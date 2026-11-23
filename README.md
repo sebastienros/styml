@@ -369,8 +369,9 @@ Signature: 'the team'
 ### Comments, order and omitted members
 
 `[YamlComment]` writes a comment line above a member, in block style. `MappingOrder = Sorted` writes an object's members
-by `[YamlPropertyOrder]`, then by name in ordinal order (dictionaries keep their own order), and `YamlIgnoreCondition.WhenWritingEmptyCollection` leaves out null values and empty collections, as
-YamlDotNet's `OmitNull | OmitEmptyCollections` does:
+by `[YamlPropertyOrder]`, then by name in ordinal order; dictionaries keep their own order.
+`YamlIgnoreCondition.WhenWritingEmptyCollection` leaves out null values and empty collections, as YamlDotNet's
+`OmitNull | OmitEmptyCollections` does:
 
 <!-- sample:comments -->
 ```csharp
@@ -496,7 +497,7 @@ public class Node
 
 <!-- sample:anchors -->
 ```csharp
-var labels = new List<string> { "x", "y" };
+var labels = new List<string> { "blue", "green" };
 var shared = new Node { Name = "shared", Labels = labels };
 var root = new Node { Name = "root", Next = shared, Labels = labels };
 var options = new YamlSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
@@ -511,8 +512,8 @@ Next:
   Name: shared
   Next: null
   Labels: &1
-  - x
-  - "y"
+  - blue
+  - green
 Labels: *1
 
 same list after reading: True

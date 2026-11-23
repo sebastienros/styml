@@ -258,7 +258,7 @@ namespace System.Text.Yaml.Tests.Readme
             }
 
             // readme: anchors text
-            var labels = new List<string> { "x", "y" };
+            var labels = new List<string> { "blue", "green" };
             var shared = new Node { Name = "shared", Labels = labels };
             var root = new Node { Name = "root", Next = shared, Labels = labels };
             var options = new YamlSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };

@@ -3,8 +3,8 @@ Next:
   Name: shared
   Next: null
   Labels: &1
-  - x
-  - "y"
+  - blue
+  - green
 Labels: *1
 
 same list after reading: True
