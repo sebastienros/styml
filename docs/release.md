@@ -4,7 +4,7 @@
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `build.yml` | push and pull request on `main` (not for `docs/**` or `README.md` alone), or on demand | ubuntu and windows: restore, build every target, leg Y and leg YJ of the five test projects on net11.0, leg Y of `Styml.Yaml.Tests` on net481 (windows), pack, the consumer sample from the packed package (net11.0, net10.0), and a preview push to Feedz from `main` |
+| `build.yml` | push and pull request on `main` (not for `docs/**` or `README.md` alone), or on demand | ubuntu and windows: restore, build every target, leg Y and leg YJ of the five test projects on net11.0, leg Y of `Styml.Yaml.Tests` on net481 (windows), pack, the consumer sample from the packed package (net11.0, net10.0), and a preview package from `main` on Feedz |
 | `publish.yml` | a tag `v*.*.*` | `aot.yml`, then tag validation, build, leg Y, pack, provenance attestation, and the push to nuget.org |
 | `aot.yml` | called by `publish.yml`, or on demand | `samples/AotSmoke` published trimmed and as Native AOT on linux-x64, warnings as errors, and run |
 
@@ -28,18 +28,8 @@ https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.js
 a release tag sets `Version` from the tag, so `v0.1.0-preview.1` publishes `0.1.0-preview.1` and `v0.1.0` publishes
 `0.1.0`. A tag must point to a commit on `main`.
 
-## One-time setup (the repository owner)
-
-- **Feedz:** create the `sebastienros/styml` repository on Feedz and add its API key as the `FEEDZ_IO_API_KEY`
-  repository secret. Without it, `build.yml` skips the preview push.
-- **nuget.org trusted publishing:** add a policy for the `sebastienros/styml` repository, workflow `publish.yml`,
-  environment `release`, owned by the `sebastienros` account (the user `publish.yml` passes to `NuGet/login`).
-- **The `release` environment:** create it in the repository settings, with the protection rules wanted for a release
-  (required reviewers, tags only).
-- **Branch protection on `main`:** require the `build` checks of `build.yml` (ubuntu and windows).
-
 ## Making a release
 
 1. Run the local gates above on the commit to release.
 2. Tag it: `git tag v0.1.0-preview.1 && git push origin v0.1.0-preview.1`.
-3. Approve the `release` environment when `publish.yml` asks.
+3. `publish.yml` validates the tag, builds, tests, packs and publishes the package to nuget.org.
