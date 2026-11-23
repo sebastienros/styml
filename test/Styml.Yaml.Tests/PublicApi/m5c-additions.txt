@@ -1,0 +1,11 @@
+# M5c: decision 1's duplicate-key handling on both option types,
+# the serializer's Schema, and the JSON and failsafe schemas.
+enum System.Text.Yaml.YamlDuplicateKeyHandling
+System.Text.Yaml.YamlDuplicateKeyHandling.Error field const System.Text.Yaml.YamlDuplicateKeyHandling = 0
+System.Text.Yaml.YamlDuplicateKeyHandling.FirstWins field const System.Text.Yaml.YamlDuplicateKeyHandling = 2
+System.Text.Yaml.YamlDuplicateKeyHandling.LastWins field const System.Text.Yaml.YamlDuplicateKeyHandling = 1
+System.Text.Yaml.YamlDocumentOptions.DuplicateKeyHandling property System.Text.Yaml.YamlDuplicateKeyHandling { get; set; }
+System.Text.Yaml.YamlSerializerOptions.DuplicateKeyHandling property System.Text.Yaml.YamlDuplicateKeyHandling { get; set; }
+System.Text.Yaml.YamlSerializerOptions.Schema property System.Text.Yaml.YamlSchemaKind { get; set; }
+System.Text.Yaml.YamlSchemaKind.Failsafe field const System.Text.Yaml.YamlSchemaKind = 3
+System.Text.Yaml.YamlSchemaKind.Json field const System.Text.Yaml.YamlSchemaKind = 2

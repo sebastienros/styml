@@ -1,0 +1,4 @@
+# Valid yaml-test-suite cases that Utf8YamlReader rejects, one per line: <case id> <reason>.
+# YamlTestSuiteTests fails when a listed case starts being accepted (remove the entry then).
+#
+# Empty since M3d: every valid case is accepted (complex keys, D9 and D10).

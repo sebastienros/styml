@@ -1,0 +1,4 @@
+# yaml-test-suite error cases that Utf8YamlReader accepts, one per line: <case id> <reason>.
+# YamlTestSuiteTests fails when a listed case starts being rejected (remove the entry then).
+#
+# (none)

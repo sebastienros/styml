@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1051" height="452" viewBox="0 0 1051 452" role="img" aria-labelledby="title desc">
+  <title id="title">Tokenize (the reader alone), Kubernetes manifests, k8s-m, 76 KB</title>
+  <desc id="desc">Tokenize (the reader alone) of Kubernetes manifests, k8s-m, 76 KB: Styml takes 189.7 µs and allocates 0 B; VYaml 1.63 times Styml's time (309.0 µs) and 1.1 KB; SharpYaml 4.70 times Styml's time (891.0 µs) and 1.26 MB; YamlDotNet 7.17 times Styml's time (1,360.2 µs) and 1.78 MB; System.Text.Json (JSON) 0.63 times Styml's time (119.1 µs) and 0 B. Smaller is better.</desc>
+  <defs>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #3f3f46; }
+      .tick { font-size: 11px; fill: #666; }
+      .axis-title { font-size: 13px; font-weight: 600; }
+      .heading { font-size: 13px; font-weight: 600; fill: #3f3f46; }
+      .caption { font-size: 11.5px; fill: #555; }
+      .grid { stroke: #dedede; stroke-width: 1; }
+      .axis { stroke: #8c8c8c; stroke-width: 1; }
+      .value { font-size: 11px; text-anchor: middle; fill: #555; }
+      .styml-value { font-size: 11px; font-weight: 700; text-anchor: middle; fill: #312e81; }
+      .competitor { opacity: .72; }
+    </style>
+  </defs>
+  <rect width="1051" height="452" fill="#fff"/>
+
+  <g font-size="12">
+    <circle cx="260" cy="23" r="5" fill="#4F46E5" stroke="#312e81" stroke-width="2"/>
+    <text x="271" y="27" font-weight="700">Styml</text>
+    <circle cx="344" cy="23" r="5" fill="#E69F00" opacity=".8"/>
+    <text x="355" y="27">VYaml</text>
+    <circle cx="422" cy="23" r="5" fill="#009E73" opacity=".8"/>
+    <text x="433" y="27">SharpYaml</text>
+    <circle cx="527" cy="23" r="5" fill="#D55E00" opacity=".8"/>
+    <text x="538" y="27">YamlDotNet</text>
+    <circle cx="638" cy="23" r="5" fill="#9CA3AF" opacity=".8"/>
+    <text x="649" y="27">System.Text.Json (JSON)</text>
+  </g>
+  <text class="heading" x="525.5" y="59" text-anchor="middle">Tokenize (the reader alone) · Kubernetes manifests, k8s-m, 76 KB · smaller is better ↓</text>
+
+  <g>
+    <line class="grid" x1="62" y1="342" x2="500" y2="342"/><text class="tick" x="52" y="346" text-anchor="end">0</text>
+    <line class="grid" x1="62" y1="290.4" x2="500" y2="290.4"/><text class="tick" x="52" y="294.4" text-anchor="end">400</text>
+    <line class="grid" x1="62" y1="238.8" x2="500" y2="238.8"/><text class="tick" x="52" y="242.8" text-anchor="end">800</text>
+    <line class="grid" x1="62" y1="187.2" x2="500" y2="187.2"/><text class="tick" x="52" y="191.2" text-anchor="end">1,200</text>
+    <line class="grid" x1="62" y1="135.6" x2="500" y2="135.6"/><text class="tick" x="52" y="139.6" text-anchor="end">1,600</text>
+    <line class="grid" x1="62" y1="84" x2="500" y2="84"/><text class="tick" x="52" y="88" text-anchor="end">2,000</text>
+    <line class="axis" x1="62" y1="84" x2="62" y2="342"/><line class="axis" x1="62" y1="342" x2="500" y2="342"/>
+
+    <rect x="88" y="317.5" width="56.6" height="24.5" rx="1" fill="#4F46E5" stroke="#312e81" stroke-width="2"/>
+    <text class="styml-value" x="116.3" y="311">189.7</text>
+    <rect class="competitor" x="170.6" y="302.1" width="56.6" height="39.9" rx="1" fill="#E69F00"/>
+    <text class="value" x="198.9" y="295">309.0</text>
+    <rect class="competitor" x="253.2" y="227.1" width="56.6" height="114.9" rx="1" fill="#009E73"/>
+    <text class="value" x="281.5" y="220">891.0</text>
+    <rect class="competitor" x="335.8" y="166.5" width="56.6" height="175.5" rx="1" fill="#D55E00"/>
+    <text class="value" x="364.1" y="160">1,360.2</text>
+    <rect class="competitor" x="418.4" y="326.6" width="56.6" height="15.4" rx="1" fill="#9CA3AF"/>
+    <text class="value" x="446.7" y="320">119.1</text>
+    <text class="axis-title" x="281" y="381" text-anchor="middle">Duration (microseconds)</text>
+  </g>
+
+  <g>
+    <line class="grid" x1="588" y1="342" x2="1026" y2="342"/><text class="tick" x="578" y="346" text-anchor="end">0</text>
+    <line class="grid" x1="588" y1="290.4" x2="1026" y2="290.4"/><text class="tick" x="578" y="294.4" text-anchor="end">400</text>
+    <line class="grid" x1="588" y1="238.8" x2="1026" y2="238.8"/><text class="tick" x="578" y="242.8" text-anchor="end">800</text>
+    <line class="grid" x1="588" y1="187.2" x2="1026" y2="187.2"/><text class="tick" x="578" y="191.2" text-anchor="end">1,200</text>
+    <line class="grid" x1="588" y1="135.6" x2="1026" y2="135.6"/><text class="tick" x="578" y="139.6" text-anchor="end">1,600</text>
+    <line class="grid" x1="588" y1="84" x2="1026" y2="84"/><text class="tick" x="578" y="88" text-anchor="end">2,000</text>
+    <line class="axis" x1="588" y1="84" x2="588" y2="342"/><line class="axis" x1="588" y1="342" x2="1026" y2="342"/>
+
+    <rect x="614" y="342" width="56.6" height="1.5" rx="1" fill="#4F46E5" stroke="#312e81" stroke-width="2"/>
+    <text class="styml-value" x="642.3" y="335">0 B</text>
+    <rect class="competitor" x="696.6" y="341.9" width="56.6" height="1" rx="1" fill="#E69F00"/>
+    <text class="value" x="724.9" y="335">1.1 KB</text>
+    <rect class="competitor" x="779.2" y="175.9" width="56.6" height="166.1" rx="1" fill="#009E73"/>
+    <text class="value" x="807.5" y="169">1.26 MB</text>
+    <rect class="competitor" x="861.8" y="106.8" width="56.6" height="235.2" rx="1" fill="#D55E00"/>
+    <text class="value" x="890.1" y="100">1.78 MB</text>
+    <rect class="competitor" x="944.4" y="342" width="56.6" height="1" rx="1" fill="#9CA3AF"/>
+    <text class="value" x="972.7" y="335">0 B</text>
+    <text class="axis-title" x="807" y="381" text-anchor="middle">Memory allocation (kilobytes)</text>
+  </g>
+
+  <text class="caption" x="525.5" y="412" text-anchor="middle">Every token to the end. YamlDotNet and SharpYaml read a string decoded in setup; the others read UTF-8 bytes.</text>
+</svg>

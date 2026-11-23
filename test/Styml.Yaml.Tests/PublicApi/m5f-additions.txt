@@ -1,0 +1,31 @@
+# M5f: comments and scalar styles on members (attributes, and their
+# contract and generator values), sorted mapping order, omitting empty collections, and the YAML options of the
+# source-generation attribute.
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.Comment property System.String { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.ScalarStyle property System.Text.Yaml.YamlScalarStyle { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].Comment property System.String { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].ScalarStyle property System.Text.Yaml.YamlScalarStyle { get; init; }
+System.Text.Yaml.Serialization.YamlCommentAttribute.Comment property System.String { get; }
+System.Text.Yaml.Serialization.YamlCommentAttribute.ctor(System.String)
+System.Text.Yaml.Serialization.YamlIgnoreCondition.WhenWritingEmptyCollection field const System.Text.Yaml.Serialization.YamlIgnoreCondition = 6
+System.Text.Yaml.Serialization.YamlMappingOrder.Declaration field const System.Text.Yaml.Serialization.YamlMappingOrder = 0
+System.Text.Yaml.Serialization.YamlMappingOrder.Sorted field const System.Text.Yaml.Serialization.YamlMappingOrder = 1
+System.Text.Yaml.Serialization.YamlScalarStyleAttribute.Style property System.Text.Yaml.YamlScalarStyle { get; }
+System.Text.Yaml.Serialization.YamlScalarStyleAttribute.ctor(System.Text.Yaml.YamlScalarStyle)
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.AcceptLenientScalars property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.DisallowImplicitCollectionKeys property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.DuplicateKeyHandling property System.Text.Yaml.YamlDuplicateKeyHandling { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.ExpandSequenceItems property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.IndentSequences property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.MappingOrder property System.Text.Yaml.Serialization.YamlMappingOrder { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.MaxAliasExpansion property System.Int32 { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.MaxLineWidth property System.Int32 { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.MultiLineStringStyle property System.Text.Yaml.YamlScalarStyle { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.QuoteForLenientReaders property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.ResolveMergeKeys property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.Schema property System.Text.Yaml.YamlSchemaKind { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.WriteStyle property System.Text.Yaml.YamlWriterStyle { get; set; }
+System.Text.Yaml.YamlSerializerOptions.MappingOrder property System.Text.Yaml.Serialization.YamlMappingOrder { get; set; }
+enum System.Text.Yaml.Serialization.YamlMappingOrder
+sealed class System.Text.Yaml.Serialization.YamlCommentAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlScalarStyleAttribute : System.Text.Yaml.Serialization.YamlAttribute

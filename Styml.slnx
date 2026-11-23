@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Styml/Styml.csproj" />
+    <Project Path="src/Styml.SourceGeneration/Styml.SourceGeneration.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/TestShims/TestUtilities.csproj" />
+    <Project Path="test/Styml.Tests/Styml.Tests.csproj" />
+    <Project Path="test/Styml.SourceGeneration.TestLibrary/Styml.SourceGeneration.TestLibrary.csproj" />
+    <Project Path="test/Styml.SourceGeneration.Tests/Styml.SourceGeneration.Tests.csproj" />
+    <Project Path="test/Styml.SourceGeneration.Unit.Tests/Styml.SourceGeneration.Unit.Tests.csproj" />
+    <Project Path="test/Styml.Parity.Tests/Styml.Parity.Tests.csproj" />
+    <Project Path="test/Styml.Yaml.Tests/Styml.Yaml.Tests.csproj" />
+  </Folder>
+  <!-- Benchmarks: listed for the IDE, never built or run by `dotnet build` / `dotnet test` of the solution. How to run
+       them: docs/benchmarks/README.md. -->
+  <Folder Name="/bench/">
+    <Project Path="bench/Styml.Benchmarks.Model/Styml.Benchmarks.Model.csproj">
+      <Build Project="false" />
+    </Project>
+    <Project Path="bench/Styml.Benchmarks/Styml.Benchmarks.csproj">
+      <Build Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/RoundTrip/RoundTrip.csproj" />
+  </Folder>
+</Solution>

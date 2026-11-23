@@ -1,0 +1,4 @@
+# M4b's reader step: scalar resolution beyond the YAML standards in typed
+# reads, off by default (non-standard behaviour is opt-in).
+System.Text.Yaml.YamlReaderOptions.AcceptLenientScalars property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.AcceptLenientScalars property System.Boolean { get; set; }

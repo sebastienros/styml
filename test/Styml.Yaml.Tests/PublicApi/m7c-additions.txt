@@ -1,0 +1,5 @@
+# M7c: IgnoreSourceStyles on
+# the writer options, the serializer options and the source-generation attribute.
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.IgnoreSourceStyles property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IgnoreSourceStyles property System.Boolean { get; set; }
+System.Text.Yaml.YamlWriterOptions.IgnoreSourceStyles property System.Boolean { get; set; }

@@ -1,0 +1,11 @@
+# M5a: YamlDocument reads YAML: anchors, tags, scalar styles and aliases on
+# YamlElement, anchors and tags on YamlNode, and the document's schema and alias-expansion limit.
+System.Text.Yaml.Nodes.YamlNode.Anchor property System.String { get; set; }
+System.Text.Yaml.Nodes.YamlNode.Tag property System.String { get; set; }
+System.Text.Yaml.YamlDocumentOptions.MaxAliasExpansion property System.Int32 { get; set; }
+System.Text.Yaml.YamlDocumentOptions.Schema property System.Text.Yaml.YamlSchemaKind { get; set; }
+System.Text.Yaml.YamlElement.GetAnchor() System.String
+System.Text.Yaml.YamlElement.GetExpandedTag() System.String
+System.Text.Yaml.YamlElement.GetTag() System.String
+System.Text.Yaml.YamlElement.IsAlias property System.Boolean { get; }
+System.Text.Yaml.YamlElement.ScalarStyle property System.Text.Yaml.YamlScalarStyle { get; }

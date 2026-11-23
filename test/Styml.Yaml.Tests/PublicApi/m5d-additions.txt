@@ -1,0 +1,15 @@
+# M5d: tags as type discriminators (the style on the
+# hierarchy, a derived type's tag) and the options' explicit tag-to-type list, with its attribute for a context.
+enum System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle
+System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle.Both field const System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle = 2
+System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle.Property field const System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle = 0
+System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle.Tag field const System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle = 1
+System.Text.Yaml.Serialization.Metadata.YamlDerivedType.Tag property System.String { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions.DiscriminatorStyle property System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle { get; set; }
+System.Text.Yaml.Serialization.YamlDerivedTypeAttribute.Tag property System.String { get; set; }
+System.Text.Yaml.Serialization.YamlPolymorphicAttribute.DiscriminatorStyle property System.Text.Yaml.Serialization.YamlTypeDiscriminatorStyle { get; set; }
+sealed class System.Text.Yaml.Serialization.YamlTagMappingAttribute : System.Text.Yaml.Serialization.YamlAttribute
+System.Text.Yaml.Serialization.YamlTagMappingAttribute.ctor(System.String, System.Type)
+System.Text.Yaml.Serialization.YamlTagMappingAttribute.Tag property System.String { get; }
+System.Text.Yaml.Serialization.YamlTagMappingAttribute.Type property System.Type { get; }
+System.Text.Yaml.YamlSerializerOptions.TagMappings property System.Collections.Generic.IDictionary`2[System.String, System.Type] { get; }

@@ -1,0 +1,8 @@
+# M3b: the key kind of the reader's PropertyName tokens (alias keys, D9 / docs/feature-parity.md; Complex is
+# reserved for collection keys, D10), on every target.
+enum System.Text.Yaml.YamlKeyKind
+System.Text.Yaml.Utf8YamlReader.KeyKind property System.Text.Yaml.YamlKeyKind { get; }
+System.Text.Yaml.YamlKeyKind.Alias field const System.Text.Yaml.YamlKeyKind = 2
+System.Text.Yaml.YamlKeyKind.Complex field const System.Text.Yaml.YamlKeyKind = 3
+System.Text.Yaml.YamlKeyKind.None field const System.Text.Yaml.YamlKeyKind = 0
+System.Text.Yaml.YamlKeyKind.Scalar field const System.Text.Yaml.YamlKeyKind = 1

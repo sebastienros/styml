@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Lists the public API of a Styml.dll in the format of test/Styml.Yaml.Tests/PublicApi (M3's exit criterion 9).
+       See README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../test/Styml.Yaml.Tests/PublicApiListing.cs" Link="PublicApiListing.cs" />
+  </ItemGroup>
+</Project>

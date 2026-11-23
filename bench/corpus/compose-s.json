@@ -1,0 +1,62 @@
+{
+  "name": "stack-november",
+  "services": {
+    "lima-quebec-0": {
+      "image": "postgres:16",
+      "container_name": "lima-quebec-0",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "lima-quebec-0.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8000:8080",
+        "9000:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-0;Database=tango;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/lima-quebec-0:/var/lib/lima-quebec-0",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.team": "bravo",
+        "com.example.description": "Service lima-quebec-0: handles lima requests"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8080/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    }
+  },
+  "networks": {
+    "backend": {
+      "driver": "bridge"
+    },
+    "frontend": {
+      "driver": "bridge"
+    }
+  },
+  "volumes": {
+    "db-data": {
+      "driver": "local"
+    }
+  }
+}

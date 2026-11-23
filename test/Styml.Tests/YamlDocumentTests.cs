@@ -1,0 +1,3645 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Buffers;
+using System.Collections;
+using System.Globalization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.IO;
+using Xunit;
+using System.Buffers.Text;
+using System.IO.Tests;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Threading;
+using TestData = System.Text.Yaml.Serialization.Tests.TestData;
+
+namespace System.Text.Yaml.Tests
+{
+    public static class YamlDocumentTests
+    {
+        private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
+
+        private static readonly YamlDocumentOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
+
+        private static readonly Dictionary<TestCaseType, string> s_expectedConcat =
+            new Dictionary<TestCaseType, string>();
+
+        private static readonly Dictionary<TestCaseType, string> s_compactYaml =
+            new Dictionary<TestCaseType, string>();
+
+        public static IEnumerable<object[]> BadBOMCases { get; } =
+            new object[][]
+            {
+                new object[] { "\u00EF" },
+                new object[] { "\u00EF1" },
+                new object[] { "\u00EF\u00BB" },
+                new object[] { "\u00EF\u00BB1" },
+                new object[] { "\u00EF\u00BB\u00BE" },
+                new object[] { "\u00EF\u00BB\u00BE1" },
+                new object[] { "\u00EF\u00BB\u00FB" },
+                new object[] { "\u00EF\u00BB\u00FB1" },
+
+                // Legal BOM, but no payload.
+                new object[] { "\u00EF\u00BB\u00BF" },
+            };
+
+        public static IEnumerable<object[]> ReducedTestCases { get; } =
+            new List<object[]>
+            {
+                new object[] { true, TestCaseType.ProjectLockYaml, SR.ProjectLockYaml},
+                new object[] { true, TestCaseType.Yaml40KB, SR.Yaml40KB},
+                new object[] { false, TestCaseType.DeepTree, SR.DeepTree},
+                new object[] { false, TestCaseType.Yaml400KB, SR.Yaml400KB},
+            };
+
+        public static IEnumerable<object[]> TestCases { get; } =
+            new List<object[]>
+            {
+                new object[] { true, TestCaseType.Basic, SR.BasicYaml},
+                new object[] { true, TestCaseType.BasicLargeNum, SR.BasicYamlWithLargeNum}, // Yaml.NET treats numbers starting with 0 as octal (0425 becomes 277)
+                new object[] { true, TestCaseType.BroadTree, SR.BroadTree}, // \r\n behavior is different between Yaml.NET and System.Text.Yaml
+                new object[] { true, TestCaseType.DeepTree, SR.DeepTree},
+                new object[] { true, TestCaseType.FullSchema1, SR.FullYamlSchema1},
+                new object[] { true, TestCaseType.HelloWorld, SR.HelloWorld},
+                new object[] { true, TestCaseType.LotsOfNumbers, SR.LotsOfNumbers},
+                new object[] { true, TestCaseType.LotsOfStrings, SR.LotsOfStrings},
+                new object[] { true, TestCaseType.ProjectLockYaml, SR.ProjectLockYaml},
+                new object[] { true, TestCaseType.Yaml400B, SR.Yaml400B},
+                new object[] { true, TestCaseType.Yaml4KB, SR.Yaml4KB},
+                new object[] { true, TestCaseType.Yaml40KB, SR.Yaml40KB},
+                new object[] { true, TestCaseType.Yaml400KB, SR.Yaml400KB},
+
+                new object[] { false, TestCaseType.Basic, SR.BasicYaml},
+                new object[] { false, TestCaseType.BasicLargeNum, SR.BasicYamlWithLargeNum}, // Yaml.NET treats numbers starting with 0 as octal (0425 becomes 277)
+                new object[] { false, TestCaseType.BroadTree, SR.BroadTree}, // \r\n behavior is different between Yaml.NET and System.Text.Yaml
+                new object[] { false, TestCaseType.DeepTree, SR.DeepTree},
+                new object[] { false, TestCaseType.FullSchema1, SR.FullYamlSchema1},
+                new object[] { false, TestCaseType.HelloWorld, SR.HelloWorld},
+                new object[] { false, TestCaseType.LotsOfNumbers, SR.LotsOfNumbers},
+                new object[] { false, TestCaseType.LotsOfStrings, SR.LotsOfStrings},
+                new object[] { false, TestCaseType.ProjectLockYaml, SR.ProjectLockYaml},
+                new object[] { false, TestCaseType.Yaml400B, SR.Yaml400B},
+                new object[] { false, TestCaseType.Yaml4KB, SR.Yaml4KB},
+                new object[] { false, TestCaseType.Yaml40KB, SR.Yaml40KB},
+                new object[] { false, TestCaseType.Yaml400KB, SR.Yaml400KB},
+            };
+
+        // TestCaseType is only used to give the json strings a descriptive name within the unit tests.
+        public enum TestCaseType
+        {
+            HelloWorld,
+            Basic,
+            BasicLargeNum,
+            ProjectLockYaml,
+            FullSchema1,
+            DeepTree,
+            BroadTree,
+            LotsOfNumbers,
+            LotsOfStrings,
+            Yaml400B,
+            Yaml4KB,
+            Yaml40KB,
+            Yaml400KB,
+        }
+
+        public enum ParseReaderScenario
+        {
+            NotStarted,
+            StartAtFirstToken,
+            StartAtNestedValue,
+            StartAtPropertyName,
+        }
+
+        public static IEnumerable<object[]> ParseReaderSuccessfulCases { get; } = BuildParseReaderSuccessfulCases().ToList();
+
+        private static IEnumerable<object[]> BuildParseReaderSuccessfulCases()
+        {
+            var scenarios = (ParseReaderScenario[])Enum.GetValues(typeof(ParseReaderScenario));
+
+            foreach (int segmentCount in new[] { 0, 1, 2, 15, 125 })
+            {
+                foreach (ParseReaderScenario scenario in scenarios)
+                {
+                    yield return new object[] { scenario, segmentCount };
+                }
+            }
+        }
+
+        private static string ReadHelloWorld(JToken obj)
+        {
+            string message = (string)obj["message"];
+            return message;
+        }
+
+        private static string ReadYaml400KB(JToken obj)
+        {
+            var sb = new StringBuilder(250000);
+            foreach (JToken token in obj)
+            {
+                sb.Append((string)token["_id"]);
+                sb.Append((int)token["index"]);
+                sb.Append((string)token["guid"]);
+                sb.Append((bool)token["isActive"]);
+                sb.Append((string)token["balance"]);
+                sb.Append((string)token["picture"]);
+                sb.Append((int)token["age"]);
+                sb.Append((string)token["eyeColor"]);
+                sb.Append((string)token["name"]);
+                sb.Append((string)token["gender"]);
+                sb.Append((string)token["company"]);
+                sb.Append((string)token["email"]);
+                sb.Append((string)token["phone"]);
+                sb.Append((string)token["address"]);
+                sb.Append((string)token["about"]);
+                sb.Append((string)token["registered"]);
+                sb.Append((double)token["latitude"]);
+                sb.Append((double)token["longitude"]);
+
+                JToken tags = token["tags"];
+                foreach (JToken tag in tags)
+                {
+                    sb.Append((string)tag);
+                }
+                JToken friends = token["friends"];
+                foreach (JToken friend in friends)
+                {
+                    sb.Append((int)friend["id"]);
+                    sb.Append((string)friend["name"]);
+                }
+                sb.Append((string)token["greeting"]);
+                sb.Append((string)token["favoriteFruit"]);
+
+            }
+            return sb.ToString();
+        }
+
+        private static string ReadHelloWorld(YamlElement obj)
+        {
+            string message = obj.GetProperty("message").GetString();
+            return message;
+        }
+
+        private static string ReadYaml400KB(YamlElement obj)
+        {
+            var sb = new StringBuilder(250000);
+
+            foreach (YamlElement element in obj.EnumerateArray())
+            {
+                sb.Append(element.GetProperty("_id").GetString());
+                sb.Append(element.GetProperty("index").GetInt32());
+                sb.Append(element.GetProperty("guid").GetString());
+                sb.Append(element.GetProperty("isActive").GetBoolean());
+                sb.Append(element.GetProperty("balance").GetString());
+                sb.Append(element.GetProperty("picture").GetString());
+                sb.Append(element.GetProperty("age").GetInt32());
+                sb.Append(element.GetProperty("eyeColor").GetString());
+                sb.Append(element.GetProperty("name").GetString());
+                sb.Append(element.GetProperty("gender").GetString());
+                sb.Append(element.GetProperty("company").GetString());
+                sb.Append(element.GetProperty("email").GetString());
+                sb.Append(element.GetProperty("phone").GetString());
+                sb.Append(element.GetProperty("address").GetString());
+                sb.Append(element.GetProperty("about").GetString());
+                sb.Append(element.GetProperty("registered").GetString());
+                sb.Append(element.GetProperty("latitude").GetDouble());
+                sb.Append(element.GetProperty("longitude").GetDouble());
+
+                YamlElement tags = element.GetProperty("tags");
+                for (int j = 0; j < tags.GetArrayLength(); j++)
+                {
+                    sb.Append(tags[j].GetString());
+                }
+                YamlElement friends = element.GetProperty("friends");
+                for (int j = 0; j < friends.GetArrayLength(); j++)
+                {
+                    sb.Append(friends[j].GetProperty("id").GetInt32());
+                    sb.Append(friends[j].GetProperty("name").GetString());
+                }
+                sb.Append(element.GetProperty("greeting").GetString());
+                sb.Append(element.GetProperty("favoriteFruit").GetString());
+            }
+
+            return sb.ToString();
+        }
+
+        [Theory]
+        // The ReadOnlyMemory<bytes> variant is the only one that runs all the input documents.
+        // The rest use a reduced set as because (implementation detail) they ultimately
+        // funnel into the same worker code and the difference between Reduced and Full
+        // is about 0.7 seconds (which adds up).
+        //
+        // If the internals change such that one of these is exercising substantially different
+        // code, then it should switch to the full variation set.
+        [MemberData(nameof(TestCases))]
+        public static async Task ParseYaml_MemoryBytes(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => Task.FromResult(YamlDocument.Parse(bytes.AsMemory())));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_String(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                str => Task.FromResult(YamlDocument.Parse(str)),
+                null);
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_SeekableStream(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => Task.FromResult(YamlDocument.Parse(new MemoryStream(bytes))));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_SeekableStream_Async(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => YamlDocument.ParseAsync(new MemoryStream(bytes)));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_UnseekableStream(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => YamlDocument.ParseAsync(
+                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_UnseekableStream_Async(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => YamlDocument.ParseAsync(new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)));
+        }
+
+
+        [Fact]
+        public static void ParseYaml_SeekableStream_Small()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (YamlDocument doc = YamlDocument.Parse(new MemoryStream(data)))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Fact]
+        public static void ParseYaml_UnseekableStream_Small()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (YamlDocument doc =
+                YamlDocument.Parse(new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data: data)))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Fact]
+        public static async Task ParseYaml_SeekableStream_Small_Async()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (YamlDocument doc = await YamlDocument.ParseAsync(new MemoryStream(data)))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Fact]
+        public static async Task ParseYaml_UnseekableStream_Small_Async()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (YamlDocument doc = await YamlDocument.ParseAsync(
+                new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data: data)))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_SeekableStream_WithBOM(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => Task.FromResult(YamlDocument.Parse(new MemoryStream(Utf8Bom.Concat(bytes).ToArray()))));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_SeekableStream_Async_WithBOM(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => YamlDocument.ParseAsync(new MemoryStream(Utf8Bom.Concat(bytes).ToArray())));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_UnseekableStream_WithBOM(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => Task.FromResult(YamlDocument.Parse(
+                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray()))));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_UnseekableStream_Async_WithBOM(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => YamlDocument.ParseAsync(
+                        new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray())));
+        }
+
+        [Fact]
+        public static void ParseYaml_Stream_ClearRentedBuffer_WhenThrow_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnReadStream(new byte[] { 1 }))
+            {
+                Assert.Throws<EndOfStreamException>(() => YamlDocument.Parse(stream));
+            }
+        }
+
+        [Fact]
+        public static async Task ParseYaml_Stream_Async_ClearRentedBuffer_WhenThrow_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnReadStream(new byte[] { 1 }))
+            {
+                await Assert.ThrowsAsync<EndOfStreamException>(async () => await YamlDocument.ParseAsync(stream));
+            }
+        }
+
+        [Fact]
+        public static void ParseYaml_Stream_ThrowsOn_ArrayPoolRent_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnCanSeekStream(new byte[] { 1 }))
+            {
+                Assert.Throws<InsufficientMemoryException>(() => YamlDocument.Parse(stream));
+            }
+        }
+
+        [Fact]
+        public static async Task ParseYaml_Stream_Async_ThrowsOn_ArrayPoolRent_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnCanSeekStream(new byte[] { 1 }))
+            {
+                await Assert.ThrowsAsync<InsufficientMemoryException>(async () => await YamlDocument.ParseAsync(stream));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_SequenceBytes_Single(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => Task.FromResult(YamlDocument.Parse(new ReadOnlySequence<byte>(bytes))));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseYaml_SequenceBytes_Multi(bool compactData, TestCaseType type, string yamlString)
+        {
+            await ParseYamlAsync(
+                compactData,
+                type,
+                yamlString,
+                null,
+                bytes => Task.FromResult(YamlDocument.Parse(YamlTestHelper.SegmentInto(bytes, 31))));
+        }
+
+        private static async Task ParseYamlAsync(
+            bool compactData,
+            TestCaseType type,
+            string yamlString,
+            Func<string, Task<YamlDocument>> stringDocBuilder,
+            Func<byte[], Task<YamlDocument>> bytesDocBuilder)
+        {
+            // One, but not both, must be null.
+            if ((stringDocBuilder == null) == (bytesDocBuilder == null))
+                throw new InvalidOperationException();
+
+            // Remove all formatting/indentation
+            if (compactData)
+            {
+                yamlString = GetCompactYaml(type, yamlString);
+            }
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = await (stringDocBuilder?.Invoke(yamlString) ?? bytesDocBuilder?.Invoke(dataUtf8)))
+            {
+                Assert.NotNull(doc);
+
+                YamlElement rootElement = doc.RootElement;
+
+                Func<JToken, string> expectedFunc = null;
+                Func<YamlElement, string> actualFunc = null;
+
+                switch (type)
+                {
+                    case TestCaseType.Yaml400KB:
+                        expectedFunc = token => ReadYaml400KB(token);
+                        actualFunc = element => ReadYaml400KB(element);
+                        break;
+                    case TestCaseType.HelloWorld:
+                        expectedFunc = token => ReadHelloWorld(token);
+                        actualFunc = element => ReadHelloWorld(element);
+                        break;
+                }
+
+                if (expectedFunc != null)
+                {
+                    string expectedCustom;
+                    string actualCustom;
+
+                    using (var stream = new MemoryStream(dataUtf8))
+                    using (var streamReader = new StreamReader(stream, Encoding.UTF8, false, 1024, true))
+                    using (var yamlReader = new JsonTextReader(streamReader) { MaxDepth = null })
+                    {
+                        JToken jToken = JToken.ReadFrom(yamlReader);
+
+                        expectedCustom = expectedFunc(jToken);
+                        actualCustom = actualFunc(rootElement);
+                    }
+
+                    Assert.Equal(expectedCustom, actualCustom);
+                }
+
+                string actual = doc.PrintYaml();
+                string expected = GetExpectedConcat(type, yamlString);
+
+                Assert.Equal(expected, actual);
+
+                Assert.Equal(yamlString, rootElement.GetRawText());
+            }
+        }
+
+        private static string PrintYaml(this YamlDocument document, int sizeHint = 0)
+        {
+            return PrintYaml(document.RootElement, sizeHint);
+        }
+
+        private static string PrintYaml(this YamlElement element, int sizeHint = 0)
+        {
+            StringBuilder sb = new StringBuilder(sizeHint);
+            DepthFirstAppend(sb, element);
+            return sb.ToString();
+        }
+
+        private static void DepthFirstAppend(StringBuilder buf, YamlElement element)
+        {
+            YamlValueKind kind = element.ValueKind;
+
+            switch (kind)
+            {
+                case YamlValueKind.False:
+                case YamlValueKind.True:
+                case YamlValueKind.String:
+                case YamlValueKind.Number:
+                {
+                    buf.Append(element.ToString());
+                    buf.Append(", ");
+                    break;
+                }
+                case YamlValueKind.Object:
+                {
+                    foreach (YamlProperty prop in element.EnumerateObject())
+                    {
+                        buf.Append(prop.Name);
+                        buf.Append(", ");
+                        DepthFirstAppend(buf, prop.Value);
+                    }
+
+                    break;
+                }
+                case YamlValueKind.Array:
+                {
+                    foreach (YamlElement child in element.EnumerateArray())
+                    {
+                        DepthFirstAppend(buf, child);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("[{\"arrayWithObjects\":[\"text\",14,[],null,false,{},{\"time\":24},[\"1\",\"2\",\"3\"]]}]")]
+        [InlineData("[{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}]")]
+        [InlineData("[{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}},{\"a\":{}}]")]
+        [InlineData("{\"a\":\"b\"}")]
+        [InlineData("{}")]
+        [InlineData("[]")]
+        public static void CustomParseYaml(string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8, default))
+            {
+                string actual = doc.PrintYaml();
+
+                TextReader reader = new StringReader(yamlString);
+                string expected = YamlTestHelper.NewtonsoftReturnStringHelper(reader);
+
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        [Fact]
+        public static void ParseArray()
+        {
+            using (YamlDocument doc = YamlDocument.Parse(SR.SimpleArrayYaml))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(2, root.GetArrayLength());
+
+                string phoneNumber = root[0].GetString();
+                int age = root[1].GetInt32();
+
+                Assert.Equal("425-214-3151", phoneNumber);
+                Assert.Equal(25, age);
+
+                Assert.Throws<IndexOutOfRangeException>(() => root[2]);
+            }
+        }
+
+        [Fact]
+        public static void ParseSimpleObject()
+        {
+            using (YamlDocument doc = YamlDocument.Parse(SR.SimpleObjectYaml))
+            {
+                YamlElement parsedObject = doc.RootElement;
+
+                int age = parsedObject.GetProperty("age").GetInt32();
+                string ageString = parsedObject.GetProperty("age").ToString();
+                string first = parsedObject.GetProperty("first").GetString();
+                string last = parsedObject.GetProperty("last").GetString();
+                string phoneNumber = parsedObject.GetProperty("phoneNumber").GetString();
+                string street = parsedObject.GetProperty("street").GetString();
+                string city = parsedObject.GetProperty("city").GetString();
+                int zip = parsedObject.GetProperty("zip").GetInt32();
+
+                Assert.Equal(7, parsedObject.GetPropertyCount());
+                Assert.True(parsedObject.TryGetProperty("age", out YamlElement age2));
+                Assert.Equal(30, age2.GetInt32());
+
+                Assert.Equal(30, age);
+                Assert.Equal("30", ageString);
+                Assert.Equal("John", first);
+                Assert.Equal("Smith", last);
+                Assert.Equal("425-214-3151", phoneNumber);
+                Assert.Equal("1 Microsoft Way", street);
+                Assert.Equal("Redmond", city);
+                Assert.Equal(98052, zip);
+            }
+        }
+
+        [Fact]
+        public static void ParseNestedYaml()
+        {
+            using (YamlDocument doc = YamlDocument.Parse(SR.ParseYaml))
+            {
+                YamlElement parsedObject = doc.RootElement;
+
+                Assert.Equal(1, parsedObject.GetArrayLength());
+                YamlElement person = parsedObject[0];
+                Assert.Equal(5, person.GetPropertyCount());
+                double age = person.GetProperty("age").GetDouble();
+                string first = person.GetProperty("first").GetString();
+                string last = person.GetProperty("last").GetString();
+                YamlElement phoneNums = person.GetProperty("phoneNumbers");
+                Assert.Equal(2, phoneNums.GetArrayLength());
+                string phoneNum1 = phoneNums[0].GetString();
+                string phoneNum2 = phoneNums[1].GetString();
+                YamlElement address = person.GetProperty("address");
+                string street = address.GetProperty("street").GetString();
+                string city = address.GetProperty("city").GetString();
+                double zipCode = address.GetProperty("zip").GetDouble();
+                const string ThrowsAnyway = "throws-anyway";
+
+                Assert.Equal(30, age);
+                Assert.Equal("John", first);
+                Assert.Equal("Smith", last);
+                Assert.Equal("425-000-1212", phoneNum1);
+                Assert.Equal("425-000-1213", phoneNum2);
+                Assert.Equal("1 Microsoft Way", street);
+                Assert.Equal("Redmond", city);
+                Assert.Equal(98052, zipCode);
+
+                Assert.Throws<InvalidOperationException>(() => person.GetArrayLength());
+                Assert.Throws<IndexOutOfRangeException>(() => phoneNums[2]);
+                Assert.Throws<InvalidOperationException>(() => phoneNums.GetProperty("2"));
+                Assert.Throws<KeyNotFoundException>(() => address.GetProperty("2"));
+                Assert.Throws<InvalidOperationException>(() => address.GetProperty("city").GetDouble());
+                Assert.Throws<InvalidOperationException>(() => address.GetProperty("city").GetBoolean());
+                Assert.Throws<InvalidOperationException>(() => address.GetProperty("zip").GetString());
+                Assert.Throws<InvalidOperationException>(() => person.GetProperty("phoneNumbers").GetString());
+                Assert.Throws<InvalidOperationException>(() => person.GetString());
+                Assert.Throws<InvalidOperationException>(() => person.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => person.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => person.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+            }
+        }
+
+        [Fact]
+        public static void ParseBoolean()
+        {
+            using (YamlDocument doc = YamlDocument.Parse("[true,false]"))
+            {
+                YamlElement parsedObject = doc.RootElement;
+                bool first = parsedObject[0].GetBoolean();
+                bool second = parsedObject[1].GetBoolean();
+                Assert.True(first);
+                Assert.False(second);
+            }
+        }
+
+        [Fact]
+        public static void YamlArrayToString()
+        {
+            using (YamlDocument doc = YamlDocument.Parse(SR.ParseYaml))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Array, root.ValueKind);
+                Assert.Equal(SR.ParseYaml, root.ToString());
+            }
+        }
+
+        [Fact]
+        public static void YamlObjectToString()
+        {
+            using (YamlDocument doc = YamlDocument.Parse(SR.BasicYaml))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Object, root.ValueKind);
+                Assert.Equal(SR.BasicYaml, root.ToString());
+            }
+        }
+
+        [Fact]
+        public static void MixedArrayIndexing()
+        {
+            // The root object is an array with "complex" children
+            // root[0] is a number (simple single forward)
+            // root[1] is an object which needs to account for the start entry, the children, and end.
+            // root[2] is the target inner array
+            // root[3] is a simple value past two complex values
+            //
+            // Within root[2] the array has only simple values, so it uses a different indexing algorithm.
+            const string yaml = " [ 6, { \"hi\": \"mom\" }, [ \"425-214-3151\", 25 ], null ] ";
+
+            using (YamlDocument doc = YamlDocument.Parse(yaml))
+            {
+                YamlElement root = doc.RootElement;
+                YamlElement target = root[2];
+
+                Assert.Equal(2, target.GetArrayLength());
+
+                string phoneNumber = target[0].GetString();
+                int age = target[1].GetInt32();
+
+                Assert.Equal("425-214-3151", phoneNumber);
+                Assert.Equal(25, age);
+                Assert.Equal(YamlValueKind.Null, root[3].ValueKind);
+
+                Assert.Throws<IndexOutOfRangeException>(() => root[4]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(sbyte.MaxValue)]
+        [InlineData(sbyte.MinValue)]
+        public static void ReadNumber_1Byte(sbyte value)
+        {
+            double expectedDouble = value;
+            float expectedFloat = value;
+            decimal expectedDecimal = value;
+
+            using (YamlDocument doc = YamlDocument.Parse("    " + value + "  "))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                Assert.True(root.TryGetSingle(out float floatVal));
+                Assert.Equal(expectedFloat, floatVal);
+
+                Assert.True(root.TryGetDouble(out double doubleVal));
+                Assert.Equal(expectedDouble, doubleVal);
+
+                Assert.True(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(expectedDecimal, decimalVal);
+
+                Assert.True(root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(value, sbyteVal);
+
+                Assert.True(root.TryGetInt16(out short shortVal));
+                Assert.Equal(value, shortVal);
+
+                Assert.True(root.TryGetInt32(out int intVal));
+                Assert.Equal(value, intVal);
+
+                Assert.True(root.TryGetInt64(out long longVal));
+                Assert.Equal(value, longVal);
+
+                Assert.Equal(expectedFloat, root.GetSingle());
+                Assert.Equal(expectedDouble, root.GetDouble());
+                Assert.Equal(expectedDecimal, root.GetDecimal());
+                Assert.Equal(value, root.GetInt32());
+                Assert.Equal(value, root.GetInt64());
+
+                if (value >= 0)
+                {
+                    byte expectedByte = (byte)value;
+                    ushort expectedUShort = (ushort)value;
+                    uint expectedUInt = (uint)value;
+                    ulong expectedULong = (ulong)value;
+
+                    Assert.True(root.TryGetByte(out byte byteVal));
+                    Assert.Equal(expectedByte, byteVal);
+
+                    Assert.True(root.TryGetUInt16(out ushort ushortVal));
+                    Assert.Equal(expectedUShort, ushortVal);
+
+                    Assert.True(root.TryGetUInt32(out uint uintVal));
+                    Assert.Equal(expectedUInt, uintVal);
+
+                    Assert.True(root.TryGetUInt64(out ulong ulongVal));
+                    Assert.Equal(expectedULong, ulongVal);
+
+                    Assert.Equal(expectedUInt, root.GetUInt32());
+                    Assert.Equal(expectedULong, root.GetUInt64());
+                }
+                else
+                {
+                    Assert.False(root.TryGetByte(out byte byteValue));
+                    Assert.Equal(0, byteValue);
+
+                    Assert.False(root.TryGetUInt16(out ushort ushortValue));
+                    Assert.Equal(0, ushortValue);
+
+                    Assert.False(root.TryGetUInt32(out uint uintValue));
+                    Assert.Equal(0U, uintValue);
+
+                    Assert.False(root.TryGetUInt64(out ulong ulongValue));
+                    Assert.Equal(0UL, ulongValue);
+
+                    Assert.Throws<FormatException>(() => root.GetUInt32());
+                    Assert.Throws<FormatException>(() => root.GetUInt64());
+                }
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetBytesFromBase64(out byte[] bytes));
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(short.MaxValue)]
+        [InlineData(short.MinValue)]
+        public static void ReadNumber_2Bytes(short value)
+        {
+            double expectedDouble = value;
+            float expectedFloat = value;
+            decimal expectedDecimal = value;
+
+            using (YamlDocument doc = YamlDocument.Parse("    " + value + "  "))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                Assert.True(root.TryGetSingle(out float floatVal));
+                Assert.Equal(expectedFloat, floatVal);
+
+                Assert.True(root.TryGetDouble(out double doubleVal));
+                Assert.Equal(expectedDouble, doubleVal);
+
+                Assert.True(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(expectedDecimal, decimalVal);
+
+                Assert.Equal((value == 0), root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(0, sbyteVal);
+
+                Assert.Equal((value == 0), root.TryGetByte(out byte byteVal));
+                Assert.Equal(0, byteVal);
+
+                Assert.True(root.TryGetInt16(out short shortVal));
+                Assert.Equal(value, shortVal);
+
+                Assert.True(root.TryGetInt32(out int intVal));
+                Assert.Equal(value, intVal);
+
+                Assert.True(root.TryGetInt64(out long longVal));
+                Assert.Equal(value, longVal);
+
+                Assert.Equal(expectedFloat, root.GetSingle());
+                Assert.Equal(expectedDouble, root.GetDouble());
+                Assert.Equal(expectedDecimal, root.GetDecimal());
+                Assert.Equal(value, root.GetInt32());
+                Assert.Equal(value, root.GetInt64());
+
+                if (value >= 0)
+                {
+                    byte expectedByte = (byte)value;
+                    ushort expectedUShort = (ushort)value;
+                    uint expectedUInt = (uint)value;
+                    ulong expectedULong = (ulong)value;
+
+                    Assert.True(root.TryGetUInt16(out ushort ushortVal));
+                    Assert.Equal(expectedUShort, ushortVal);
+
+                    Assert.True(root.TryGetUInt32(out uint uintVal));
+                    Assert.Equal(expectedUInt, uintVal);
+
+                    Assert.True(root.TryGetUInt64(out ulong ulongVal));
+                    Assert.Equal(expectedULong, ulongVal);
+
+                    Assert.Equal(expectedUInt, root.GetUInt32());
+                    Assert.Equal(expectedULong, root.GetUInt64());
+                }
+                else
+                {
+                    Assert.False(root.TryGetUInt16(out ushort ushortValue));
+                    Assert.Equal(0, ushortValue);
+
+                    Assert.False(root.TryGetUInt32(out uint uintValue));
+                    Assert.Equal(0U, uintValue);
+
+                    Assert.False(root.TryGetUInt64(out ulong ulongValue));
+                    Assert.Equal(0UL, ulongValue);
+
+                    Assert.Throws<FormatException>(() => root.GetUInt32());
+                    Assert.Throws<FormatException>(() => root.GetUInt64());
+                }
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetBytesFromBase64(out byte[] bytes));
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        public static void ReadSmallInteger(int value)
+        {
+            double expectedDouble = value;
+            float expectedFloat = value;
+            decimal expectedDecimal = value;
+
+            using (YamlDocument doc = YamlDocument.Parse("    " + value + "  "))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                Assert.True(root.TryGetSingle(out float floatVal));
+                Assert.Equal(expectedFloat, floatVal);
+
+                Assert.True(root.TryGetDouble(out double doubleVal));
+                Assert.Equal(expectedDouble, doubleVal);
+
+                Assert.True(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(expectedDecimal, decimalVal);
+
+                Assert.Equal((value == 0), root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(0, sbyteVal);
+
+                Assert.Equal((value == 0), root.TryGetByte(out byte byteVal));
+                Assert.Equal(0, byteVal);
+
+                Assert.Equal((value == 0), root.TryGetInt16(out short shortVal));
+                Assert.Equal(0, shortVal);
+
+                Assert.Equal((value == 0), root.TryGetUInt16(out ushort ushortVal));
+                Assert.Equal(0, ushortVal);
+
+                Assert.True(root.TryGetInt32(out int intVal));
+                Assert.Equal(value, intVal);
+
+                Assert.True(root.TryGetInt64(out long longVal));
+                Assert.Equal(value, longVal);
+
+                Assert.Equal(expectedFloat, root.GetSingle());
+                Assert.Equal(expectedDouble, root.GetDouble());
+                Assert.Equal(expectedDecimal, root.GetDecimal());
+                Assert.Equal(value, root.GetInt32());
+                Assert.Equal(value, root.GetInt64());
+
+                if (value >= 0)
+                {
+                    uint expectedUInt = (uint)value;
+                    ulong expectedULong = (ulong)value;
+
+                    Assert.True(root.TryGetUInt32(out uint uintVal));
+                    Assert.Equal(expectedUInt, uintVal);
+
+                    Assert.True(root.TryGetUInt64(out ulong ulongVal));
+                    Assert.Equal(expectedULong, ulongVal);
+
+                    Assert.Equal(expectedUInt, root.GetUInt32());
+                    Assert.Equal(expectedULong, root.GetUInt64());
+                }
+                else
+                {
+                    Assert.False(root.TryGetUInt32(out uint uintValue));
+                    Assert.Equal(0U, uintValue);
+
+                    Assert.False(root.TryGetUInt64(out ulong ulongValue));
+                    Assert.Equal(0UL, ulongValue);
+
+                    Assert.Throws<FormatException>(() => root.GetUInt32());
+                    Assert.Throws<FormatException>(() => root.GetUInt64());
+                }
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetBytesFromBase64(out byte[] bytes));
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)uint.MaxValue)]
+        [InlineData(long.MaxValue)]
+        [InlineData((long)int.MinValue - 1)]
+        [InlineData(long.MinValue)]
+        public static void ReadMediumInteger(long value)
+        {
+            double expectedDouble = value;
+            float expectedFloat = value;
+            decimal expectedDecimal = value;
+
+            using (YamlDocument doc = YamlDocument.Parse("    " + value + "  "))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                Assert.True(root.TryGetSingle(out float floatVal));
+                Assert.Equal(expectedFloat, floatVal);
+
+                Assert.True(root.TryGetDouble(out double doubleVal));
+                Assert.Equal(expectedDouble, doubleVal);
+
+                Assert.True(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(expectedDecimal, decimalVal);
+
+                Assert.False(root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(0, sbyteVal);
+
+                Assert.False(root.TryGetByte(out byte byteVal));
+                Assert.Equal(0, byteVal);
+
+                Assert.False(root.TryGetInt16(out short shortVal));
+                Assert.Equal(0, shortVal);
+
+                Assert.False(root.TryGetUInt16(out ushort ushortVal));
+                Assert.Equal(0, ushortVal);
+
+                Assert.False(root.TryGetInt32(out int intVal));
+                Assert.Equal(0, intVal);
+
+                Assert.True(root.TryGetInt64(out long longVal));
+                Assert.Equal(value, longVal);
+
+                Assert.Equal(expectedFloat, root.GetSingle());
+                Assert.Equal(expectedDouble, root.GetDouble());
+                Assert.Equal(expectedDecimal, root.GetDecimal());
+                Assert.Throws<FormatException>(() => root.GetInt32());
+                Assert.Equal(value, root.GetInt64());
+
+                if (value >= 0)
+                {
+                    if (value <= uint.MaxValue)
+                    {
+                        uint expectedUInt = (uint)value;
+                        Assert.True(root.TryGetUInt32(out uint uintVal));
+                        Assert.Equal(expectedUInt, uintVal);
+
+                        Assert.Equal(expectedUInt, root.GetUInt64());
+                    }
+                    else
+                    {
+                        Assert.False(root.TryGetUInt32(out uint uintValue));
+                        Assert.Equal(0U, uintValue);
+
+                        Assert.Throws<FormatException>(() => root.GetUInt32());
+                    }
+
+                    ulong expectedULong = (ulong)value;
+                    Assert.True(root.TryGetUInt64(out ulong ulongVal));
+                    Assert.Equal(expectedULong, ulongVal);
+
+                    Assert.Equal(expectedULong, root.GetUInt64());
+                }
+                else
+                {
+                    Assert.False(root.TryGetUInt32(out uint uintValue));
+                    Assert.Equal(0U, uintValue);
+
+                    Assert.False(root.TryGetUInt64(out ulong ulongValue));
+                    Assert.Equal(0UL, ulongValue);
+
+                    Assert.Throws<FormatException>(() => root.GetUInt32());
+                    Assert.Throws<FormatException>(() => root.GetUInt64());
+                }
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Theory]
+        [InlineData((ulong)long.MaxValue + 1)]
+        [InlineData(ulong.MaxValue)]
+        public static void ReadLargeInteger(ulong value)
+        {
+            double expectedDouble = value;
+            float expectedFloat = value;
+            decimal expectedDecimal = value;
+
+            using (YamlDocument doc = YamlDocument.Parse("    " + value + "  "))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                Assert.True(root.TryGetSingle(out float floatVal));
+                Assert.Equal(expectedFloat, floatVal);
+
+                Assert.True(root.TryGetDouble(out double doubleVal));
+                Assert.Equal(expectedDouble, doubleVal);
+
+                Assert.True(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(expectedDecimal, decimalVal);
+
+                Assert.False(root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(0, sbyteVal);
+
+                Assert.False(root.TryGetByte(out byte byteVal));
+                Assert.Equal(0, byteVal);
+
+                Assert.False(root.TryGetInt16(out short shortVal));
+                Assert.Equal(0, shortVal);
+
+                Assert.False(root.TryGetUInt16(out ushort ushortVal));
+                Assert.Equal(0, ushortVal);
+
+                Assert.False(root.TryGetInt32(out int intVal));
+                Assert.Equal(0, intVal);
+
+                Assert.False(root.TryGetUInt32(out uint uintVal));
+                Assert.Equal(0U, uintVal);
+
+                Assert.False(root.TryGetInt64(out long longVal));
+                Assert.Equal(0L, longVal);
+
+                Assert.Equal(expectedFloat, root.GetSingle());
+                Assert.Equal(expectedDouble, root.GetDouble());
+                Assert.Equal(expectedDecimal, root.GetDecimal());
+                Assert.Throws<FormatException>(() => root.GetInt32());
+                Assert.Throws<FormatException>(() => root.GetUInt32());
+                Assert.Throws<FormatException>(() => root.GetInt64());
+
+                Assert.True(root.TryGetUInt64(out ulong ulongVal));
+                Assert.Equal(value, ulongVal);
+
+                Assert.Equal(value, root.GetUInt64());
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Fact]
+        public static void ReadTooLargeInteger()
+        {
+            float expectedFloat = ulong.MaxValue;
+            double expectedDouble = ulong.MaxValue;
+            decimal expectedDecimal = ulong.MaxValue;
+            expectedDouble *= 10;
+            expectedFloat *= 10;
+            expectedDecimal *= 10;
+
+            using (YamlDocument doc = YamlDocument.Parse("    " + ulong.MaxValue + "0  ", default))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                Assert.True(root.TryGetSingle(out float floatVal));
+                Assert.Equal(expectedFloat, floatVal);
+
+                Assert.True(root.TryGetDouble(out double doubleVal));
+                Assert.Equal(expectedDouble, doubleVal);
+
+                Assert.True(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(expectedDecimal, decimalVal);
+
+                Assert.False(root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(0, sbyteVal);
+
+                Assert.False(root.TryGetByte(out byte byteVal));
+                Assert.Equal(0, byteVal);
+
+                Assert.False(root.TryGetInt16(out short shortVal));
+                Assert.Equal(0, shortVal);
+
+                Assert.False(root.TryGetUInt16(out ushort ushortVal));
+                Assert.Equal(0, ushortVal);
+
+                Assert.False(root.TryGetInt32(out int intVal));
+                Assert.Equal(0, intVal);
+
+                Assert.False(root.TryGetUInt32(out uint uintVal));
+                Assert.Equal(0U, uintVal);
+
+                Assert.False(root.TryGetInt64(out long longVal));
+                Assert.Equal(0L, longVal);
+
+                Assert.False(root.TryGetUInt64(out ulong ulongVal));
+                Assert.Equal(0UL, ulongVal);
+
+                Assert.Equal(expectedFloat, root.GetSingle());
+                Assert.Equal(expectedDouble, root.GetDouble());
+                Assert.Equal(expectedDecimal, root.GetDecimal());
+                Assert.Throws<FormatException>(() => root.GetInt32());
+                Assert.Throws<FormatException>(() => root.GetUInt32());
+                Assert.Throws<FormatException>(() => root.GetInt64());
+                Assert.Throws<FormatException>(() => root.GetUInt64());
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlDateTimeTestData.ValidISO8601Tests), MemberType = typeof(YamlDateTimeTestData))]
+        public static void ReadDateTimeAndDateTimeOffset(string yamlString, string expectedString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8, default))
+            {
+                YamlElement root = doc.RootElement;
+
+                DateTime expectedDateTime = DateTime.Parse(expectedString);
+                DateTimeOffset expectedDateTimeOffset = DateTimeOffset.Parse(expectedString);
+
+                Assert.Equal(YamlValueKind.String, root.ValueKind);
+
+                Assert.True(root.TryGetDateTime(out DateTime DateTimeVal));
+                Assert.Equal(expectedDateTime, DateTimeVal);
+
+                Assert.True(root.TryGetDateTimeOffset(out DateTimeOffset DateTimeOffsetVal));
+                Assert.Equal(expectedDateTimeOffset, DateTimeOffsetVal);
+
+                Assert.Equal(expectedDateTime, root.GetDateTime());
+                Assert.Equal(expectedDateTimeOffset, root.GetDateTimeOffset());
+
+                Assert.Throws<InvalidOperationException>(() => root.GetSByte());
+                Assert.Throws<InvalidOperationException>(() => root.GetByte());
+                Assert.Throws<InvalidOperationException>(() => root.GetInt16());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt16());
+                Assert.Throws<InvalidOperationException>(() => root.GetInt32());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
+                Assert.Throws<InvalidOperationException>(() => root.GetInt64());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlDateTimeTestData.ValidISO8601TestsWithUtcOffset), MemberType = typeof(YamlDateTimeTestData))]
+        public static void ReadDateTimeAndDateTimeOffset_WithUtcOffset(string yamlString, string expectedString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8, default))
+            {
+                YamlElement root = doc.RootElement;
+
+                DateTime expectedDateTime = DateTime.ParseExact(expectedString, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+                DateTimeOffset expectedDateTimeOffset = DateTimeOffset.ParseExact(expectedString, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+
+                Assert.Equal(YamlValueKind.String, root.ValueKind);
+
+                Assert.True(root.TryGetDateTime(out DateTime DateTimeVal));
+                Assert.Equal(expectedDateTime, DateTimeVal);
+
+                Assert.True(root.TryGetDateTimeOffset(out DateTimeOffset DateTimeOffsetVal));
+                Assert.Equal(expectedDateTimeOffset, DateTimeOffsetVal);
+
+                Assert.Equal(expectedDateTime, root.GetDateTime());
+                Assert.Equal(expectedDateTimeOffset, root.GetDateTimeOffset());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlDateTimeTestData.InvalidISO8601Tests), MemberType = typeof(YamlDateTimeTestData))]
+        public static void ReadDateTimeAndDateTimeOffset_InvalidTests(string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8, default))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.String, root.ValueKind);
+
+                Assert.False(root.TryGetDateTime(out DateTime DateTimeVal));
+                Assert.Equal(default, DateTimeVal);
+                Assert.False(root.TryGetDateTimeOffset(out DateTimeOffset DateTimeOffsetVal));
+                Assert.Equal(default, DateTimeOffsetVal);
+
+                Assert.Throws<FormatException>(() => root.GetDateTime());
+                Assert.Throws<FormatException>(() => root.GetDateTimeOffset());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlGuidTestData.ValidGuidTests), MemberType = typeof(YamlGuidTestData))]
+        [MemberData(nameof(YamlGuidTestData.ValidHexGuidTests), MemberType = typeof(YamlGuidTestData))]
+        public static void ReadGuid(string yamlString, string expectedStr)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{yamlString}\"");
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8, default))
+            {
+                YamlElement root = doc.RootElement;
+
+                Guid expected = new Guid(expectedStr);
+
+                Assert.Equal(YamlValueKind.String, root.ValueKind);
+
+                Assert.True(root.TryGetGuid(out Guid GuidVal));
+                Assert.Equal(expected, GuidVal);
+
+                Assert.Equal(expected, root.GetGuid());
+
+                Assert.Throws<InvalidOperationException>(() => root.GetSByte());
+                Assert.Throws<InvalidOperationException>(() => root.GetByte());
+                Assert.Throws<InvalidOperationException>(() => root.GetInt16());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt16());
+                Assert.Throws<InvalidOperationException>(() => root.GetInt32());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
+                Assert.Throws<InvalidOperationException>(() => root.GetInt64());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlGuidTestData.InvalidGuidTests), MemberType = typeof(YamlGuidTestData))]
+        public static void ReadGuid_InvalidTests(string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{yamlString}\"");
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8, default))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.String, root.ValueKind);
+
+                Assert.False(root.TryGetGuid(out Guid GuidVal));
+                Assert.Equal(default, GuidVal);
+
+                Assert.Throws<FormatException>(() => root.GetGuid());
+            }
+        }
+
+        public static IEnumerable<object[]> NonIntegerCases
+        {
+            get
+            {
+                yield return new object[] { "1e+1", 10.0, 10.0f, 10m };
+                yield return new object[] { "1.1e-0", 1.1, 1.1f, 1.1m };
+                yield return new object[] { "3.14159", 3.14159, 3.14159f, 3.14159m };
+                yield return new object[] { "1e-10", 1e-10, 1e-10f, 1e-10m };
+                yield return new object[] { "1234567.15", 1234567.15, 1234567.13f, 1234567.15m };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonIntegerCases))]
+        public static void ReadNonInteger(string str, double expectedDouble, float expectedFloat, decimal expectedDecimal)
+        {
+            using (YamlDocument doc = YamlDocument.Parse("    " + str + "  "))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                Assert.True(root.TryGetSingle(out float floatVal));
+                Assert.Equal(expectedFloat, floatVal);
+
+                Assert.True(root.TryGetDouble(out double doubleVal));
+                Assert.Equal(expectedDouble, doubleVal);
+
+                Assert.True(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(expectedDecimal, decimalVal);
+
+                Assert.False(root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(0, sbyteVal);
+
+                Assert.False(root.TryGetByte(out byte byteVal));
+                Assert.Equal(0, byteVal);
+
+                Assert.False(root.TryGetInt16(out short shortVal));
+                Assert.Equal(0, shortVal);
+
+                Assert.False(root.TryGetUInt16(out ushort ushortVal));
+                Assert.Equal(0, ushortVal);
+
+                Assert.False(root.TryGetInt32(out int intVal));
+                Assert.Equal(0, intVal);
+
+                Assert.False(root.TryGetUInt32(out uint uintVal));
+                Assert.Equal(0U, uintVal);
+
+                Assert.False(root.TryGetInt64(out long longVal));
+                Assert.Equal(0L, longVal);
+
+                Assert.False(root.TryGetUInt64(out ulong ulongVal));
+                Assert.Equal(0UL, ulongVal);
+
+                Assert.Equal(expectedFloat, root.GetSingle());
+                Assert.Equal(expectedDouble, root.GetDouble());
+                Assert.Equal(expectedDecimal, root.GetDecimal());
+                Assert.Throws<FormatException>(() => root.GetSByte());
+                Assert.Throws<FormatException>(() => root.GetByte());
+                Assert.Throws<FormatException>(() => root.GetInt16());
+                Assert.Throws<FormatException>(() => root.GetUInt16());
+                Assert.Throws<FormatException>(() => root.GetInt32());
+                Assert.Throws<FormatException>(() => root.GetUInt32());
+                Assert.Throws<FormatException>(() => root.GetInt64());
+                Assert.Throws<FormatException>(() => root.GetUInt64());
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Fact]
+        public static void ReadTooPreciseDouble()
+        {
+            using (YamlDocument doc = YamlDocument.Parse("    1e+100000002"))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Number, root.ValueKind);
+
+                if (PlatformDetection.IsNetFramework)
+                {
+                    Assert.False(root.TryGetSingle(out float floatVal));
+                    Assert.Equal(0f, floatVal);
+
+                    Assert.False(root.TryGetDouble(out double doubleVal));
+                    Assert.Equal(0d, doubleVal);
+                }
+                else
+                {
+                    Assert.True(root.TryGetSingle(out float floatVal));
+                    Assert.Equal(float.PositiveInfinity, floatVal);
+
+                    Assert.True(root.TryGetDouble(out double doubleVal));
+                    Assert.Equal(double.PositiveInfinity, doubleVal);
+                }
+
+                Assert.False(root.TryGetDecimal(out decimal decimalVal));
+                Assert.Equal(0m, decimalVal);
+
+                Assert.False(root.TryGetSByte(out sbyte sbyteVal));
+                Assert.Equal(0, sbyteVal);
+
+                Assert.False(root.TryGetByte(out byte byteVal));
+                Assert.Equal(0, byteVal);
+
+                Assert.False(root.TryGetInt16(out short shortVal));
+                Assert.Equal(0, shortVal);
+
+                Assert.False(root.TryGetUInt16(out ushort ushortVal));
+                Assert.Equal(0, ushortVal);
+
+                Assert.False(root.TryGetInt32(out int intVal));
+                Assert.Equal(0, intVal);
+
+                Assert.False(root.TryGetUInt32(out uint uintVal));
+                Assert.Equal(0U, uintVal);
+
+                Assert.False(root.TryGetInt64(out long longVal));
+                Assert.Equal(0L, longVal);
+
+                Assert.False(root.TryGetUInt64(out ulong ulongVal));
+                Assert.Equal(0UL, ulongVal);
+
+                if (PlatformDetection.IsNetFramework)
+                {
+                    Assert.Throws<FormatException>(() => root.GetSingle());
+                    Assert.Throws<FormatException>(() => root.GetDouble());
+                }
+                else
+                {
+                    Assert.Equal(float.PositiveInfinity, root.GetSingle());
+                    Assert.Equal(double.PositiveInfinity, root.GetDouble());
+                }
+
+                Assert.Throws<FormatException>(() => root.GetDecimal());
+                Assert.Throws<FormatException>(() => root.GetSByte());
+                Assert.Throws<FormatException>(() => root.GetByte());
+                Assert.Throws<FormatException>(() => root.GetInt16());
+                Assert.Throws<FormatException>(() => root.GetUInt16());
+                Assert.Throws<FormatException>(() => root.GetInt32());
+                Assert.Throws<FormatException>(() => root.GetUInt32());
+                Assert.Throws<FormatException>(() => root.GetInt64());
+                Assert.Throws<FormatException>(() => root.GetUInt64());
+
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Fact]
+        public static void CheckUseAfterDispose()
+        {
+            var buffer = new ArrayBufferWriter<byte>(1024);
+            using (YamlDocument doc = YamlDocument.Parse("{\"First\":1}", default))
+            {
+                YamlElement root = doc.RootElement;
+                YamlProperty property = root.EnumerateObject().First();
+                doc.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => root.ValueKind);
+                Assert.Throws<ObjectDisposedException>(() => root.GetArrayLength());
+                Assert.Throws<ObjectDisposedException>(() => root.GetPropertyCount());
+                Assert.Throws<ObjectDisposedException>(() => root.EnumerateArray());
+                Assert.Throws<ObjectDisposedException>(() => root.EnumerateObject());
+                Assert.Throws<ObjectDisposedException>(() => root.GetDouble());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetDouble(out double _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetSByte());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetSByte(out sbyte _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetByte());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetByte(out byte _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetInt16());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetInt16(out short _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetUInt16());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt16(out ushort _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetInt32());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetInt32(out int _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetUInt32());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt32(out uint _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetInt64());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetInt64(out long _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetUInt64());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt64(out ulong _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<ObjectDisposedException>(() => root.GetBytesFromBase64());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetBytesFromBase64(out byte[] _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetBoolean());
+                Assert.Throws<ObjectDisposedException>(() => root.GetRawText());
+
+                Assert.Throws<ObjectDisposedException>(() =>
+                {
+                    using var writer = new Utf8YamlWriter(buffer);
+                    root.WriteTo(writer);
+                });
+
+                Assert.Throws<ObjectDisposedException>(() =>
+                {
+                    using var writer = new Utf8YamlWriter(buffer);
+                    doc.WriteTo(writer);
+                });
+
+                Assert.Throws<ObjectDisposedException>(() =>
+                {
+                    using var writer = new Utf8YamlWriter(buffer);
+                    property.WriteTo(writer);
+                });
+            }
+        }
+
+        [Fact]
+        public static void CheckUseDefault()
+        {
+            YamlElement root = default;
+
+            Assert.Equal(YamlValueKind.Undefined, root.ValueKind);
+
+            Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+            Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
+            Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
+            Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+            Assert.Throws<InvalidOperationException>(() => root.GetDouble());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetDouble(out double _));
+            Assert.Throws<InvalidOperationException>(() => root.GetSByte());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetSByte(out sbyte _));
+            Assert.Throws<InvalidOperationException>(() => root.GetByte());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetByte(out byte _));
+            Assert.Throws<InvalidOperationException>(() => root.GetInt16());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetInt16(out short _));
+            Assert.Throws<InvalidOperationException>(() => root.GetUInt16());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetUInt16(out ushort _));
+            Assert.Throws<InvalidOperationException>(() => root.GetInt32());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetInt32(out int _));
+            Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetUInt32(out uint _));
+            Assert.Throws<InvalidOperationException>(() => root.GetInt64());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetInt64(out long _));
+            Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetUInt64(out ulong _));
+            Assert.Throws<InvalidOperationException>(() => root.GetString());
+            const string ThrowsAnyway = "throws-anyway";
+            Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+            Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+            Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+            Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetBytesFromBase64(out byte[] _));
+            Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+            Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+            Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+            Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            Assert.Throws<InvalidOperationException>(() => root.GetRawText());
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                var buffer = new ArrayBufferWriter<byte>(1024);
+                using var writer = new Utf8YamlWriter(buffer);
+                root.WriteTo(writer);
+            });
+        }
+
+        [Fact]
+        public static void CheckInvalidString()
+        {
+            Assert.Throws<ArgumentException>(() => YamlDocument.Parse("{ \"unpaired\uDFFE\": true }"));
+        }
+
+        [Theory]
+        [InlineData("\"hello\"    ", "hello")]
+        [InlineData("    null     ", (string)null)]
+        [InlineData("\"\\u0033\\u0031\"", "31")]
+        public static void ReadString(string yaml, string? expectedValue)
+        {
+            using (YamlDocument doc = YamlDocument.Parse(yaml))
+            {
+                Assert.Equal(expectedValue, doc.RootElement.GetString());
+            }
+        }
+
+        [Fact]
+        public static void GetString_BadUtf8()
+        {
+            // The Arabic ligature Lam-Alef (U+FEFB) (which happens to, as a standalone, mean "no" in English)
+            // is UTF-8 EF BB BB.  So let's leave out a BB and put it in quotes.
+            byte[] badUtf8 = new byte[] { 0x22, 0xEF, 0xBB, 0x22 };
+            using (YamlDocument doc = YamlDocument.Parse(badUtf8))
+            {
+                YamlElement root = doc.RootElement;
+
+                const string ErrorMessage = "Cannot transcode invalid UTF-8 YAML text to UTF-16 string.";
+                Assert.Equal(YamlValueKind.String, root.ValueKind);
+                AssertExtensions.Throws<InvalidOperationException>(() => root.GetString(), ErrorMessage);
+                Assert.Throws<InvalidOperationException>(() => root.GetRawText());
+                const string DummyString = "dummy-string";
+                Assert.False(root.ValueEquals(badUtf8));
+                Assert.False(root.ValueEquals(DummyString));
+                Assert.False(root.ValueEquals(DummyString.AsSpan()));
+                Assert.False(root.ValueEquals(Encoding.UTF8.GetBytes(DummyString)));
+            }
+        }
+
+        [Fact]
+        public static void GetBase64String_BadUtf8()
+        {
+            // The Arabic ligature Lam-Alef (U+FEFB) (which happens to, as a standalone, mean "no" in English)
+            // is UTF-8 EF BB BB.  So let's leave out a BB and put it in quotes.
+            using (YamlDocument doc = YamlDocument.Parse(new byte[] { 0x22, 0xEF, 0xBB, 0x22 }))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.String, root.ValueKind);
+                Assert.Throws<FormatException>(() => root.GetBytesFromBase64());
+                Assert.False(root.TryGetBytesFromBase64(out byte[] value));
+                Assert.Null(value);
+            }
+        }
+
+        [Fact]
+        public static void GetBase64Unescapes()
+        {
+            string yamlString = "\"\\u0031234\""; // equivalent to "\"1234\""
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8))
+            {
+                byte[] expected = Convert.FromBase64String("1234"); // new byte[3] { 215, 109, 248 }
+
+                Assert.Equal(expected, doc.RootElement.GetBytesFromBase64());
+
+                Assert.True(doc.RootElement.TryGetBytesFromBase64(out byte[] value));
+                Assert.Equal(expected, value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlBase64TestData.ValidBase64Tests), MemberType = typeof(YamlBase64TestData))]
+        public static void ReadBase64String(string yamlString)
+        {
+            byte[] expected = Convert.FromBase64String(yamlString.AsSpan(1, yamlString.Length - 2).ToString());
+
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                Assert.Equal(expected, doc.RootElement.GetBytesFromBase64());
+
+                Assert.True(doc.RootElement.TryGetBytesFromBase64(out byte[] value));
+                Assert.Equal(expected, value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlBase64TestData.InvalidBase64Tests), MemberType = typeof(YamlBase64TestData))]
+        public static void InvalidBase64(string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8))
+            {
+                Assert.False(doc.RootElement.TryGetBytesFromBase64(out byte[] value));
+                Assert.Null(value);
+
+                Assert.Throws<FormatException>(() => doc.RootElement.GetBytesFromBase64());
+            }
+        }
+
+        [Theory]
+        [InlineData(" { \"hi\": \"there\" }")]
+        [InlineData(" { \n\n\n\n } ")]
+        [InlineData(" { \"outer\": { \"inner\": [ 1, 2, 3 ] }, \"secondOuter\": [ 2, 4, 6, 0, 1 ] }")]
+        public static void TryGetProperty_NoProperty(string yaml)
+        {
+            using (YamlDocument doc = YamlDocument.Parse(yaml))
+            {
+                YamlElement root = doc.RootElement;
+
+                const string NotPresent = "Not Present";
+                byte[] notPresentUtf8 = Encoding.UTF8.GetBytes(NotPresent);
+
+                YamlElement element;
+                Assert.False(root.TryGetProperty(NotPresent, out element));
+                Assert.Equal(default, element);
+                Assert.False(root.TryGetProperty(NotPresent.AsSpan(), out element));
+                Assert.Equal(default, element);
+                Assert.False(root.TryGetProperty(notPresentUtf8, out element));
+                Assert.Equal(default, element);
+                Assert.False(root.TryGetProperty(new string('z', 512), out element));
+                Assert.Equal(default, element);
+
+                Assert.Throws<KeyNotFoundException>(() => root.GetProperty(new string('z', 512)));
+
+                KeyNotFoundException ex;
+                ex = Assert.Throws<KeyNotFoundException>(() => root.GetProperty(NotPresent));
+                Assert.Contains(NotPresent, ex.Message);
+                ex = Assert.Throws<KeyNotFoundException>(() => root.GetProperty(NotPresent.AsSpan()));
+                Assert.Contains(NotPresent, ex.Message);
+                ex = Assert.Throws<KeyNotFoundException>(() => root.GetProperty(notPresentUtf8));
+                Assert.Contains(NotPresent, ex.Message);
+            }
+        }
+
+        [Fact]
+        public static void TryGetProperty_CaseSensitive()
+        {
+            const string PascalString = "Needle";
+            const string CamelString = "needle";
+            const string OddString = "nEeDle";
+            const string InverseOddString = "NeEdLE";
+
+            string yaml = $"{{ \"{PascalString}\": \"no\", \"{CamelString}\": 42, \"{OddString}\": false }}";
+
+            using (YamlDocument doc = YamlDocument.Parse(yaml))
+            {
+                YamlElement root = doc.RootElement;
+
+                byte[] pascalBytes = Encoding.UTF8.GetBytes(PascalString);
+                byte[] camelBytes = Encoding.UTF8.GetBytes(CamelString);
+                byte[] oddBytes = Encoding.UTF8.GetBytes(OddString);
+                byte[] inverseOddBytes = Encoding.UTF8.GetBytes(InverseOddString);
+
+                void assertPascal(YamlElement elem)
+                {
+                    Assert.Equal(YamlValueKind.String, elem.ValueKind);
+                    Assert.Equal("no", elem.GetString());
+                }
+
+                void assertCamel(YamlElement elem)
+                {
+                    Assert.Equal(YamlValueKind.Number, elem.ValueKind);
+                    Assert.Equal(42, elem.GetInt32());
+                }
+
+                void assertOdd(YamlElement elem)
+                {
+                    Assert.Equal(YamlValueKind.False, elem.ValueKind);
+                    Assert.False(elem.GetBoolean());
+                }
+
+                Assert.True(root.TryGetProperty(PascalString, out YamlElement pascal));
+                assertPascal(pascal);
+                Assert.True(root.TryGetProperty(PascalString.AsSpan(), out pascal));
+                assertPascal(pascal);
+                Assert.True(root.TryGetProperty(pascalBytes, out pascal));
+                assertPascal(pascal);
+
+                Assert.True(root.TryGetProperty(CamelString, out YamlElement camel));
+                assertCamel(camel);
+                Assert.True(root.TryGetProperty(CamelString.AsSpan(), out camel));
+                assertCamel(camel);
+                Assert.True(root.TryGetProperty(camelBytes, out camel));
+                assertCamel(camel);
+
+                Assert.True(root.TryGetProperty(OddString, out YamlElement odd));
+                assertOdd(odd);
+                Assert.True(root.TryGetProperty(OddString.AsSpan(), out odd));
+                assertOdd(odd);
+                Assert.True(root.TryGetProperty(oddBytes, out odd));
+                assertOdd(odd);
+
+                Assert.False(root.TryGetProperty(InverseOddString, out _));
+                Assert.False(root.TryGetProperty(InverseOddString.AsSpan(), out _));
+                Assert.False(root.TryGetProperty(inverseOddBytes, out _));
+
+                assertPascal(root.GetProperty(PascalString));
+                assertPascal(root.GetProperty(PascalString.AsSpan()));
+                assertPascal(root.GetProperty(pascalBytes));
+
+                assertCamel(root.GetProperty(CamelString));
+                assertCamel(root.GetProperty(CamelString.AsSpan()));
+                assertCamel(root.GetProperty(camelBytes));
+
+                assertOdd(root.GetProperty(OddString));
+                assertOdd(root.GetProperty(OddString.AsSpan()));
+                assertOdd(root.GetProperty(oddBytes));
+
+                Assert.Throws<KeyNotFoundException>(() => root.GetProperty(InverseOddString));
+                Assert.Throws<KeyNotFoundException>(() => root.GetProperty(InverseOddString.AsSpan()));
+                Assert.Throws<KeyNotFoundException>(() => root.GetProperty(inverseOddBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData(">>")]
+        [InlineData(">>>")]
+        [InlineData(">>a")]
+        [InlineData(">a>")]
+        public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testData)
+        {
+            string yamlString = YamlSerializer.Serialize(new { DateTimeProperty = testData });
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            using (YamlDocument doc = YamlDocument.Parse(dataUtf8, default))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTime(out DateTime datetimeValue));
+                Assert.Equal(default, datetimeValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTime());
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTimeOffset(out DateTimeOffset datetimeOffsetValue));
+                Assert.Equal(default, datetimeOffsetValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTimeOffset());
+            }
+        }
+
+        [Fact]
+        public static void CheckParseDepth()
+        {
+            const int OkayCount = 64;
+            string okayYaml = new string('[', OkayCount) + "2" + new string(']', OkayCount);
+            int depth = 0;
+
+            using (YamlDocument doc = YamlDocument.Parse(okayYaml))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Array, root.ValueKind);
+
+                YamlElement cur = root;
+
+                while (cur.ValueKind == YamlValueKind.Array)
+                {
+                    Assert.Equal(1, cur.GetArrayLength());
+                    cur = cur[0];
+                    depth++;
+                }
+
+                Assert.Equal(YamlValueKind.Number, cur.ValueKind);
+                Assert.Equal(2, cur.GetInt32());
+                Assert.Equal(OkayCount, depth);
+            }
+
+            string badYaml = $"[{okayYaml}]";
+
+            Assert.ThrowsAny<YamlException>(() => YamlDocument.Parse(badYaml));
+        }
+
+        [Fact]
+        public static void HonorReaderOptionsMaxDepth()
+        {
+            const int OkayCount = 65;
+            string okayYaml = new string('[', OkayCount) + "2" + new string(']', OkayCount);
+            int depth = 0;
+
+            using (YamlDocument doc = YamlDocument.Parse(okayYaml, new YamlDocumentOptions { MaxDepth = OkayCount }))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Array, root.ValueKind);
+
+                YamlElement cur = root;
+
+                while (cur.ValueKind == YamlValueKind.Array)
+                {
+                    Assert.Equal(1, cur.GetArrayLength());
+                    cur = cur[0];
+                    depth++;
+                }
+
+                Assert.Equal(YamlValueKind.Number, cur.ValueKind);
+                Assert.Equal(2, cur.GetInt32());
+                Assert.Equal(OkayCount, depth);
+            }
+
+            Assert.ThrowsAny<YamlException>(() => YamlDocument.Parse(okayYaml, new YamlDocumentOptions { MaxDepth = 32 }));
+            Assert.ThrowsAny<YamlException>(() => YamlDocument.Parse(okayYaml));
+            Assert.ThrowsAny<YamlException>(() => YamlDocument.Parse(okayYaml, new YamlDocumentOptions { MaxDepth = 0 }));
+            Assert.ThrowsAny<YamlException>(() => YamlDocument.Parse(okayYaml, new YamlDocumentOptions { MaxDepth = 64 }));
+        }
+
+        [Fact]
+        public static void LargeMaxDepthIsAllowed()
+        {
+            // MaxDepthOverflow * 8 > int.MaxValue
+            const int MaxDepthOverflow = 1 << 28; //268_435_456;
+
+            string okayYaml = "[]";
+
+            using (YamlDocument doc = YamlDocument.Parse(okayYaml, new YamlDocumentOptions { MaxDepth = MaxDepthOverflow }))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Array, root.ValueKind);
+            }
+
+            using (YamlDocument doc = YamlDocument.Parse(okayYaml, new YamlDocumentOptions { MaxDepth = int.MaxValue }))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Array, root.ValueKind);
+            }
+        }
+
+        [Fact]
+        public static void EnableComments()
+        {
+            string yaml = "3";
+            byte[] utf8 = Encoding.UTF8.GetBytes(yaml);
+
+            var readerOptions = new YamlReaderOptions
+            {
+                CommentHandling = YamlCommentHandling.Allow,
+            };
+
+            AssertExtensions.Throws<ArgumentException>(
+                "reader",
+                () =>
+                {
+                    YamlReaderState state = new YamlReaderState(readerOptions);
+                    Utf8YamlReader reader = new Utf8YamlReader(utf8, isFinalBlock: false, state);
+                    YamlDocument.ParseValue(ref reader);
+                });
+
+            AssertExtensions.Throws<ArgumentException>(
+                "reader",
+                () =>
+                {
+                    YamlReaderState state = new YamlReaderState(readerOptions);
+                    Utf8YamlReader reader = new Utf8YamlReader(utf8, isFinalBlock: false, state);
+                    YamlDocument.TryParseValue(ref reader, out _);
+                });
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData((int)YamlCommentHandling.Allow)]
+        [InlineData(3)]
+        [InlineData(byte.MaxValue)]
+        [InlineData(byte.MaxValue + 3)] // Other values, like byte.MaxValue + 1 overflows to 0 (i.e. YamlCommentHandling.Disallow), which is valid.
+        [InlineData(byte.MaxValue + 4)]
+        public static void ReadCommentHandlingDoesNotSupportAllow(int enumValue)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new YamlDocumentOptions
+            {
+                CommentHandling = (YamlCommentHandling)enumValue
+            });
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        public static void TestDepthInvalid(int depth)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new YamlDocumentOptions
+            {
+                MaxDepth = depth
+            });
+        }
+
+        [Fact]
+        public static void GetPropertyByNullName()
+        {
+            using (YamlDocument doc = YamlDocument.Parse("{ }"))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "propertyName",
+                    () => doc.RootElement.GetProperty((string)null));
+
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "propertyName",
+                    () => doc.RootElement.TryGetProperty((string)null, out _));
+            }
+        }
+
+        [Fact]
+        public static void GetPropertyInvalidUtf16()
+        {
+            using (YamlDocument doc = YamlDocument.Parse("{\"name\":\"value\"}"))
+            {
+                Assert.Throws<ArgumentException>(() => doc.RootElement.GetProperty("unpaired\uDFFE"));
+
+                Assert.Throws<ArgumentException>(() => doc.RootElement.TryGetProperty("unpaired\uDFFE", out _));
+            }
+        }
+
+        [Theory]
+        [InlineData("short")]
+        [InlineData("thisValueIsLongerThan86CharsSoWeDeferTheTranscodingUntilWeFindAViableCandidateAsAPropertyMatch")]
+        public static void GetPropertyFindsLast(string propertyName)
+        {
+            string yaml = $"{{ \"{propertyName}\": 1, \"{propertyName}\": 2, \"nope\": -1, \"{propertyName}\": 3 }}";
+
+            using (YamlDocument doc = YamlDocument.Parse(yaml, YamlTestSerializerOptions.LastWinsDocument))
+            {
+                YamlElement root = doc.RootElement;
+                byte[] utf8PropertyName = Encoding.UTF8.GetBytes(propertyName);
+
+                Assert.Equal(3, root.GetProperty(propertyName).GetInt32());
+                Assert.Equal(3, root.GetProperty(propertyName.AsSpan()).GetInt32());
+                Assert.Equal(3, root.GetProperty(utf8PropertyName).GetInt32());
+
+                YamlElement matchedProperty;
+                Assert.True(root.TryGetProperty(propertyName, out matchedProperty));
+                Assert.Equal(3, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(propertyName.AsSpan(), out matchedProperty));
+                Assert.Equal(3, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(utf8PropertyName, out matchedProperty));
+                Assert.Equal(3, matchedProperty.GetInt32());
+            }
+        }
+
+        [Theory]
+        [InlineData("short")]
+        [InlineData("thisValueIsLongerThan86CharsSoWeDeferTheTranscodingUntilWeFindAViableCandidateAsAPropertyMatch")]
+        public static void GetPropertyFindsLast_WithEscaping(string propertyName)
+        {
+            string first = $"\\u{(int)propertyName[0]:X4}{propertyName.Substring(1)}";
+            StringBuilder builder = new StringBuilder(propertyName.Length * 6);
+
+            int half = propertyName.Length / 2;
+            builder.Append(propertyName.Substring(0, half));
+
+            for (int i = half; i < propertyName.Length; i++)
+            {
+                builder.AppendFormat("\\u{0:X4}", (int)propertyName[i]);
+            }
+
+            builder.Append('2');
+            string second = builder.ToString();
+            builder.Clear();
+
+            for (int i = 0; i < propertyName.Length; i++)
+            {
+                if ((i & 1) == 0)
+                {
+                    builder.Append(propertyName[i]);
+                }
+                else
+                {
+                    builder.AppendFormat("\\u{0:X4}", (int)propertyName[i]);
+                }
+            }
+
+            builder.Append('3');
+            string third = builder.ToString();
+
+            string pn2 = propertyName + "2";
+            string pn3 = propertyName + "3";
+
+            string yaml =
+                $"{{ \"{propertyName}\": 0, \"{first}\": 1, \"{pn2}\": 0, \"{second}\": 2, \"{pn3}\": 0, \"nope\": -1, \"{third}\": 3 }}";
+
+            using (YamlDocument doc = YamlDocument.Parse(yaml, YamlTestSerializerOptions.LastWinsDocument))
+            {
+                YamlElement root = doc.RootElement;
+                byte[] utf8PropertyName = Encoding.UTF8.GetBytes(propertyName);
+                byte[] utf8PropertyName2 = Encoding.UTF8.GetBytes(pn2);
+                byte[] utf8PropertyName3 = Encoding.UTF8.GetBytes(pn3);
+
+                Assert.Equal(1, root.GetProperty(propertyName).GetInt32());
+                Assert.Equal(1, root.GetProperty(propertyName.AsSpan()).GetInt32());
+                Assert.Equal(1, root.GetProperty(utf8PropertyName).GetInt32());
+
+                Assert.Equal(2, root.GetProperty(pn2).GetInt32());
+                Assert.Equal(2, root.GetProperty(pn2.AsSpan()).GetInt32());
+                Assert.Equal(2, root.GetProperty(utf8PropertyName2).GetInt32());
+
+                Assert.Equal(3, root.GetProperty(pn3).GetInt32());
+                Assert.Equal(3, root.GetProperty(pn3.AsSpan()).GetInt32());
+                Assert.Equal(3, root.GetProperty(utf8PropertyName3).GetInt32());
+
+                YamlElement matchedProperty;
+                Assert.True(root.TryGetProperty(propertyName, out matchedProperty));
+                Assert.Equal(1, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(propertyName.AsSpan(), out matchedProperty));
+                Assert.Equal(1, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(utf8PropertyName, out matchedProperty));
+                Assert.Equal(1, matchedProperty.GetInt32());
+
+                Assert.True(root.TryGetProperty(pn2, out matchedProperty));
+                Assert.Equal(2, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(pn2.AsSpan(), out matchedProperty));
+                Assert.Equal(2, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(utf8PropertyName2, out matchedProperty));
+                Assert.Equal(2, matchedProperty.GetInt32());
+
+                Assert.True(root.TryGetProperty(pn3, out matchedProperty));
+                Assert.Equal(3, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(pn3.AsSpan(), out matchedProperty));
+                Assert.Equal(3, matchedProperty.GetInt32());
+                Assert.True(root.TryGetProperty(utf8PropertyName3, out matchedProperty));
+                Assert.Equal(3, matchedProperty.GetInt32());
+            }
+        }
+
+        [Fact]
+        public static void GetRawText()
+        {
+            const string yaml =
+// Don't let there be a newline before the first embedded quote,
+// because the index would change across CRLF vs LF compile environments.
+"""
+    {  "  weird  property  name"
+                      :
+           {
+             "nested":
+             [ 1, 2, 3
+    ,
+    4, 5, 6 ],
+            "also" : 3
+      },
+      "number": 1.02e+4,
+      "bool": false,
+      "n\u0075ll": null,
+      "multiLineArray":
+
+    [
+
+    0,
+    1,
+    2,
+
+        3
+
+    ],
+      "string":
+
+    "Aren't string just the greatest?\r\nNot a terminating quote: \"     \r   \n   \t  \\   "
+    }
+    """;
+
+            using (YamlDocument doc = YamlDocument.Parse(yaml))
+            {
+                Assert.Equal(6, doc.RootElement.GetPropertyCount());
+                YamlElement.ObjectEnumerator enumerator = doc.RootElement.EnumerateObject();
+                Assert.True(enumerator.MoveNext(), "Move to first property");
+                YamlProperty property = enumerator.Current;
+
+                Assert.Equal("  weird  property  name", property.Name);
+                string rawText = property.ToString();
+                int crCount = rawText.Count(c => c == '\r');
+                Assert.Equal(2, property.Value.GetPropertyCount());
+                Assert.Equal(128 + crCount, rawText.Length);
+                Assert.Equal('\"', rawText[0]);
+                Assert.Equal(' ', rawText[1]);
+                Assert.Equal('}', rawText[rawText.Length - 1]);
+                Assert.Equal(yaml.Substring(yaml.IndexOf('\"'), rawText.Length), rawText);
+
+                Assert.True(enumerator.MoveNext(), "Move to number property");
+                property = enumerator.Current;
+
+                Assert.Equal("number", property.Name);
+                Assert.Equal("\"number\": 1.02e+4", property.ToString());
+                Assert.Equal(10200.0, property.Value.GetDouble());
+                Assert.Equal("1.02e+4", property.Value.GetRawText());
+
+                Assert.True(enumerator.MoveNext(), "Move to bool property");
+                property = enumerator.Current;
+
+                Assert.Equal("bool", property.Name);
+                Assert.False(property.Value.GetBoolean());
+                Assert.Equal("false", property.Value.GetRawText());
+                Assert.Equal(bool.FalseString, property.Value.ToString());
+
+                Assert.True(enumerator.MoveNext(), "Move to null property");
+                property = enumerator.Current;
+
+                Assert.Equal("null", property.Name);
+                Assert.Equal("null", property.Value.GetRawText());
+                Assert.Equal(string.Empty, property.Value.ToString());
+                Assert.Equal("\"n\\u0075ll\": null", property.ToString());
+
+                Assert.True(enumerator.MoveNext(), "Move to multiLineArray property");
+                property = enumerator.Current;
+
+                Assert.Equal("multiLineArray", property.Name);
+                Assert.Equal(4, property.Value.GetArrayLength());
+                rawText = property.Value.GetRawText();
+                Assert.Equal('[', rawText[0]);
+                Assert.Equal(']', rawText[rawText.Length - 1]);
+                Assert.Contains('3', rawText);
+                Assert.Contains('\n', rawText);
+
+                Assert.True(enumerator.MoveNext(), "Move to string property");
+                property = enumerator.Current;
+
+                Assert.Equal("string", property.Name);
+                rawText = property.Value.GetRawText();
+                Assert.Equal('\"', rawText[0]);
+                Assert.Equal('\"', rawText[rawText.Length - 1]);
+                string strValue = property.Value.GetString();
+                int newlineIdx = strValue.IndexOf('\r');
+                int colonIdx = strValue.IndexOf(':');
+                int escapedQuoteIdx = colonIdx + 2;
+                Assert.Equal(rawText.Substring(1, newlineIdx), strValue.Substring(0, newlineIdx));
+                Assert.Equal('\\', rawText[escapedQuoteIdx + 3]);
+                Assert.Equal('\"', rawText[escapedQuoteIdx + 4]);
+                Assert.Equal('\"', strValue[escapedQuoteIdx]);
+                Assert.Contains("\r", strValue);
+                Assert.Contains(@"\r", rawText);
+                string valueText = rawText;
+                rawText = property.ToString();
+                Assert.Equal('\"', rawText[0]);
+                Assert.Equal('\"', rawText[rawText.Length - 1]);
+                Assert.NotEqual(valueText, rawText);
+                Assert.EndsWith(valueText, rawText);
+
+                Assert.False(enumerator.MoveNext(), "Move past the last property");
+            }
+        }
+
+        [Fact]
+        public static void ArrayEnumeratorIndependentWalk()
+        {
+            using (YamlDocument doc = YamlDocument.Parse("[0, 1, 2, 3, 4, 5]"))
+            {
+                YamlElement root = doc.RootElement;
+                YamlElement.ArrayEnumerator structEnumerable = root.EnumerateArray();
+                IEnumerable<YamlElement> strongBoxedEnumerable = root.EnumerateArray();
+                IEnumerable weakBoxedEnumerable = root.EnumerateArray();
+
+                YamlElement.ArrayEnumerator structEnumerator = structEnumerable.GetEnumerator();
+                IEnumerator<YamlElement> strongBoxedEnumerator = strongBoxedEnumerable.GetEnumerator();
+                IEnumerator weakBoxedEnumerator = weakBoxedEnumerable.GetEnumerator();
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.True(weakBoxedEnumerator.MoveNext());
+
+                Assert.Equal(0, structEnumerator.Current.GetInt32());
+                Assert.Equal(0, strongBoxedEnumerator.Current.GetInt32());
+                Assert.Equal(0, ((YamlElement)weakBoxedEnumerator.Current).GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.True(weakBoxedEnumerator.MoveNext());
+
+                Assert.Equal(1, structEnumerator.Current.GetInt32());
+                Assert.Equal(1, strongBoxedEnumerator.Current.GetInt32());
+                Assert.Equal(1, ((YamlElement)weakBoxedEnumerator.Current).GetInt32());
+
+                int test = 0;
+
+                foreach (YamlElement element in structEnumerable)
+                {
+                    Assert.Equal(test, element.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlElement element in structEnumerable)
+                {
+                    Assert.Equal(test, element.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlElement element in strongBoxedEnumerable)
+                {
+                    Assert.Equal(test, element.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlElement element in strongBoxedEnumerable)
+                {
+                    Assert.Equal(test, element.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlElement element in weakBoxedEnumerable)
+                {
+                    Assert.Equal(test, element.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlElement element in weakBoxedEnumerable)
+                {
+                    Assert.Equal(test, element.GetInt32());
+                    test++;
+                }
+
+                structEnumerator.Reset();
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(0, structEnumerator.Current.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(1, structEnumerator.Current.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(2, structEnumerator.Current.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(3, structEnumerator.Current.GetInt32());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal(2, strongBoxedEnumerator.Current.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(4, structEnumerator.Current.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(5, structEnumerator.Current.GetInt32());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal(3, strongBoxedEnumerator.Current.GetInt32());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal(2, ((YamlElement)weakBoxedEnumerator.Current).GetInt32());
+
+                Assert.False(structEnumerator.MoveNext());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal(4, strongBoxedEnumerator.Current.GetInt32());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal(5, strongBoxedEnumerator.Current.GetInt32());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal(3, ((YamlElement)weakBoxedEnumerator.Current).GetInt32());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal(4, ((YamlElement)weakBoxedEnumerator.Current).GetInt32());
+
+                Assert.False(structEnumerator.MoveNext());
+                Assert.False(strongBoxedEnumerator.MoveNext());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal(5, ((YamlElement)weakBoxedEnumerator.Current).GetInt32());
+
+                Assert.False(weakBoxedEnumerator.MoveNext());
+                Assert.False(structEnumerator.MoveNext());
+                Assert.False(strongBoxedEnumerator.MoveNext());
+                Assert.False(weakBoxedEnumerator.MoveNext());
+            }
+        }
+
+        [Fact]
+        public static void DefaultArrayEnumeratorDoesNotThrow()
+        {
+            YamlElement.ArrayEnumerator enumerable = default;
+            YamlElement.ArrayEnumerator enumerator = enumerable.GetEnumerator();
+            YamlElement.ArrayEnumerator defaultEnumerator = default;
+
+            Assert.Equal(YamlValueKind.Undefined, enumerable.Current.ValueKind);
+            Assert.Equal(YamlValueKind.Undefined, enumerator.Current.ValueKind);
+
+            Assert.False(enumerable.MoveNext());
+            Assert.False(enumerable.MoveNext());
+            Assert.False(defaultEnumerator.MoveNext());
+        }
+
+        [Fact]
+        public static void ObjectEnumeratorIndependentWalk()
+        {
+            const string yaml = """
+
+                {
+                  "name0": 0,
+                  "name1": 1,
+                  "name2": 2,
+                  "name3": 3,
+                  "name4": 4,
+                  "name5": 5
+                }
+                """;
+            using (YamlDocument doc = YamlDocument.Parse(yaml))
+            {
+                YamlElement root = doc.RootElement;
+                YamlElement.ObjectEnumerator structEnumerable = root.EnumerateObject();
+                IEnumerable<YamlProperty> strongBoxedEnumerable = root.EnumerateObject();
+                IEnumerable weakBoxedEnumerable = root.EnumerateObject();
+
+                YamlElement.ObjectEnumerator structEnumerator = structEnumerable.GetEnumerator();
+                IEnumerator<YamlProperty> strongBoxedEnumerator = strongBoxedEnumerable.GetEnumerator();
+                IEnumerator weakBoxedEnumerator = weakBoxedEnumerable.GetEnumerator();
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.True(weakBoxedEnumerator.MoveNext());
+
+                Assert.Equal("name0", structEnumerator.Current.Name);
+                Assert.Equal(0, structEnumerator.Current.Value.GetInt32());
+                Assert.Equal("name0", strongBoxedEnumerator.Current.Name);
+                Assert.Equal(0, strongBoxedEnumerator.Current.Value.GetInt32());
+                Assert.Equal("name0", ((YamlProperty)weakBoxedEnumerator.Current).Name);
+                Assert.Equal(0, ((YamlProperty)weakBoxedEnumerator.Current).Value.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.True(weakBoxedEnumerator.MoveNext());
+
+                Assert.Equal(1, structEnumerator.Current.Value.GetInt32());
+                Assert.Equal(1, strongBoxedEnumerator.Current.Value.GetInt32());
+                Assert.Equal(1, ((YamlProperty)weakBoxedEnumerator.Current).Value.GetInt32());
+
+                int test = 0;
+
+                foreach (YamlProperty property in structEnumerable)
+                {
+                    Assert.Equal("name" + test, property.Name);
+                    Assert.Equal(test, property.Value.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlProperty property in structEnumerable)
+                {
+                    Assert.Equal("name" + test, property.Name);
+                    Assert.Equal(test, property.Value.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlProperty property in strongBoxedEnumerable)
+                {
+                    Assert.Equal("name" + test, property.Name);
+                    Assert.Equal(test, property.Value.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlProperty property in strongBoxedEnumerable)
+                {
+                    string propertyName = property.Name;
+                    Assert.Equal("name" + test, property.Name);
+                    Assert.Equal(test, property.Value.GetInt32());
+                    test++;
+
+                    // Subsequent read of the same YamlProperty should return an equal string
+                    string propertyName2 = property.Name;
+                    Assert.Equal(propertyName, propertyName2);
+                }
+
+                test = 0;
+
+                foreach (YamlProperty property in weakBoxedEnumerable)
+                {
+                    Assert.Equal("name" + test, property.Name);
+                    Assert.Equal(test, property.Value.GetInt32());
+                    test++;
+                }
+
+                test = 0;
+
+                foreach (YamlProperty property in weakBoxedEnumerable)
+                {
+                    Assert.Equal("name" + test, property.Name);
+                    Assert.Equal(test, property.Value.GetInt32());
+                    test++;
+                }
+
+                structEnumerator.Reset();
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name0", structEnumerator.Current.Name);
+                Assert.Equal(0, structEnumerator.Current.Value.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name1", structEnumerator.Current.Name);
+                Assert.Equal(1, structEnumerator.Current.Value.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name2", structEnumerator.Current.Name);
+                Assert.Equal(2, structEnumerator.Current.Value.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name3", structEnumerator.Current.Name);
+                Assert.Equal(3, structEnumerator.Current.Value.GetInt32());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal("name2", strongBoxedEnumerator.Current.Name);
+                Assert.Equal(2, strongBoxedEnumerator.Current.Value.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name4", structEnumerator.Current.Name);
+                Assert.Equal(4, structEnumerator.Current.Value.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name5", structEnumerator.Current.Name);
+                Assert.Equal(5, structEnumerator.Current.Value.GetInt32());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal("name3", strongBoxedEnumerator.Current.Name);
+                Assert.Equal(3, strongBoxedEnumerator.Current.Value.GetInt32());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal("name2", ((YamlProperty)weakBoxedEnumerator.Current).Name);
+                Assert.Equal(2, ((YamlProperty)weakBoxedEnumerator.Current).Value.GetInt32());
+
+                Assert.False(structEnumerator.MoveNext());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal("name4", strongBoxedEnumerator.Current.Name);
+                Assert.Equal(4, strongBoxedEnumerator.Current.Value.GetInt32());
+
+                Assert.True(strongBoxedEnumerator.MoveNext());
+                Assert.Equal("name5", strongBoxedEnumerator.Current.Name);
+                Assert.Equal(5, strongBoxedEnumerator.Current.Value.GetInt32());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal("name3", ((YamlProperty)weakBoxedEnumerator.Current).Name);
+                Assert.Equal(3, ((YamlProperty)weakBoxedEnumerator.Current).Value.GetInt32());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal("name4", ((YamlProperty)weakBoxedEnumerator.Current).Name);
+                Assert.Equal(4, ((YamlProperty)weakBoxedEnumerator.Current).Value.GetInt32());
+
+                Assert.False(structEnumerator.MoveNext());
+                Assert.False(strongBoxedEnumerator.MoveNext());
+
+                Assert.True(weakBoxedEnumerator.MoveNext());
+                Assert.Equal("name5", ((YamlProperty)weakBoxedEnumerator.Current).Name);
+                Assert.Equal(5, ((YamlProperty)weakBoxedEnumerator.Current).Value.GetInt32());
+
+                Assert.False(weakBoxedEnumerator.MoveNext());
+                Assert.False(structEnumerator.MoveNext());
+                Assert.False(strongBoxedEnumerator.MoveNext());
+                Assert.False(weakBoxedEnumerator.MoveNext());
+            }
+        }
+
+        [Fact]
+        public static void DefaultObjectEnumeratorDoesNotThrow()
+        {
+            YamlElement.ObjectEnumerator enumerable = default;
+            YamlElement.ObjectEnumerator enumerator = enumerable.GetEnumerator();
+            YamlElement.ObjectEnumerator defaultEnumerator = default;
+
+            Assert.Equal(YamlValueKind.Undefined, enumerable.Current.Value.ValueKind);
+            Assert.Equal(YamlValueKind.Undefined, enumerator.Current.Value.ValueKind);
+
+            Assert.Throws<InvalidOperationException>(() => enumerable.Current.Name);
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current.Name);
+
+            Assert.False(enumerable.MoveNext());
+            Assert.False(enumerable.MoveNext());
+            Assert.False(defaultEnumerator.MoveNext());
+        }
+
+        [Fact]
+        public static void ReadNestedObject()
+        {
+            const string yaml = """
+
+                {
+                  "first":
+                  {
+                    "true": true,
+                    "false": false,
+                    "null": null,
+                    "int": 3,
+                    "nearlyPi": 3.14159,
+                    "text": "This is some text that does not end... <EOT>"
+                  },
+                  "second":
+                  {
+                    "blub": { "bool": true },
+                    "glub": { "bool": false }
+                  }
+                }
+                """;
+            using (YamlDocument doc = YamlDocument.Parse(yaml))
+            {
+                YamlElement root = doc.RootElement;
+                Assert.Equal(YamlValueKind.Object, root.ValueKind);
+
+                Assert.True(root.GetProperty("first").GetProperty("true").GetBoolean());
+                Assert.False(root.GetProperty("first").GetProperty("false").GetBoolean());
+                Assert.Equal(YamlValueKind.Null, root.GetProperty("first").GetProperty("null").ValueKind);
+                Assert.Equal(3, root.GetProperty("first").GetProperty("int").GetInt32());
+                Assert.Equal(3.14159f, root.GetProperty("first").GetProperty("nearlyPi").GetSingle());
+                Assert.Equal("This is some text that does not end... <EOT>", root.GetProperty("first").GetProperty("text").GetString());
+
+                Assert.True(root.GetProperty("second").GetProperty("blub").GetProperty("bool").GetBoolean());
+                Assert.False(root.GetProperty("second").GetProperty("glub").GetProperty("bool").GetBoolean());
+            }
+        }
+
+        [Fact]
+        public static void ParseNull()
+        {
+            Assert.Throws<ArgumentNullException>(
+                "yaml",
+                () => YamlDocument.Parse((string)null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "utf8Yaml",
+                () => YamlDocument.Parse((Stream)null));
+
+            // This synchronously throws the ArgumentNullException
+            AssertExtensions.Throws<ArgumentNullException>(
+                "utf8Yaml",
+                () => { YamlDocument.ParseAsync(null); });
+        }
+
+        [Fact]
+        public static void ParseDefaultReader()
+        {
+            Assert.ThrowsAny<YamlException>(() =>
+            {
+                Utf8YamlReader reader = default;
+                YamlDocument.ParseValue(ref reader);
+            });
+
+            {
+                Utf8YamlReader reader = default;
+                Assert.False(YamlDocument.TryParseValue(ref reader, out YamlDocument document));
+                Assert.Null(document);
+            }
+        }
+
+        private static void ParseReaderInScenario(
+            ParseReaderScenario scenario,
+            string valueYaml,
+            YamlTokenType tokenType,
+            int segmentCount)
+        {
+            switch (scenario)
+            {
+                case ParseReaderScenario.NotStarted:
+                case ParseReaderScenario.StartAtFirstToken:
+                    ParseReaderAtStart(
+                        scenario == ParseReaderScenario.StartAtFirstToken,
+                        valueYaml,
+                        tokenType,
+                        segmentCount);
+                    break;
+                case ParseReaderScenario.StartAtNestedValue:
+                    ParseReaderAtNestedValue(valueYaml, tokenType, segmentCount);
+                    break;
+                case ParseReaderScenario.StartAtPropertyName:
+                    ParseReaderAtPropertyName(valueYaml, tokenType, segmentCount);
+                    break;
+            }
+        }
+
+        private static void ParseReaderAtStart(
+            bool readFirst,
+            string valueYaml,
+            YamlTokenType tokenType,
+            int segmentCount)
+        {
+            string yaml = $"      {valueYaml}   5";
+            byte[] utf8 = Encoding.UTF8.GetBytes(yaml);
+            YamlReaderState state = default;
+
+            BuildSegmentedReader(out Utf8YamlReader reader, utf8, segmentCount, state);
+
+            if (readFirst)
+            {
+                Assert.True(reader.Read(), "Move to first token");
+            }
+
+            using (YamlDocument document = YamlDocument.ParseValue(ref reader))
+            {
+                Assert.Equal(valueYaml, document.RootElement.GetRawText());
+            }
+
+            Exception ex;
+            long position = reader.BytesConsumed;
+
+            try
+            {
+                reader.Read();
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsAssignableFrom<YamlException>(ex);
+
+            BuildSegmentedReader(out reader, utf8.AsMemory((int)position), 0, state, true);
+
+            Assert.True(reader.Read(), "Read trailing number");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+        }
+
+        private static void ParseReaderAtNestedValue(
+            string valueYaml,
+            YamlTokenType tokenType,
+            int segmentCount)
+        {
+            // Open-ended value (missing final ])
+            string yaml = $"[ 0, 1, 2, 3, 4, {valueYaml}     , 6, 7, 8, 9 ";
+            byte[] utf8 = Encoding.UTF8.GetBytes(yaml);
+            YamlReaderState state = default;
+
+            BuildSegmentedReader(out Utf8YamlReader reader, utf8, segmentCount, state);
+
+            Assert.True(reader.Read(), "Read [");
+            Assert.Equal(YamlTokenType.StartArray, reader.TokenType);
+            Assert.True(reader.Read(), "Read 0");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 1");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 2");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 3");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 4");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+
+            Assert.True(reader.Read(), "Read desired value");
+            Assert.Equal(tokenType, reader.TokenType);
+            long currentPosition = reader.BytesConsumed;
+
+            using (YamlDocument document = YamlDocument.ParseValue(ref reader))
+            {
+                Assert.Equal(valueYaml, document.RootElement.GetRawText());
+            }
+
+            switch (tokenType)
+            {
+                case YamlTokenType.StartArray:
+                    Assert.Equal(YamlTokenType.EndArray, reader.TokenType);
+                    Assert.InRange(reader.BytesConsumed, currentPosition + 1, long.MaxValue);
+                    break;
+                case YamlTokenType.StartObject:
+                    Assert.Equal(YamlTokenType.EndObject, reader.TokenType);
+                    Assert.InRange(reader.BytesConsumed, currentPosition + 1, long.MaxValue);
+                    break;
+                default:
+                    Assert.Equal(tokenType, reader.TokenType);
+                    Assert.Equal(currentPosition, reader.BytesConsumed);
+                    break;
+            }
+
+            Assert.True(reader.Read(), "Read 6");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 7");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 8");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 9");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+
+            Assert.False(reader.Read());
+        }
+
+        private static void ParseReaderAtPropertyName(
+            string valueYaml,
+            YamlTokenType tokenType,
+            int segmentCount)
+        {
+            // Open-ended value
+            string yaml = $"{{ \"this\": [ {{ \"is\": {{ \"the\": {{ \"target\": {valueYaml}    , \"capiche\" : [ 6, 7, 8, 9 ] ";
+            byte[] utf8 = Encoding.UTF8.GetBytes(yaml);
+            YamlReaderState state = default;
+
+            BuildSegmentedReader(out Utf8YamlReader reader, utf8, segmentCount, state);
+
+            Assert.True(reader.Read(), "Read root object start");
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"this\" property name");
+            Assert.Equal(YamlTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"this\" StartArray");
+            Assert.Equal(YamlTokenType.StartArray, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"this\" StartObject");
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"is\" property name");
+            Assert.Equal(YamlTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"is\" StartObject");
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"the\" property name");
+            Assert.Equal(YamlTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"the\" StartObject");
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"target\" property name");
+            Assert.Equal(YamlTokenType.PropertyName, reader.TokenType);
+
+            long currentPosition = reader.BytesConsumed;
+
+            using (YamlDocument document = YamlDocument.ParseValue(ref reader))
+            {
+                Assert.Equal(valueYaml, document.RootElement.GetRawText());
+            }
+
+            // The reader will have moved.
+            Assert.InRange(reader.BytesConsumed, currentPosition + 1, long.MaxValue);
+
+            switch (tokenType)
+            {
+                case YamlTokenType.StartArray:
+                    Assert.Equal(YamlTokenType.EndArray, reader.TokenType);
+                    break;
+                case YamlTokenType.StartObject:
+                    Assert.Equal(YamlTokenType.EndObject, reader.TokenType);
+                    break;
+                default:
+                    Assert.Equal(tokenType, reader.TokenType);
+                    break;
+            }
+
+            Assert.True(reader.Read(), "Read \"capiche\" property name");
+            Assert.Equal(YamlTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"capiche\" StartArray");
+            Assert.Equal(YamlTokenType.StartArray, reader.TokenType);
+            Assert.True(reader.Read(), "Read 6");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 7");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 8");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 9");
+            Assert.Equal(YamlTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"capiche\" EndArray");
+            Assert.Equal(YamlTokenType.EndArray, reader.TokenType);
+
+            Assert.False(reader.Read());
+        }
+
+
+        [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingContent()
+        {
+            var options = new YamlReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8YamlReader("[null,false,42,{},[1]]             <NotYaml/>"u8, options);
+
+            using YamlDocument doc = YamlDocument.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", doc.RootElement.GetRawText());
+            Assert.Equal(YamlTokenType.EndArray, reader.TokenType);
+
+            YamlTestHelper.AssertThrows<YamlException>(ref reader, (ref Utf8YamlReader reader) => reader.Read());
+        }
+
+        [Theory]
+        [InlineData("""{ "foo" : [1], "test": false, "bar" : { "nested": 3 } }""", 3)]
+        [InlineData("""{ "foo" : [1,2,3,4] }""", 1)]
+        [InlineData("{}", 0)]
+        [InlineData("""{ "foo" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }, "test": true, "foo2" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }}""", 3)]
+        public static void TestGetPropertyCount(string yaml, int expectedCount)
+        {
+            YamlElement element = YamlElement.Parse(yaml);
+            Assert.Equal(expectedCount, element.GetPropertyCount());
+        }
+
+        [Fact]
+        public static void VerifyGetPropertyCountAndArrayLengthUsingEnumerateMethods()
+        {
+            using (YamlDocument doc = YamlDocument.Parse(SR.ProjectLockYaml))
+            {
+                CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(doc.RootElement);
+            }
+
+            void CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(YamlElement elem)
+            {
+                if (elem.ValueKind == YamlValueKind.Object)
+                {
+                    Assert.Equal(elem.EnumerateObject().Count(), elem.GetPropertyCount());
+                    foreach (YamlProperty prop in elem.EnumerateObject())
+                    {
+                        CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(prop.Value);
+                    }
+                }
+                else if (elem.ValueKind == YamlValueKind.Array)
+                {
+                    Assert.Equal(elem.EnumerateArray().Count(), elem.GetArrayLength());
+                    foreach (YamlElement item in elem.EnumerateArray())
+                    {
+                        CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(item);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void EnsureResizeSucceeds()
+        {
+            // This test increases coverage, so it's based on a lot of implementation detail,
+            // to ensure that the otherwise untested blocks produce the right functional behavior.
+            //
+            // The initial database size is just over the number of bytes of UTF-8 data in the payload,
+            // capped at 2^20 (unless the payload exceeds 2^22).
+            //
+            // Regrowth happens if the rented array (which may be bigger than we asked for) is not sufficient,
+            // meaning tokens (on average) occur more often than every 12 bytes.
+            //
+            // The array pool (for bytes) returns power-of-two sizes.
+            //
+            // Conclusion: A resize will happen if a payload of 1MB+epsilon has tokens more often than every 12 bytes.
+            //
+            // Integer numbers as strings, padded to 4 with no whitespace in series in an array: 7x + 1.
+            //  That would take 149797 integers.
+            //
+            // Padded to 5 (8x + 1) => 131072 integers.
+            // Padded to 6 (9x + 1) => 116509 integers.
+            //
+            // At pad-to-6 tokens occur every 9 bytes, and we can represent values without repeat.
+
+            const int NumberOfNumbers = (1024 * 1024 / 9) + 1;
+            const int NumberOfBytes = 9 * NumberOfNumbers + 1;
+
+            byte[] utf8Yaml = new byte[NumberOfBytes];
+            utf8Yaml.AsSpan().Fill((byte)'"');
+            utf8Yaml[0] = (byte)'[';
+
+            Span<byte> valuesSpan = utf8Yaml.AsSpan(1);
+            StandardFormat format = StandardFormat.Parse("D6");
+
+            for (int i = 0; i < NumberOfNumbers; i++)
+            {
+                // Just inside the quote
+                Span<byte> curDest = valuesSpan.Slice(9 * i + 1);
+
+                if (!Utf8Formatter.TryFormat(i, curDest, out int bytesWritten, format) || bytesWritten != 6)
+                {
+                    throw new InvalidOperationException("" + i);
+                }
+
+                curDest[7] = (byte)',';
+            }
+
+            // Replace last comma with ]
+            utf8Yaml[NumberOfBytes - 1] = (byte)']';
+
+            using (YamlDocument doc = YamlDocument.Parse(utf8Yaml))
+            {
+                YamlElement root = doc.RootElement;
+                int count = root.GetArrayLength();
+
+                for (int i = 0; i < count; i++)
+                {
+                    Assert.Equal(i, int.Parse(root[i].GetString()));
+                }
+            }
+        }
+
+        [Fact]
+        public static void ValueEquals_Null_TrueForNullFalseForEmpty()
+        {
+            using (YamlDocument doc = YamlDocument.Parse("   null   "))
+            {
+                YamlElement jElement = doc.RootElement;
+                Assert.True(jElement.ValueEquals((string)null));
+                Assert.True(jElement.ValueEquals(default(ReadOnlySpan<char>)));
+                Assert.True(jElement.ValueEquals((ReadOnlySpan<byte>)null));
+                Assert.True(jElement.ValueEquals(default(ReadOnlySpan<byte>)));
+
+                Assert.False(jElement.ValueEquals(Array.Empty<byte>()));
+                Assert.False(jElement.ValueEquals(""));
+                Assert.False(jElement.ValueEquals("".AsSpan()));
+            }
+        }
+
+        [Fact]
+        public static void ValueEquals_EmptyYamlString_True()
+        {
+            using (YamlDocument doc = YamlDocument.Parse("\"\""))
+            {
+                YamlElement jElement = doc.RootElement;
+                Assert.True(jElement.ValueEquals(""));
+                Assert.True(jElement.ValueEquals("".AsSpan()));
+                Assert.True(jElement.ValueEquals(default(ReadOnlySpan<char>)));
+                Assert.True(jElement.ValueEquals(default(ReadOnlySpan<byte>)));
+                Assert.True(jElement.ValueEquals(Array.Empty<byte>()));
+            }
+        }
+
+        [Fact]
+        public static void ValueEquals_TestTextEqualsLargeMatch_True()
+        {
+            string lookup = new string('a', 320);
+            string yamlString = "\"" + lookup + "\"";
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                YamlElement jElement = doc.RootElement;
+                Assert.True(jElement.ValueEquals((string)lookup));
+                Assert.True(jElement.ValueEquals((ReadOnlySpan<char>)lookup.AsSpan()));
+            }
+        }
+
+        [Theory]
+        [InlineData("\"conne\\u0063tionId\"", "connectionId")]
+        [InlineData("\"connectionId\"", "connectionId")]
+        [InlineData("\"123\"", "123")]
+        [InlineData("\"My name is \\\"Ahson\\\"\"", "My name is \"Ahson\"")]
+        public static void ValueEquals_YamlTokenStringType_True(string yamlString, string expected)
+        {
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                YamlElement jElement = doc.RootElement;
+                Assert.True(jElement.ValueEquals(expected));
+                Assert.True(jElement.ValueEquals(expected.AsSpan()));
+                byte[] expectedGetBytes = Encoding.UTF8.GetBytes(expected);
+                Assert.True(jElement.ValueEquals(expectedGetBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData("\"conne\\u0063tionId\"", "c")]
+        public static void ValueEquals_DestinationTooSmallComparesEscaping_False(string yamlString, string other)
+        {
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                YamlElement jElement = doc.RootElement;
+                Assert.False(jElement.ValueEquals(other));
+                Assert.False(jElement.ValueEquals(other.AsSpan()));
+                byte[] otherGetBytes = Encoding.UTF8.GetBytes(other);
+                Assert.False(jElement.ValueEquals(otherGetBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData("\"hello\"", new char[1] { (char)0xDC01 })]    // low surrogate - invalid
+        [InlineData("\"hello\"", new char[1] { (char)0xD801 })]    // high surrogate - missing pair
+        public static void InvalidUTF16Search(string yamlString, char[] lookup)
+        {
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                YamlElement jElement = doc.RootElement;
+                Assert.False(jElement.ValueEquals(lookup));
+            }
+        }
+
+        [Theory]
+        [InlineData("\"connectionId\"", "\"conne\\u0063tionId\"")]
+        [InlineData("\"conne\\u0063tionId\"", "connecxionId")] // intentionally making mismatch after escaped character
+        [InlineData("\"conne\\u0063tionId\"", "bonnectionId")] // intentionally changing the expected starting character
+        public static void ValueEquals_YamlTokenStringType_False(string yamlString, string otherText)
+        {
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                YamlElement jElement = doc.RootElement;
+                Assert.False(jElement.ValueEquals(otherText));
+                Assert.False(jElement.ValueEquals(otherText.AsSpan()));
+                byte[] expectedGetBytes = Encoding.UTF8.GetBytes(otherText);
+                Assert.False(jElement.ValueEquals(expectedGetBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData("{}")]
+        [InlineData("{\"\" : \"\"}")]
+        [InlineData("{\"sample\" : \"\"}")]
+        [InlineData("{\"sample\" : null}")]
+        [InlineData("{\"sample\" : \"sample-value\"}")]
+        [InlineData("{\"connectionId\" : \"123\"}")]
+        public static void ValueEquals_NotString_Throws(string yamlString)
+        {
+            const string ErrorMessage = "The requested operation requires an element of type 'String', but the target element has type 'Object'.";
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                YamlElement jElement = doc.RootElement;
+                const string ThrowsAnyway = "throws-anyway";
+                AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(ThrowsAnyway), ErrorMessage);
+                AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(ThrowsAnyway.AsSpan()), ErrorMessage);
+                AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)), ErrorMessage);
+            }
+        }
+
+        [Fact]
+        public static void NameEquals_Empty_Throws()
+        {
+            const string yamlString = "{\"\" : \"some-value\"}";
+            const string ErrorMessage = "The requested operation requires an element of type 'String', but the target element has type 'Object'.";
+            using (YamlDocument doc = YamlDocument.Parse(yamlString))
+            {
+                YamlElement jElement = doc.RootElement;
+                const string ThrowsAnyway = "throws-anyway";
+                AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(ThrowsAnyway), ErrorMessage);
+                AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(ThrowsAnyway.AsSpan()), ErrorMessage);
+                AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)), ErrorMessage);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [OuterLoop] // thread-safety / stress test
+        public static async Task GetString_ConcurrentUse_ThreadSafe()
+        {
+            using (YamlDocument doc = YamlDocument.Parse(SR.SimpleObjectYaml))
+            {
+                YamlElement first = doc.RootElement.GetProperty("first");
+                YamlElement last = doc.RootElement.GetProperty("last");
+
+                const int Iters = 10_000;
+                using (var gate = new Barrier(2))
+                {
+                    await Task.WhenAll(
+                        Task.Factory.StartNew(() =>
+                        {
+                            gate.SignalAndWait();
+                            for (int i = 0; i < Iters; i++)
+                            {
+                                Assert.Equal("John", first.GetString());
+                                Assert.True(first.ValueEquals("John"));
+                            }
+                        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default),
+                        Task.Factory.StartNew(() =>
+                        {
+                            gate.SignalAndWait();
+                            for (int i = 0; i < Iters; i++)
+                            {
+                                Assert.Equal("Smith", last.GetString());
+                                Assert.True(last.ValueEquals("Smith"));
+                            }
+                        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
+                }
+            }
+        }
+
+        private static void BuildSegmentedReader(
+            out Utf8YamlReader reader,
+            ReadOnlyMemory<byte> data,
+            int segmentCount,
+            scoped in YamlReaderState state,
+            bool isFinalBlock = false)
+        {
+            if (segmentCount == 0)
+            {
+                reader = new Utf8YamlReader(
+                    data.Span,
+                    isFinalBlock,
+                    state);
+            }
+            else if (segmentCount == 1)
+            {
+                reader = new Utf8YamlReader(
+                    new ReadOnlySequence<byte>(data),
+                    isFinalBlock,
+                    state);
+            }
+            else
+            {
+                reader = new Utf8YamlReader(
+                    YamlTestHelper.SegmentInto(data, segmentCount),
+                    isFinalBlock,
+                    state);
+            }
+
+        }
+
+        private static string GetExpectedConcat(TestCaseType testCaseType, string yamlString)
+        {
+            if (s_expectedConcat.TryGetValue(testCaseType, out string existing))
+            {
+                return existing;
+            }
+
+            TextReader reader = new StringReader(yamlString);
+            return s_expectedConcat[testCaseType] = YamlTestHelper.NewtonsoftReturnStringHelper(reader);
+        }
+
+        private static string GetCompactYaml(TestCaseType testCaseType, string yamlString)
+        {
+            if (s_compactYaml.TryGetValue(testCaseType, out string existing))
+            {
+                return existing;
+            }
+
+            using (var yamlReader = new JsonTextReader(new StringReader(yamlString)) { MaxDepth = null })
+            {
+                yamlReader.FloatParseHandling = FloatParseHandling.Decimal;
+                JToken jtoken = JToken.ReadFrom(yamlReader);
+                var stringWriter = new StringWriter();
+
+                using (JsonTextWriter yamlWriter = new JsonTextWriter(stringWriter))
+                {
+                    jtoken.WriteTo(yamlWriter);
+                    existing = stringWriter.ToString();
+                }
+            }
+
+            return s_compactYaml[testCaseType] = existing;
+        }
+
+        [Fact]
+        public static async Task VerifyMultiThreadedDispose()
+        {
+            Action<object> disposeAction = (object document) => ((YamlDocument)document).Dispose();
+
+            // Create a bunch of parallel tasks that call Dispose several times on the same object.
+            Task[] tasks = new Task[100];
+            int count = 0;
+            for (int j = 0; j < 10; j++)
+            {
+                YamlDocument document = YamlDocument.Parse("123" + j);
+                for (int i = 0; i < 10; i++)
+                {
+                    tasks[count] = new Task(disposeAction, document);
+                    tasks[count].Start();
+
+                    count++;
+                }
+            }
+
+            await Task.WhenAll(tasks);
+
+            // When ArrayPool gets corrupted, the Rent method might return an already rented array, which is incorrect.
+            // So we will rent as many arrays as calls to YamlElement.Dispose and check they are unique.
+            // The minimum length that we ask for is a mirror of the size of the string passed to YamlDocument.Parse.
+            HashSet<byte[]> uniqueAddresses = new HashSet<byte[]>();
+            while (count > 0)
+            {
+                byte[] arr = ArrayPool<byte>.Shared.Rent(4);
+                Assert.True(uniqueAddresses.Add(arr));
+                count--;
+            }
+        }
+
+        [Fact]
+        public static void DeserializeNullAsNullLiteral()
+        {
+            var yamlDocument = YamlSerializer.Deserialize<YamlDocument>("null");
+            Assert.NotNull(yamlDocument);
+            Assert.Equal(YamlValueKind.Null, yamlDocument.RootElement.ValueKind);
+        }
+
+        [Fact]
+        public static void YamlMarshal_GetRawUtf8Value_DisposedDocument_ThrowsObjectDisposedException()
+        {
+            YamlDocument jDoc = YamlDocument.Parse("{}");
+            YamlElement element = jDoc.RootElement;
+            jDoc.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => YamlMarshal.GetRawUtf8Value(element));
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyYamlPayloads), MemberType = typeof(TestData))]
+        public static void ParseYamlDocumentWithDuplicateProperties(string yamlPayload, bool isValidYaml = false)
+        {
+            AssertDuplicateProperty(yamlPayload, isValidYaml, YamlTestSerializerOptions.LastWinsDocument);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyYamlPayloads), MemberType = typeof(TestData))]
+        public static void ParseYamlDocumentArrayWithDuplicateProperties(string yamlPayload, bool isValidYaml = false)
+        {
+            yamlPayload = $"[{yamlPayload}]";
+            AssertDuplicateProperty(yamlPayload, isValidYaml, YamlTestSerializerOptions.LastWinsDocument);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyYamlPayloads), MemberType = typeof(TestData))]
+        public static void ParseYamlDocumentDeeplyNestedWithDuplicateProperties(string yamlPayload, bool isValidYaml = false)
+        {
+            yamlPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{yamlPayload}}} } } } } } } } } }""";
+            AssertDuplicateProperty(yamlPayload, isValidYaml, YamlTestSerializerOptions.LastWinsDocument);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyYamlPayloads), MemberType = typeof(TestData))]
+        public static void ParseYamlDocumentClassWithDuplicateProperties(string yamlPayload, bool isValidYaml = false)
+        {
+            yamlPayload = $$"""{"Object":{{yamlPayload}}}""";
+            AssertDuplicateProperty(yamlPayload, isValidYaml, YamlTestSerializerOptions.LastWinsDocument);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseYamlDocumentObjectWithDuplicateProperties(int count, int insertPosition)
+        {
+            string yaml = CreatePayload(count, insertPosition, "p1");
+            AssertDuplicateProperty(yaml, isValidYaml: false, YamlTestSerializerOptions.LastWinsDocument);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseYamlDocumentEscapeWithDuplicateProperties(int count, int insertPosition)
+        {
+            string yaml = CreatePayload(count, insertPosition, """p\u0031""");
+            AssertDuplicateProperty(yaml, isValidYaml: false, YamlTestSerializerOptions.LastWinsDocument);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseYamlDocumentObjectWithNoDuplicateProperties(int count, int insertPosition)
+        {
+            string yaml = CreatePayload(count, insertPosition, "notduplicate");
+            AssertDuplicateProperty(yaml, isValidYaml: true);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseYamlDocumentEscapeWithNoDuplicateProperties(int count, int insertPosition)
+        {
+            string yaml = CreatePayload(count, insertPosition, """notduplicate\u0030\u0030""");
+            AssertDuplicateProperty(yaml, isValidYaml: true);
+        }
+
+        private static string CreatePayload(int count, int insertPosition, string insertProperty)
+        {
+            StringBuilder builder = new();
+            builder.Append("{");
+            for (int i = 0; i < count; i++)
+            {
+                if (i > 0)
+                    builder.AppendLine(",");
+
+                if (i == insertPosition)
+                    builder.Append($"""  "{insertProperty}":1""");
+                else
+                    builder.Append($"""  "p{i}":1""");
+            }
+            builder.Append("}");
+            return builder.ToString();
+        }
+
+        // M7a: the duplicate-key callers pass LastWins, the JSON grammar's default; the others keep the default.
+        private static void AssertDuplicateProperty(string yamlPayload, bool isValidYaml, YamlDocumentOptions noThrowOptions = default)
+        {
+            if (isValidYaml)
+            {
+                using (YamlDocument.Parse(yamlPayload, s_noDuplicateParamsOptions)) { } // Assert no throw
+            }
+            else
+            {
+                Assert.Throws<YamlException>(() => YamlDocument.Parse(yamlPayload, s_noDuplicateParamsOptions));
+            }
+
+            using (YamlDocument.Parse(yamlPayload, noThrowOptions)) { } // Assert no throw
+        }
+
+        [Fact]
+        public static void ParseYamlDuplicatePropertiesErrorMessage()
+        {
+            string yaml = """{"a":1,"a":1}""";
+            AssertExtensions.ThrowsContains<YamlException>(
+                () => YamlDocument.Parse(yaml, s_noDuplicateParamsOptions),
+                "a");
+        }
+
+        [Fact]
+        public static void ParseYamlDuplicatePropertiesErrorMessageLong()
+        {
+            string yaml = """{"12345678901234567":1,"12345678901234567":1}""";
+            AssertExtensions.ThrowsContains<YamlException>(
+                () => YamlDocument.Parse(yaml, s_noDuplicateParamsOptions),
+                "123456789012345...");
+
+            yaml = """{"123456789012345":1,"123456789012345":1}""";
+            AssertExtensions.ThrowsContains<YamlException>(
+                () => YamlDocument.Parse(yaml, s_noDuplicateParamsOptions),
+                "123456789012345");
+
+            yaml = """{"1234567890123456":1,"1234567890123456":1}""";
+            AssertExtensions.ThrowsContains<YamlException>(
+                () => YamlDocument.Parse(yaml, s_noDuplicateParamsOptions),
+                "123456789012345...");
+        }
+
+        [Fact]
+        public static void ParseYamlDuplicatePropertiesErrorMessageEscaped()
+        {
+            string yaml = """{"0":1,"\u0030":1}""";
+            AssertExtensions.ThrowsContains<YamlException>(
+                () => YamlDocument.Parse(yaml, s_noDuplicateParamsOptions),
+                "'\u0030'");
+
+            yaml = """{"\u0030":1,"0":1}""";
+            AssertExtensions.ThrowsContains<YamlException>(
+                () => YamlDocument.Parse(yaml, s_noDuplicateParamsOptions),
+                "'0'");
+        }
+
+        [Fact]
+        public static void YamlElement_GetDouble_EdgeCases()
+        {
+            using YamlDocument doc = YamlDocument.Parse("0.0");
+            double value = doc.RootElement.GetDouble();
+            Assert.Equal(0.0, value);
+            
+            using YamlDocument doc2 = YamlDocument.Parse("1.7976931348623157E+308");
+            double value2 = doc2.RootElement.GetDouble();
+            Assert.True(value2 > 1E+307);
+            
+            using YamlDocument doc3 = YamlDocument.Parse("-1.7976931348623157E+308");
+            double value3 = doc3.RootElement.GetDouble();
+            Assert.True(value3 < -1E+307);
+        }
+
+        [Fact]
+        public static void YamlElement_GetSingle_EdgeCases()
+        {
+            using YamlDocument doc = YamlDocument.Parse("0.0");
+            float value = doc.RootElement.GetSingle();
+            Assert.Equal(0.0f, value);
+            
+            using YamlDocument doc2 = YamlDocument.Parse("3.4028235E+38");
+            float value2 = doc2.RootElement.GetSingle();
+            Assert.True(value2 > 1E+37f);
+            
+            using YamlDocument doc3 = YamlDocument.Parse("-3.4028235E+38");
+            float value3 = doc3.RootElement.GetSingle();
+            Assert.True(value3 < -1E+37f);
+        }
+
+        [Fact]
+        public static void ParseWithMaxDepthOption()
+        {
+            string yaml = """{"a":{"b":{"c":{"d":1}}}}""";
+            var options = new YamlDocumentOptions { MaxDepth = 10 };
+            using var doc = YamlDocument.Parse(yaml, options);
+            Assert.Equal(1, doc.RootElement.GetProperty("a").GetProperty("b").GetProperty("c").GetProperty("d").GetInt32());
+        }
+
+        [Fact]
+        public static void ParseWithAllowTrailingCommas()
+        {
+            string yaml = """{"a":1,}""";
+            var options = new YamlDocumentOptions { AllowTrailingCommas = true };
+            using var doc = YamlDocument.Parse(yaml, options);
+            Assert.Equal(1, doc.RootElement.GetProperty("a").GetInt32());
+        }
+
+        [Fact]
+        public static void YamlElement_TryGetDouble()
+        {
+            using YamlDocument doc = YamlDocument.Parse("3.14159");
+            Assert.True(doc.RootElement.TryGetDouble(out double value));
+            Assert.Equal(3.14159, value, precision: 5);
+        }
+
+        [Fact]
+        public static void YamlElement_TryGetSingle()
+        {
+            using YamlDocument doc = YamlDocument.Parse("3.14");
+            Assert.True(doc.RootElement.TryGetSingle(out float value));
+            Assert.Equal(3.14f, value, precision: 2);
+        }
+    }
+
+    public class ThrowOnReadStream : MemoryStream
+    {
+        public ThrowOnReadStream(byte[] bytes) : base(bytes)
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new EndOfStreamException();
+        }
+    }
+
+    public class ThrowOnCanSeekStream : MemoryStream
+    {
+        public ThrowOnCanSeekStream(byte[] bytes) : base(bytes)
+        {
+        }
+
+        public override bool CanSeek => throw new InsufficientMemoryException();
+    }
+}

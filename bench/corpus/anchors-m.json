@@ -1,0 +1,1690 @@
+{
+  "name": "stack-bravo",
+  "services": {
+    "echo-mike-0": {
+      "image": "registry.example.com/whiskey/group-0:latest",
+      "container_name": "echo-mike-0",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "echo-mike-0.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8000:8080",
+        "9000:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-0;Database=romeo;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/echo-mike-0:/var/lib/echo-mike-0",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "echo-mike-0"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8080/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "alpha-victor-1": {
+      "image": "registry.example.com/whiskey/group-0:latest",
+      "container_name": "alpha-victor-1",
+      "restart": "unless-stopped",
+      "ports": [
+        "8001:8080",
+        "9001:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-0;Database=romeo;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/alpha-victor-1:/var/lib/alpha-victor-1",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "alpha-victor-1"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8080/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "mike-lima-2": {
+      "image": "registry.example.com/whiskey/group-0:latest",
+      "container_name": "mike-lima-2",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "mike-lima-2.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8002:8080",
+        "9002:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-0;Database=romeo;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/mike-lima-2:/var/lib/mike-lima-2",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "mike-lima-2"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8080/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "zulu-oscar-3": {
+      "image": "registry.example.com/whiskey/group-0:latest",
+      "container_name": "zulu-oscar-3",
+      "restart": "unless-stopped",
+      "ports": [
+        "8003:8080",
+        "9003:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-0;Database=romeo;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/zulu-oscar-3:/var/lib/zulu-oscar-3",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "zulu-oscar-3"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8080/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "golf-xray-4": {
+      "image": "registry.example.com/delta/group-4:latest",
+      "container_name": "golf-xray-4",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "golf-xray-4.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8004:8080",
+        "9004:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-4;Database=november;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/golf-xray-4:/var/lib/golf-xray-4",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "golf-xray-4"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8084/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "quebec-november-5": {
+      "image": "registry.example.com/delta/group-4:latest",
+      "container_name": "quebec-november-5",
+      "restart": "unless-stopped",
+      "ports": [
+        "8005:8080",
+        "9005:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-4;Database=november;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/quebec-november-5:/var/lib/quebec-november-5",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "quebec-november-5"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8084/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "kilo-victor-6": {
+      "image": "registry.example.com/delta/group-4:latest",
+      "container_name": "kilo-victor-6",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "kilo-victor-6.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8006:8080",
+        "9006:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-4;Database=november;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/kilo-victor-6:/var/lib/kilo-victor-6",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "kilo-victor-6"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8084/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "yankee-alpha-7": {
+      "image": "registry.example.com/delta/group-4:latest",
+      "container_name": "yankee-alpha-7",
+      "restart": "unless-stopped",
+      "ports": [
+        "8007:8080",
+        "9007:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-4;Database=november;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/yankee-alpha-7:/var/lib/yankee-alpha-7",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "yankee-alpha-7"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8084/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "india-bravo-8": {
+      "image": "registry.example.com/charlie/group-8:latest",
+      "container_name": "india-bravo-8",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "india-bravo-8.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8008:8080",
+        "9008:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-8;Database=papa;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/india-bravo-8:/var/lib/india-bravo-8",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "india-bravo-8"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8088/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "quebec-romeo-9": {
+      "image": "registry.example.com/charlie/group-8:latest",
+      "container_name": "quebec-romeo-9",
+      "restart": "unless-stopped",
+      "ports": [
+        "8009:8080",
+        "9009:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-8;Database=papa;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/quebec-romeo-9:/var/lib/quebec-romeo-9",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "quebec-romeo-9"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8088/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "charlie-november-10": {
+      "image": "registry.example.com/charlie/group-8:latest",
+      "container_name": "charlie-november-10",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "charlie-november-10.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8010:8080",
+        "9010:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-8;Database=papa;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/charlie-november-10:/var/lib/charlie-november-10",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "charlie-november-10"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8088/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "echo-yankee-11": {
+      "image": "registry.example.com/charlie/group-8:latest",
+      "container_name": "echo-yankee-11",
+      "restart": "unless-stopped",
+      "ports": [
+        "8011:8080",
+        "9011:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-8;Database=papa;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/echo-yankee-11:/var/lib/echo-yankee-11",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "echo-yankee-11"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8088/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "foxtrot-sierra-12": {
+      "image": "registry.example.com/november/group-12:latest",
+      "container_name": "foxtrot-sierra-12",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "foxtrot-sierra-12.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8012:8080",
+        "9012:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-12;Database=quebec;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/foxtrot-sierra-12:/var/lib/foxtrot-sierra-12",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "foxtrot-sierra-12"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8092/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "foxtrot-xray-13": {
+      "image": "registry.example.com/november/group-12:latest",
+      "container_name": "foxtrot-xray-13",
+      "restart": "unless-stopped",
+      "ports": [
+        "8013:8080",
+        "9013:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-12;Database=quebec;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/foxtrot-xray-13:/var/lib/foxtrot-xray-13",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "foxtrot-xray-13"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8092/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "india-yankee-14": {
+      "image": "registry.example.com/november/group-12:latest",
+      "container_name": "india-yankee-14",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "india-yankee-14.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8014:8080",
+        "9014:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-12;Database=quebec;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/india-yankee-14:/var/lib/india-yankee-14",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "india-yankee-14"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8092/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "november-juliet-15": {
+      "image": "registry.example.com/november/group-12:latest",
+      "container_name": "november-juliet-15",
+      "restart": "unless-stopped",
+      "ports": [
+        "8015:8080",
+        "9015:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-12;Database=quebec;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/november-juliet-15:/var/lib/november-juliet-15",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "november-juliet-15"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8092/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "whiskey-oscar-16": {
+      "image": "registry.example.com/juliet/group-16:latest",
+      "container_name": "whiskey-oscar-16",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "whiskey-oscar-16.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8016:8080",
+        "9016:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-16;Database=hotel;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/whiskey-oscar-16:/var/lib/whiskey-oscar-16",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "whiskey-oscar-16"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8096/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "sierra-zulu-17": {
+      "image": "registry.example.com/juliet/group-16:latest",
+      "container_name": "sierra-zulu-17",
+      "restart": "unless-stopped",
+      "ports": [
+        "8017:8080",
+        "9017:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-16;Database=hotel;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/sierra-zulu-17:/var/lib/sierra-zulu-17",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "sierra-zulu-17"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8096/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "quebec-alpha-18": {
+      "image": "registry.example.com/juliet/group-16:latest",
+      "container_name": "quebec-alpha-18",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "quebec-alpha-18.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8018:8080",
+        "9018:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-16;Database=hotel;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/quebec-alpha-18:/var/lib/quebec-alpha-18",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "quebec-alpha-18"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8096/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "golf-foxtrot-19": {
+      "image": "registry.example.com/juliet/group-16:latest",
+      "container_name": "golf-foxtrot-19",
+      "restart": "unless-stopped",
+      "ports": [
+        "8019:8080",
+        "9019:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-16;Database=hotel;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/golf-foxtrot-19:/var/lib/golf-foxtrot-19",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "golf-foxtrot-19"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8096/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "echo-echo-20": {
+      "image": "registry.example.com/victor/group-20:latest",
+      "container_name": "echo-echo-20",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "echo-echo-20.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8020:8080",
+        "9020:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-20;Database=oscar;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/echo-echo-20:/var/lib/echo-echo-20",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "echo-echo-20"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8100/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "delta-echo-21": {
+      "image": "registry.example.com/victor/group-20:latest",
+      "container_name": "delta-echo-21",
+      "restart": "unless-stopped",
+      "ports": [
+        "8021:8080",
+        "9021:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-20;Database=oscar;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/delta-echo-21:/var/lib/delta-echo-21",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "delta-echo-21"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8100/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "uniform-juliet-22": {
+      "image": "registry.example.com/victor/group-20:latest",
+      "container_name": "uniform-juliet-22",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "uniform-juliet-22.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8022:8080",
+        "9022:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-20;Database=oscar;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/uniform-juliet-22:/var/lib/uniform-juliet-22",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "uniform-juliet-22"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8100/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "lima-kilo-23": {
+      "image": "registry.example.com/victor/group-20:latest",
+      "container_name": "lima-kilo-23",
+      "restart": "unless-stopped",
+      "ports": [
+        "8023:8080",
+        "9023:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-20;Database=oscar;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/lima-kilo-23:/var/lib/lima-kilo-23",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "lima-kilo-23"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8100/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "india-sierra-24": {
+      "image": "registry.example.com/kilo/group-24:latest",
+      "container_name": "india-sierra-24",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "india-sierra-24.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8024:8080",
+        "9024:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-24;Database=alpha;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/india-sierra-24:/var/lib/india-sierra-24",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "india-sierra-24"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8104/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "zulu-hotel-25": {
+      "image": "registry.example.com/kilo/group-24:latest",
+      "container_name": "zulu-hotel-25",
+      "restart": "unless-stopped",
+      "ports": [
+        "8025:8080",
+        "9025:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-24;Database=alpha;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/zulu-hotel-25:/var/lib/zulu-hotel-25",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "zulu-hotel-25"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8104/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "mike-november-26": {
+      "image": "registry.example.com/kilo/group-24:latest",
+      "container_name": "mike-november-26",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "mike-november-26.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8026:8080",
+        "9026:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-24;Database=alpha;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/mike-november-26:/var/lib/mike-november-26",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "mike-november-26"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8104/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "alpha-mike-27": {
+      "image": "registry.example.com/kilo/group-24:latest",
+      "container_name": "alpha-mike-27",
+      "restart": "unless-stopped",
+      "ports": [
+        "8027:8080",
+        "9027:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-24;Database=alpha;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/alpha-mike-27:/var/lib/alpha-mike-27",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "alpha-mike-27"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8104/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "yankee-echo-28": {
+      "image": "registry.example.com/oscar/group-28:latest",
+      "container_name": "yankee-echo-28",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "yankee-echo-28.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8028:8080",
+        "9028:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-28;Database=foxtrot;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/yankee-echo-28:/var/lib/yankee-echo-28",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "yankee-echo-28"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8108/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "tango-yankee-29": {
+      "image": "registry.example.com/oscar/group-28:latest",
+      "container_name": "tango-yankee-29",
+      "restart": "unless-stopped",
+      "ports": [
+        "8029:8080",
+        "9029:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-28;Database=foxtrot;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/tango-yankee-29:/var/lib/tango-yankee-29",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "tango-yankee-29"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8108/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "charlie-xray-30": {
+      "image": "registry.example.com/oscar/group-28:latest",
+      "container_name": "charlie-xray-30",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "charlie-xray-30.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8030:8080",
+        "9030:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-28;Database=foxtrot;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/charlie-xray-30:/var/lib/charlie-xray-30",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "charlie-xray-30"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8108/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "delta-romeo-31": {
+      "image": "registry.example.com/oscar/group-28:latest",
+      "container_name": "delta-romeo-31",
+      "restart": "unless-stopped",
+      "ports": [
+        "8031:8080",
+        "9031:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-28;Database=foxtrot;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/delta-romeo-31:/var/lib/delta-romeo-31",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "delta-romeo-31"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8108/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "zulu-oscar-32": {
+      "image": "registry.example.com/india/group-32:latest",
+      "container_name": "zulu-oscar-32",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "zulu-oscar-32.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8032:8080",
+        "9032:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-32;Database=victor;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/zulu-oscar-32:/var/lib/zulu-oscar-32",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "zulu-oscar-32"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8112/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "uniform-uniform-33": {
+      "image": "registry.example.com/delta/group-33:latest",
+      "container_name": "uniform-uniform-33",
+      "restart": "unless-stopped",
+      "ports": [
+        "8033:8080",
+        "9033:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-33;Database=echo;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/uniform-uniform-33:/var/lib/uniform-uniform-33",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "uniform-uniform-33"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8113/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "yankee-mike-34": {
+      "image": "registry.example.com/foxtrot/group-34:latest",
+      "container_name": "yankee-mike-34",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "yankee-mike-34.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8034:8080",
+        "9034:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-34;Database=romeo;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/yankee-mike-34:/var/lib/yankee-mike-34",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "yankee-mike-34"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8114/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "whiskey-xray-35": {
+      "image": "registry.example.com/alpha/group-35:latest",
+      "container_name": "whiskey-xray-35",
+      "restart": "unless-stopped",
+      "ports": [
+        "8035:8080",
+        "9035:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-35;Database=india;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/whiskey-xray-35:/var/lib/whiskey-xray-35",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "whiskey-xray-35"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8115/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "tango-foxtrot-36": {
+      "image": "registry.example.com/sierra/group-36:latest",
+      "container_name": "tango-foxtrot-36",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "tango-foxtrot-36.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8036:8080",
+        "9036:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-36;Database=foxtrot;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/tango-foxtrot-36:/var/lib/tango-foxtrot-36",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "tango-foxtrot-36"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8116/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "alpha-foxtrot-37": {
+      "image": "registry.example.com/november/group-37:latest",
+      "container_name": "alpha-foxtrot-37",
+      "restart": "unless-stopped",
+      "ports": [
+        "8037:8080",
+        "9037:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-37;Database=kilo;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/alpha-foxtrot-37:/var/lib/alpha-foxtrot-37",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "alpha-foxtrot-37"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8117/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "golf-oscar-38": {
+      "image": "registry.example.com/golf/group-38:latest",
+      "container_name": "golf-oscar-38",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "golf-oscar-38.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8038:8080",
+        "9038:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-38;Database=quebec;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/golf-oscar-38:/var/lib/golf-oscar-38",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "golf-oscar-38"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8118/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "whiskey-romeo-39": {
+      "image": "registry.example.com/zulu/group-39:latest",
+      "container_name": "whiskey-romeo-39",
+      "restart": "unless-stopped",
+      "ports": [
+        "8039:8080",
+        "9039:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-39;Database=xray;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/whiskey-romeo-39:/var/lib/whiskey-romeo-39",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "whiskey-romeo-39"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8119/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "sierra-juliet-40": {
+      "image": "registry.example.com/whiskey/group-40:latest",
+      "container_name": "sierra-juliet-40",
+      "restart": "unless-stopped",
+      "command": [
+        "dotnet",
+        "sierra-juliet-40.dll",
+        "--urls",
+        "http://0.0.0.0:8080"
+      ],
+      "ports": [
+        "8040:8080",
+        "9040:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-40;Database=india;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/sierra-juliet-40:/var/lib/sierra-juliet-40",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "sierra-juliet-40"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8120/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    },
+    "romeo-india-41": {
+      "image": "registry.example.com/oscar/group-41:latest",
+      "container_name": "romeo-india-41",
+      "restart": "unless-stopped",
+      "ports": [
+        "8041:8080",
+        "9041:9090"
+      ],
+      "environment": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ConnectionStrings__Default": "Host=db-41;Database=sierra;Username=app",
+        "LOG_LEVEL": "info",
+        "RETRIES": "5"
+      },
+      "volumes": [
+        "./data/romeo-india-41:/var/lib/romeo-india-41",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "networks": [
+        "backend"
+      ],
+      "labels": {
+        "com.example.service": "romeo-india-41"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8121/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "10s"
+      }
+    }
+  },
+  "networks": {
+    "backend": {
+      "driver": "bridge"
+    }
+  }
+}

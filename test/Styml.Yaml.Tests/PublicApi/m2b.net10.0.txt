@@ -1,0 +1,1067 @@
+# Public API of Styml.dll (net10.0) at M2b, commit bf55f5a, listed by eng/test/public-api.
+System.Runtime.InteropServices.YamlMarshal.GetRawUtf8PropertyName(System.Text.Yaml.YamlProperty) static System.ReadOnlySpan`1[System.Byte]
+System.Runtime.InteropServices.YamlMarshal.GetRawUtf8Value(System.Text.Yaml.YamlElement) static System.ReadOnlySpan`1[System.Byte]
+System.Text.Yaml.Nodes.YamlArray.Add(System.Text.Yaml.Nodes.YamlNode) System.Void
+System.Text.Yaml.Nodes.YamlArray.Add<T>(T) System.Void
+System.Text.Yaml.Nodes.YamlArray.Clear() System.Void
+System.Text.Yaml.Nodes.YamlArray.Contains(System.Text.Yaml.Nodes.YamlNode) System.Boolean
+System.Text.Yaml.Nodes.YamlArray.Count property System.Int32 { get; }
+System.Text.Yaml.Nodes.YamlArray.Create(System.Text.Yaml.YamlElement, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlArray
+System.Text.Yaml.Nodes.YamlArray.GetEnumerator() System.Collections.Generic.IEnumerator`1[System.Text.Yaml.Nodes.YamlNode]
+System.Text.Yaml.Nodes.YamlArray.GetValues<T>() System.Collections.Generic.IEnumerable`1[T]
+System.Text.Yaml.Nodes.YamlArray.IndexOf(System.Text.Yaml.Nodes.YamlNode) System.Int32
+System.Text.Yaml.Nodes.YamlArray.Insert(System.Int32, System.Text.Yaml.Nodes.YamlNode) System.Void
+System.Text.Yaml.Nodes.YamlArray.Remove(System.Text.Yaml.Nodes.YamlNode) System.Boolean
+System.Text.Yaml.Nodes.YamlArray.RemoveAll(System.Func`2[System.Text.Yaml.Nodes.YamlNode, System.Boolean]) System.Int32
+System.Text.Yaml.Nodes.YamlArray.RemoveAt(System.Int32) System.Void
+System.Text.Yaml.Nodes.YamlArray.RemoveRange(System.Int32, System.Int32) System.Void
+System.Text.Yaml.Nodes.YamlArray.WriteTo(System.Text.Yaml.Utf8YamlWriter, System.Text.Yaml.YamlSerializerOptions) virtual System.Void
+System.Text.Yaml.Nodes.YamlArray.ctor(System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions])
+System.Text.Yaml.Nodes.YamlArray.ctor(System.ReadOnlySpan`1[System.Text.Yaml.Nodes.YamlNode])
+System.Text.Yaml.Nodes.YamlArray.ctor(System.Text.Yaml.Nodes.YamlNodeOptions, System.ReadOnlySpan`1[System.Text.Yaml.Nodes.YamlNode])
+System.Text.Yaml.Nodes.YamlArray.ctor(System.Text.Yaml.Nodes.YamlNodeOptions, System.Text.Yaml.Nodes.YamlNode[])
+System.Text.Yaml.Nodes.YamlArray.ctor(System.Text.Yaml.Nodes.YamlNode[])
+System.Text.Yaml.Nodes.YamlNode.AsArray() System.Text.Yaml.Nodes.YamlArray
+System.Text.Yaml.Nodes.YamlNode.AsObject() System.Text.Yaml.Nodes.YamlObject
+System.Text.Yaml.Nodes.YamlNode.AsValue() System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlNode.DeepClone() System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.Nodes.YamlNode.DeepEquals(System.Text.Yaml.Nodes.YamlNode, System.Text.Yaml.Nodes.YamlNode) static System.Boolean
+System.Text.Yaml.Nodes.YamlNode.GetElementIndex() System.Int32
+System.Text.Yaml.Nodes.YamlNode.GetPath() System.String
+System.Text.Yaml.Nodes.YamlNode.GetPropertyName() System.String
+System.Text.Yaml.Nodes.YamlNode.GetValue<T>() virtual T
+System.Text.Yaml.Nodes.YamlNode.GetValueKind() System.Text.Yaml.YamlValueKind
+System.Text.Yaml.Nodes.YamlNode.Item[System.Int32] property System.Text.Yaml.Nodes.YamlNode { get; set; }
+System.Text.Yaml.Nodes.YamlNode.Item[System.String] property System.Text.Yaml.Nodes.YamlNode { get; set; }
+System.Text.Yaml.Nodes.YamlNode.Options property System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions] { get; }
+System.Text.Yaml.Nodes.YamlNode.Parent property System.Text.Yaml.Nodes.YamlNode { get; }
+System.Text.Yaml.Nodes.YamlNode.Parse(System.IO.Stream, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.Nodes.YamlNode.Parse(System.ReadOnlySpan`1[System.Byte], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.Nodes.YamlNode.Parse(System.String, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.Nodes.YamlNode.Parse(ref System.Text.Yaml.Utf8YamlReader, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.Nodes.YamlNode.ParseAsync(System.IO.Stream, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions], System.Text.Yaml.YamlDocumentOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task`1[System.Text.Yaml.Nodes.YamlNode]
+System.Text.Yaml.Nodes.YamlNode.ReplaceWith<T>(T) System.Void
+System.Text.Yaml.Nodes.YamlNode.Root property System.Text.Yaml.Nodes.YamlNode { get; }
+System.Text.Yaml.Nodes.YamlNode.ToString() virtual System.String
+System.Text.Yaml.Nodes.YamlNode.ToYamlString(System.Text.Yaml.YamlSerializerOptions) System.String
+System.Text.Yaml.Nodes.YamlNode.WriteTo(System.Text.Yaml.Utf8YamlWriter, System.Text.Yaml.YamlSerializerOptions) abstract System.Void
+System.Text.Yaml.Nodes.YamlNodeOptions.PropertyNameCaseInsensitive property System.Boolean { get; set; }
+System.Text.Yaml.Nodes.YamlObject.Add(System.Collections.Generic.KeyValuePair`2[System.String, System.Text.Yaml.Nodes.YamlNode]) System.Void
+System.Text.Yaml.Nodes.YamlObject.Add(System.String, System.Text.Yaml.Nodes.YamlNode) System.Void
+System.Text.Yaml.Nodes.YamlObject.Clear() System.Void
+System.Text.Yaml.Nodes.YamlObject.ContainsKey(System.String) System.Boolean
+System.Text.Yaml.Nodes.YamlObject.Count property System.Int32 { get; }
+System.Text.Yaml.Nodes.YamlObject.Create(System.Text.Yaml.YamlElement, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlObject
+System.Text.Yaml.Nodes.YamlObject.GetAt(System.Int32) System.Collections.Generic.KeyValuePair`2[System.String, System.Text.Yaml.Nodes.YamlNode]
+System.Text.Yaml.Nodes.YamlObject.GetEnumerator() System.Collections.Generic.IEnumerator`1[System.Collections.Generic.KeyValuePair`2[System.String, System.Text.Yaml.Nodes.YamlNode]]
+System.Text.Yaml.Nodes.YamlObject.IndexOf(System.String) System.Int32
+System.Text.Yaml.Nodes.YamlObject.Insert(System.Int32, System.String, System.Text.Yaml.Nodes.YamlNode) System.Void
+System.Text.Yaml.Nodes.YamlObject.Remove(System.String) System.Boolean
+System.Text.Yaml.Nodes.YamlObject.RemoveAt(System.Int32) System.Void
+System.Text.Yaml.Nodes.YamlObject.SetAt(System.Int32, System.String, System.Text.Yaml.Nodes.YamlNode) System.Void
+System.Text.Yaml.Nodes.YamlObject.SetAt(System.Int32, System.Text.Yaml.Nodes.YamlNode) System.Void
+System.Text.Yaml.Nodes.YamlObject.TryAdd(System.String, System.Text.Yaml.Nodes.YamlNode) System.Boolean
+System.Text.Yaml.Nodes.YamlObject.TryAdd(System.String, System.Text.Yaml.Nodes.YamlNode, out System.Int32) System.Boolean
+System.Text.Yaml.Nodes.YamlObject.TryGetPropertyValue(System.String, out System.Text.Yaml.Nodes.YamlNode) System.Boolean
+System.Text.Yaml.Nodes.YamlObject.TryGetPropertyValue(System.String, out System.Text.Yaml.Nodes.YamlNode, out System.Int32) System.Boolean
+System.Text.Yaml.Nodes.YamlObject.WriteTo(System.Text.Yaml.Utf8YamlWriter, System.Text.Yaml.YamlSerializerOptions) virtual System.Void
+System.Text.Yaml.Nodes.YamlObject.ctor(System.Collections.Generic.IEnumerable`1[System.Collections.Generic.KeyValuePair`2[System.String, System.Text.Yaml.Nodes.YamlNode]], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions])
+System.Text.Yaml.Nodes.YamlObject.ctor(System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions])
+System.Text.Yaml.Nodes.YamlValue.Create(System.Boolean, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Byte, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Char, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.DateTime, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.DateTimeOffset, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Decimal, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Double, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Guid, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Int16, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Int32, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Int64, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Boolean], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Byte], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Char], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.DateTimeOffset], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.DateTime], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Decimal], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Double], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Guid], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Int16], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Int32], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Int64], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.SByte], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Single], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.Text.Yaml.YamlElement], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.UInt16], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.UInt32], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Nullable`1[System.UInt64], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.SByte, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Single, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.String, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.Text.Yaml.YamlElement, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.UInt16, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.UInt32, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create(System.UInt64, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create<T>(T, System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.Create<T>(T, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T], System.Nullable`1[System.Text.Yaml.Nodes.YamlNodeOptions]) static System.Text.Yaml.Nodes.YamlValue
+System.Text.Yaml.Nodes.YamlValue.TryGetValue<T>(out T) abstract System.Boolean
+System.Text.Yaml.Schema.YamlSchemaExporter.GetYamlSchemaAsNode(System.Text.Yaml.Serialization.Metadata.YamlTypeInfo, System.Text.Yaml.Schema.YamlSchemaExporterOptions) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.Schema.YamlSchemaExporter.GetYamlSchemaAsNode(System.Text.Yaml.YamlSerializerOptions, System.Type, System.Text.Yaml.Schema.YamlSchemaExporterOptions) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.Schema.YamlSchemaExporterContext.BaseTypeInfo property System.Text.Yaml.Serialization.Metadata.YamlTypeInfo { get; }
+System.Text.Yaml.Schema.YamlSchemaExporterContext.Path property System.ReadOnlySpan`1[System.String] { get; }
+System.Text.Yaml.Schema.YamlSchemaExporterContext.PropertyInfo property System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo { get; }
+System.Text.Yaml.Schema.YamlSchemaExporterContext.TypeInfo property System.Text.Yaml.Serialization.Metadata.YamlTypeInfo { get; }
+System.Text.Yaml.Schema.YamlSchemaExporterOptions.Default property System.Text.Yaml.Schema.YamlSchemaExporterOptions { get; }
+System.Text.Yaml.Schema.YamlSchemaExporterOptions.TransformSchemaNode property System.Func`3[System.Text.Yaml.Schema.YamlSchemaExporterContext, System.Text.Yaml.Nodes.YamlNode, System.Text.Yaml.Nodes.YamlNode] { get; init; }
+System.Text.Yaml.Schema.YamlSchemaExporterOptions.TreatNullObliviousAsNonNullable property System.Boolean { get; init; }
+System.Text.Yaml.Schema.YamlSchemaExporterOptions.ctor()
+System.Text.Yaml.Serialization.IYamlOnDeserialized.OnDeserialized() abstract System.Void
+System.Text.Yaml.Serialization.IYamlOnDeserializing.OnDeserializing() abstract System.Void
+System.Text.Yaml.Serialization.IYamlOnSerialized.OnSerialized() abstract System.Void
+System.Text.Yaml.Serialization.IYamlOnSerializing.OnSerializing() abstract System.Void
+System.Text.Yaml.Serialization.Metadata.DefaultYamlTypeInfoResolver.GetTypeInfo(System.Type, System.Text.Yaml.YamlSerializerOptions) virtual System.Text.Yaml.Serialization.Metadata.YamlTypeInfo
+System.Text.Yaml.Serialization.Metadata.DefaultYamlTypeInfoResolver.Modifiers property System.Collections.Generic.IList`1[System.Action`1[System.Text.Yaml.Serialization.Metadata.YamlTypeInfo]] { get; }
+System.Text.Yaml.Serialization.Metadata.DefaultYamlTypeInfoResolver.ctor()
+System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver.GetTypeInfo(System.Type, System.Text.Yaml.YamlSerializerOptions) abstract System.Text.Yaml.Serialization.Metadata.YamlTypeInfo
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].ElementInfo property System.Text.Yaml.Serialization.Metadata.YamlTypeInfo { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].KeyInfo property System.Text.Yaml.Serialization.Metadata.YamlTypeInfo { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].NumberHandling property System.Text.Yaml.Serialization.YamlNumberHandling { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].ObjectCreator property System.Func`1[TCollection] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].PolymorphismOptions property System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].SerializeHandler property System.Action`2[System.Text.Yaml.Utf8YamlWriter, TCollection] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].TypeClassifierFactory property System.Text.Yaml.Serialization.YamlTypeClassifierFactory { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection].ctor()
+System.Text.Yaml.Serialization.Metadata.YamlDerivedType.DerivedType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlDerivedType.TypeDiscriminator property System.Object { get; }
+System.Text.Yaml.Serialization.Metadata.YamlDerivedType.ctor(System.Type)
+System.Text.Yaml.Serialization.Metadata.YamlDerivedType.ctor(System.Type, System.Int32)
+System.Text.Yaml.Serialization.Metadata.YamlDerivedType.ctor(System.Type, System.String)
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.BooleanConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Boolean] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.ByteArrayConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Byte[]] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.ByteConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Byte] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CharConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Char] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateArrayInfo<TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TElement[]]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TElement[]]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateConcurrentQueueInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateConcurrentStackInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateDictionaryInfo<TCollection, TKey, TValue>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIAsyncEnumerableInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateICollectionInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIDictionaryInfo<TCollection, TKey, TValue>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIDictionaryInfo<TCollection>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIEnumerableInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIEnumerableInfo<TCollection>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIListInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIListInfo<TCollection>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIReadOnlyDictionaryInfo<TCollection, TKey, TValue>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateIReadOnlySetInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateISetInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateImmutableDictionaryInfo<TCollection, TKey, TValue>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection], System.Func`2[System.Collections.Generic.IEnumerable`1[System.Collections.Generic.KeyValuePair`2[TKey, TValue]], TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateImmutableEnumerableInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection], System.Func`2[System.Collections.Generic.IEnumerable`1[TElement], TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateListInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateMemoryInfo<TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[System.Memory`1[TElement]]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[System.Memory`1[TElement]]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateObjectInfo<T>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreatePropertyInfo<T>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T]) static System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateQueueInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateQueueInfo<TCollection>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection], System.Action`2[TCollection, System.Object]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateReadOnlyMemoryInfo<TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[System.ReadOnlyMemory`1[TElement]]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[System.ReadOnlyMemory`1[TElement]]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateStackInfo<TCollection, TElement>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateStackInfo<TCollection>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection], System.Action`2[TCollection, System.Object]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TCollection]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateUnionInfo<T>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T]) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.CreateValueInfo<T>(System.Text.Yaml.YamlSerializerOptions, System.Text.Yaml.Serialization.YamlConverter) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.DateOnlyConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.DateOnly] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.DateTimeConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.DateTime] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.DateTimeOffsetConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.DateTimeOffset] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.DecimalConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Decimal] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.DoubleConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Double] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.GetEnumConverter<T>(System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.Serialization.YamlConverter`1[T]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.GetNullableConverter<T>(System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T]) static System.Text.Yaml.Serialization.YamlConverter`1[System.Nullable`1[T]]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.GetNullableConverter<T>(System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.Serialization.YamlConverter`1[System.Nullable`1[T]]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.GetUnsupportedTypeConverter<T>() static System.Text.Yaml.Serialization.YamlConverter`1[T]
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.GuidConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Guid] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.HalfConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Half] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.Int128Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.Int128] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.Int16Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.Int16] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.Int32Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.Int32] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.Int64Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.Int64] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.MemoryByteConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Memory`1[System.Byte]] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.ObjectConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Object] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.ReadOnlyMemoryByteConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.ReadOnlyMemory`1[System.Byte]] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.SByteConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.SByte] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.SingleConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Single] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.StringConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.String] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.TimeOnlyConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.TimeOnly] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.TimeSpanConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.TimeSpan] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.UInt128Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.UInt128] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.UInt16Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.UInt16] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.UInt32Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.UInt32] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.UInt64Converter property System.Text.Yaml.Serialization.YamlConverter`1[System.UInt64] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.UriConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Uri] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.VersionConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Version] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.YamlArrayConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Text.Yaml.Nodes.YamlArray] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.YamlDocumentConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Text.Yaml.YamlDocument] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.YamlElementConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Text.Yaml.YamlElement] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.YamlNodeConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Text.Yaml.Nodes.YamlNode] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.YamlObjectConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Text.Yaml.Nodes.YamlObject] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlMetadataServices.YamlValueConverter property System.Text.Yaml.Serialization.YamlConverter`1[System.Text.Yaml.Nodes.YamlValue] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].ConstructorAttributeProviderFactory property System.Func`1[System.Reflection.ICustomAttributeProvider] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].ConstructorParameterMetadataInitializer property System.Func`1[System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues[]] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].NumberHandling property System.Text.Yaml.Serialization.YamlNumberHandling { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].ObjectCreator property System.Func`1[T] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].ObjectWithParameterizedConstructorCreator property System.Func`2[System.Object[], T] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].PolymorphismOptions property System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].PropertyMetadataInitializer property System.Func`2[System.Text.Yaml.Serialization.YamlSerializerContext, System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo[]] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].SerializeHandler property System.Action`2[System.Text.Yaml.Utf8YamlWriter, T] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].TypeClassifierFactory property System.Text.Yaml.Serialization.YamlTypeClassifierFactory { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T].ctor()
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.AttributeProvider property System.Reflection.ICustomAttributeProvider { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.DeclaringType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.DefaultValue property System.Object { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.HasDefaultValue property System.Boolean { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.IsMemberInitializer property System.Boolean { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.IsNullable property System.Boolean { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.Name property System.String { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.ParameterType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfo.Position property System.Int32 { get; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.DefaultValue property System.Object { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.HasDefaultValue property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.IsMemberInitializer property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.IsNullable property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.Name property System.String { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.ParameterType property System.Type { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.Position property System.Int32 { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues.ctor()
+System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions.DerivedTypes property System.Collections.Generic.IList`1[System.Text.Yaml.Serialization.Metadata.YamlDerivedType] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions.IgnoreUnrecognizedTypeDiscriminators property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions.TypeDiscriminatorPropertyName property System.String { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions.UnknownDerivedTypeHandling property System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions.ctor()
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.AssociatedParameter property System.Text.Yaml.Serialization.Metadata.YamlParameterInfo { get; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.AttributeProvider property System.Reflection.ICustomAttributeProvider { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.CustomConverter property System.Text.Yaml.Serialization.YamlConverter { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.DeclaringType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.Get property System.Func`2[System.Object, System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.IsExtensionData property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.IsGetNullable property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.IsRequired property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.IsSetNullable property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.Name property System.String { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.NumberHandling property System.Nullable`1[System.Text.Yaml.Serialization.YamlNumberHandling] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.ObjectCreationHandling property System.Nullable`1[System.Text.Yaml.Serialization.YamlObjectCreationHandling] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.Options property System.Text.Yaml.YamlSerializerOptions { get; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.Order property System.Int32 { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.PropertyType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.Set property System.Action`2[System.Object, System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo.ShouldSerialize property System.Func`3[System.Object, System.Object, System.Boolean] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].AttributeProviderFactory property System.Func`1[System.Reflection.ICustomAttributeProvider] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].Converter property System.Text.Yaml.Serialization.YamlConverter`1[T] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].DeclaringType property System.Type { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].Getter property System.Func`2[System.Object, T] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].HasYamlInclude property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].IgnoreCondition property System.Nullable`1[System.Text.Yaml.Serialization.YamlIgnoreCondition] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].IsExtensionData property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].IsProperty property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].IsPublic property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].IsVirtual property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].NumberHandling property System.Nullable`1[System.Text.Yaml.Serialization.YamlNumberHandling] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].PropertyName property System.String { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].PropertyTypeInfo property System.Text.Yaml.Serialization.Metadata.YamlTypeInfo { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].Setter property System.Action`2[System.Object, T] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].YamlPropertyName property System.String { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T].ctor()
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.ConstructorAttributeProvider property System.Reflection.ICustomAttributeProvider { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.Converter property System.Text.Yaml.Serialization.YamlConverter { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.CreateObject property System.Func`1[System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.CreateYamlPropertyInfo(System.Type, System.String) System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.CreateYamlTypeInfo(System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.CreateYamlTypeInfo<T>(System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T]
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.ElementType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.IsReadOnly property System.Boolean { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.KeyType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.Kind property System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.MakeReadOnly() System.Void
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.NumberHandling property System.Nullable`1[System.Text.Yaml.Serialization.YamlNumberHandling] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.OnDeserialized property System.Action`1[System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.OnDeserializing property System.Action`1[System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.OnSerialized property System.Action`1[System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.OnSerializing property System.Action`1[System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.Options property System.Text.Yaml.YamlSerializerOptions { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.OriginatingResolver property System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.PolymorphismOptions property System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.PreferredPropertyObjectCreationHandling property System.Nullable`1[System.Text.Yaml.Serialization.YamlObjectCreationHandling] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.Properties property System.Collections.Generic.IList`1[System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.Type property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.TypeClassifier property System.Text.Yaml.Serialization.YamlTypeClassifier { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.UnionCases property System.Collections.Generic.IList`1[System.Text.Yaml.Serialization.Metadata.YamlUnionCaseInfo] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.UnionConstructor property System.Func`3[System.Type, System.Object, System.Object] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.UnionDeconstructor property System.Func`2[System.Object, System.ValueTuple`2[System.Type, System.Object]] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo.UnmappedMemberHandling property System.Nullable`1[System.Text.Yaml.Serialization.YamlUnmappedMemberHandling] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind.Dictionary field const System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind = 3
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind.Enumerable field const System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind = 2
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind.None field const System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind = 0
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind.Object field const System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind = 1
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind.Union field const System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind = 4
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoResolver.Combine(System.ReadOnlySpan`1[System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver]) static System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoResolver.Combine(System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver[]) static System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfoResolver.WithAddedModifier(System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver, System.Action`1[System.Text.Yaml.Serialization.Metadata.YamlTypeInfo]) static System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T].CreateObject property System.Func`1[T] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T].SerializeHandler property System.Action`2[System.Text.Yaml.Utf8YamlWriter, T] { get; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T].UnionConstructor property System.Func`3[System.Type, System.Object, T] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T].UnionDeconstructor property System.Func`2[T, System.ValueTuple`2[System.Type, System.Object]] { get; set; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionCaseInfo.CaseType property System.Type { get; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionCaseInfo.IsNullable property System.Boolean { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionCaseInfo.ctor(System.Type)
+System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T].TypeClassifier property System.Text.Yaml.Serialization.YamlTypeClassifier { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T].TypeClassifierFactory property System.Text.Yaml.Serialization.YamlTypeClassifierFactory { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T].UnionCases property System.Collections.Generic.IList`1[System.Text.Yaml.Serialization.Metadata.YamlUnionCaseInfo] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T].UnionConstructor property System.Func`3[System.Type, System.Object, T] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T].UnionDeconstructor property System.Func`2[T, System.ValueTuple`2[System.Type, System.Object]] { get; init; }
+System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T].ctor()
+System.Text.Yaml.Serialization.ReferenceHandler.CreateResolver() abstract System.Text.Yaml.Serialization.ReferenceResolver
+System.Text.Yaml.Serialization.ReferenceHandler.IgnoreCycles property System.Text.Yaml.Serialization.ReferenceHandler { get; }
+System.Text.Yaml.Serialization.ReferenceHandler.Preserve property System.Text.Yaml.Serialization.ReferenceHandler { get; }
+System.Text.Yaml.Serialization.ReferenceHandler.ctor()
+System.Text.Yaml.Serialization.ReferenceHandler`1[T].CreateResolver() virtual System.Text.Yaml.Serialization.ReferenceResolver
+System.Text.Yaml.Serialization.ReferenceHandler`1[T].ctor()
+System.Text.Yaml.Serialization.ReferenceResolver.AddReference(System.String, System.Object) abstract System.Void
+System.Text.Yaml.Serialization.ReferenceResolver.GetReference(System.Object, out System.Boolean) abstract System.String
+System.Text.Yaml.Serialization.ReferenceResolver.ResolveReference(System.String) abstract System.Object
+System.Text.Yaml.Serialization.ReferenceResolver.ctor()
+System.Text.Yaml.Serialization.YamlAttribute.ctor()
+System.Text.Yaml.Serialization.YamlConstructorAttribute.ctor()
+System.Text.Yaml.Serialization.YamlConverter.CanConvert(System.Type) abstract System.Boolean
+System.Text.Yaml.Serialization.YamlConverter.Type property System.Type { get; }
+System.Text.Yaml.Serialization.YamlConverterAttribute.ConverterType property System.Type { get; }
+System.Text.Yaml.Serialization.YamlConverterAttribute.CreateConverter(System.Type) virtual System.Text.Yaml.Serialization.YamlConverter
+System.Text.Yaml.Serialization.YamlConverterAttribute.ctor()
+System.Text.Yaml.Serialization.YamlConverterAttribute.ctor(System.Type)
+System.Text.Yaml.Serialization.YamlConverterFactory.CreateConverter(System.Type, System.Text.Yaml.YamlSerializerOptions) abstract System.Text.Yaml.Serialization.YamlConverter
+System.Text.Yaml.Serialization.YamlConverterFactory.Type property System.Type { get; }
+System.Text.Yaml.Serialization.YamlConverterFactory.ctor()
+System.Text.Yaml.Serialization.YamlConverter`1[T].CanConvert(System.Type) virtual System.Boolean
+System.Text.Yaml.Serialization.YamlConverter`1[T].HandleNull property System.Boolean { get; }
+System.Text.Yaml.Serialization.YamlConverter`1[T].Read(ref System.Text.Yaml.Utf8YamlReader, System.Type, System.Text.Yaml.YamlSerializerOptions) abstract T
+System.Text.Yaml.Serialization.YamlConverter`1[T].ReadAsPropertyName(ref System.Text.Yaml.Utf8YamlReader, System.Type, System.Text.Yaml.YamlSerializerOptions) virtual T
+System.Text.Yaml.Serialization.YamlConverter`1[T].Type property System.Type { get; }
+System.Text.Yaml.Serialization.YamlConverter`1[T].Write(System.Text.Yaml.Utf8YamlWriter, T, System.Text.Yaml.YamlSerializerOptions) abstract System.Void
+System.Text.Yaml.Serialization.YamlConverter`1[T].WriteAsPropertyName(System.Text.Yaml.Utf8YamlWriter, T, System.Text.Yaml.YamlSerializerOptions) virtual System.Void
+System.Text.Yaml.Serialization.YamlConverter`1[T].ctor()
+System.Text.Yaml.Serialization.YamlDerivedTypeAttribute.DerivedType property System.Type { get; }
+System.Text.Yaml.Serialization.YamlDerivedTypeAttribute.TypeDiscriminator property System.Object { get; }
+System.Text.Yaml.Serialization.YamlDerivedTypeAttribute.ctor(System.Type)
+System.Text.Yaml.Serialization.YamlDerivedTypeAttribute.ctor(System.Type, System.Int32)
+System.Text.Yaml.Serialization.YamlDerivedTypeAttribute.ctor(System.Type, System.String)
+System.Text.Yaml.Serialization.YamlExtensionDataAttribute.ctor()
+System.Text.Yaml.Serialization.YamlIgnoreAttribute.Condition property System.Text.Yaml.Serialization.YamlIgnoreCondition { get; set; }
+System.Text.Yaml.Serialization.YamlIgnoreAttribute.ctor()
+System.Text.Yaml.Serialization.YamlIgnoreCondition.Always field const System.Text.Yaml.Serialization.YamlIgnoreCondition = 1
+System.Text.Yaml.Serialization.YamlIgnoreCondition.Never field const System.Text.Yaml.Serialization.YamlIgnoreCondition = 0
+System.Text.Yaml.Serialization.YamlIgnoreCondition.WhenReading field const System.Text.Yaml.Serialization.YamlIgnoreCondition = 5
+System.Text.Yaml.Serialization.YamlIgnoreCondition.WhenWriting field const System.Text.Yaml.Serialization.YamlIgnoreCondition = 4
+System.Text.Yaml.Serialization.YamlIgnoreCondition.WhenWritingDefault field const System.Text.Yaml.Serialization.YamlIgnoreCondition = 2
+System.Text.Yaml.Serialization.YamlIgnoreCondition.WhenWritingNull field const System.Text.Yaml.Serialization.YamlIgnoreCondition = 3
+System.Text.Yaml.Serialization.YamlIncludeAttribute.ctor()
+System.Text.Yaml.Serialization.YamlKnownNamingPolicy.CamelCase field const System.Text.Yaml.Serialization.YamlKnownNamingPolicy = 1
+System.Text.Yaml.Serialization.YamlKnownNamingPolicy.KebabCaseLower field const System.Text.Yaml.Serialization.YamlKnownNamingPolicy = 4
+System.Text.Yaml.Serialization.YamlKnownNamingPolicy.KebabCaseUpper field const System.Text.Yaml.Serialization.YamlKnownNamingPolicy = 5
+System.Text.Yaml.Serialization.YamlKnownNamingPolicy.PascalCase field const System.Text.Yaml.Serialization.YamlKnownNamingPolicy = 6
+System.Text.Yaml.Serialization.YamlKnownNamingPolicy.SnakeCaseLower field const System.Text.Yaml.Serialization.YamlKnownNamingPolicy = 2
+System.Text.Yaml.Serialization.YamlKnownNamingPolicy.SnakeCaseUpper field const System.Text.Yaml.Serialization.YamlKnownNamingPolicy = 3
+System.Text.Yaml.Serialization.YamlKnownNamingPolicy.Unspecified field const System.Text.Yaml.Serialization.YamlKnownNamingPolicy = 0
+System.Text.Yaml.Serialization.YamlKnownReferenceHandler.IgnoreCycles field const System.Text.Yaml.Serialization.YamlKnownReferenceHandler = 2
+System.Text.Yaml.Serialization.YamlKnownReferenceHandler.Preserve field const System.Text.Yaml.Serialization.YamlKnownReferenceHandler = 1
+System.Text.Yaml.Serialization.YamlKnownReferenceHandler.Unspecified field const System.Text.Yaml.Serialization.YamlKnownReferenceHandler = 0
+System.Text.Yaml.Serialization.YamlNamingPolicyAttribute.NamingPolicy property System.Text.Yaml.YamlNamingPolicy { get; }
+System.Text.Yaml.Serialization.YamlNamingPolicyAttribute.ctor(System.Text.Yaml.Serialization.YamlKnownNamingPolicy)
+System.Text.Yaml.Serialization.YamlNamingPolicyAttribute.ctor(System.Text.Yaml.YamlNamingPolicy)
+System.Text.Yaml.Serialization.YamlNumberEnumConverter`1[TEnum].CanConvert(System.Type) virtual System.Boolean
+System.Text.Yaml.Serialization.YamlNumberEnumConverter`1[TEnum].CreateConverter(System.Type, System.Text.Yaml.YamlSerializerOptions) virtual System.Text.Yaml.Serialization.YamlConverter
+System.Text.Yaml.Serialization.YamlNumberEnumConverter`1[TEnum].ctor()
+System.Text.Yaml.Serialization.YamlNumberHandling.AllowNamedFloatingPointLiterals field const System.Text.Yaml.Serialization.YamlNumberHandling = 4
+System.Text.Yaml.Serialization.YamlNumberHandling.AllowReadingFromString field const System.Text.Yaml.Serialization.YamlNumberHandling = 1
+System.Text.Yaml.Serialization.YamlNumberHandling.Strict field const System.Text.Yaml.Serialization.YamlNumberHandling = 0
+System.Text.Yaml.Serialization.YamlNumberHandling.WriteAsString field const System.Text.Yaml.Serialization.YamlNumberHandling = 2
+System.Text.Yaml.Serialization.YamlNumberHandlingAttribute.Handling property System.Text.Yaml.Serialization.YamlNumberHandling { get; }
+System.Text.Yaml.Serialization.YamlNumberHandlingAttribute.ctor(System.Text.Yaml.Serialization.YamlNumberHandling)
+System.Text.Yaml.Serialization.YamlObjectCreationHandling.Populate field const System.Text.Yaml.Serialization.YamlObjectCreationHandling = 1
+System.Text.Yaml.Serialization.YamlObjectCreationHandling.Replace field const System.Text.Yaml.Serialization.YamlObjectCreationHandling = 0
+System.Text.Yaml.Serialization.YamlObjectCreationHandlingAttribute.Handling property System.Text.Yaml.Serialization.YamlObjectCreationHandling { get; }
+System.Text.Yaml.Serialization.YamlObjectCreationHandlingAttribute.ctor(System.Text.Yaml.Serialization.YamlObjectCreationHandling)
+System.Text.Yaml.Serialization.YamlPolymorphicAttribute.IgnoreUnrecognizedTypeDiscriminators property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlPolymorphicAttribute.InferClosedTypePolymorphism property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlPolymorphicAttribute.TypeClassifier property System.Type { get; set; }
+System.Text.Yaml.Serialization.YamlPolymorphicAttribute.TypeDiscriminatorPropertyName property System.String { get; set; }
+System.Text.Yaml.Serialization.YamlPolymorphicAttribute.UnknownDerivedTypeHandling property System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling { get; set; }
+System.Text.Yaml.Serialization.YamlPolymorphicAttribute.ctor()
+System.Text.Yaml.Serialization.YamlPropertyNameAttribute.Name property System.String { get; }
+System.Text.Yaml.Serialization.YamlPropertyNameAttribute.ctor(System.String)
+System.Text.Yaml.Serialization.YamlPropertyOrderAttribute.Order property System.Int32 { get; }
+System.Text.Yaml.Serialization.YamlPropertyOrderAttribute.ctor(System.Int32)
+System.Text.Yaml.Serialization.YamlRequiredAttribute.ctor()
+System.Text.Yaml.Serialization.YamlSerializableAttribute.GenerationMode property System.Text.Yaml.Serialization.YamlSourceGenerationMode { get; set; }
+System.Text.Yaml.Serialization.YamlSerializableAttribute.TypeInfoPropertyName property System.String { get; set; }
+System.Text.Yaml.Serialization.YamlSerializableAttribute.ctor(System.Type)
+System.Text.Yaml.Serialization.YamlSerializerContext.GeneratedSerializerOptions property System.Text.Yaml.YamlSerializerOptions { get; }
+System.Text.Yaml.Serialization.YamlSerializerContext.GetTypeInfo(System.Type) abstract System.Text.Yaml.Serialization.Metadata.YamlTypeInfo
+System.Text.Yaml.Serialization.YamlSerializerContext.Options property System.Text.Yaml.YamlSerializerOptions { get; }
+System.Text.Yaml.Serialization.YamlSerializerContext.ctor(System.Text.Yaml.YamlSerializerOptions)
+System.Text.Yaml.Serialization.YamlSourceGenerationMode.Default field const System.Text.Yaml.Serialization.YamlSourceGenerationMode = 0
+System.Text.Yaml.Serialization.YamlSourceGenerationMode.Metadata field const System.Text.Yaml.Serialization.YamlSourceGenerationMode = 1
+System.Text.Yaml.Serialization.YamlSourceGenerationMode.Serialization field const System.Text.Yaml.Serialization.YamlSourceGenerationMode = 2
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.AllowDuplicateProperties property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.AllowOutOfOrderMetadataProperties property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.AllowTrailingCommas property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.Converters property System.Type[] { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.DefaultBufferSize property System.Int32 { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.DefaultIgnoreCondition property System.Text.Yaml.Serialization.YamlIgnoreCondition { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.DictionaryKeyPolicy property System.Text.Yaml.Serialization.YamlKnownNamingPolicy { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.GenerationMode property System.Text.Yaml.Serialization.YamlSourceGenerationMode { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.IgnoreReadOnlyFields property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.IgnoreReadOnlyProperties property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.IncludeFields property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.IndentCharacter property System.Char { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.IndentSize property System.Int32 { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.InferClosedTypePolymorphism property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.MaxDepth property System.Int32 { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.NewLine property System.String { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.NumberHandling property System.Text.Yaml.Serialization.YamlNumberHandling { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.PreferredObjectCreationHandling property System.Text.Yaml.Serialization.YamlObjectCreationHandling { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.PropertyNameCaseInsensitive property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.PropertyNamingPolicy property System.Text.Yaml.Serialization.YamlKnownNamingPolicy { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.ReadCommentHandling property System.Text.Yaml.YamlCommentHandling { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.ReferenceHandler property System.Text.Yaml.Serialization.YamlKnownReferenceHandler { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.RespectNullableAnnotations property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.RespectRequiredConstructorParameters property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.TypeClassifiers property System.Type[] { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.UnknownTypeHandling property System.Text.Yaml.Serialization.YamlUnknownTypeHandling { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.UnmappedMemberHandling property System.Text.Yaml.Serialization.YamlUnmappedMemberHandling { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.UseStringEnumConverter property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.WriteIndented property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.ctor()
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.ctor(System.Text.Yaml.YamlSerializerDefaults)
+System.Text.Yaml.Serialization.YamlStringEnumConverter.CanConvert(System.Type) System.Boolean
+System.Text.Yaml.Serialization.YamlStringEnumConverter.CreateConverter(System.Type, System.Text.Yaml.YamlSerializerOptions) System.Text.Yaml.Serialization.YamlConverter
+System.Text.Yaml.Serialization.YamlStringEnumConverter.ctor()
+System.Text.Yaml.Serialization.YamlStringEnumConverter.ctor(System.Text.Yaml.YamlNamingPolicy, System.Boolean)
+System.Text.Yaml.Serialization.YamlStringEnumConverter`1[TEnum].CanConvert(System.Type) System.Boolean
+System.Text.Yaml.Serialization.YamlStringEnumConverter`1[TEnum].CreateConverter(System.Type, System.Text.Yaml.YamlSerializerOptions) System.Text.Yaml.Serialization.YamlConverter
+System.Text.Yaml.Serialization.YamlStringEnumConverter`1[TEnum].ctor()
+System.Text.Yaml.Serialization.YamlStringEnumConverter`1[TEnum].ctor(System.Text.Yaml.YamlNamingPolicy, System.Boolean)
+System.Text.Yaml.Serialization.YamlStringEnumMemberNameAttribute.Name property System.String { get; }
+System.Text.Yaml.Serialization.YamlStringEnumMemberNameAttribute.ctor(System.String)
+System.Text.Yaml.Serialization.YamlTypeClassifier.BeginInvoke(ref System.Text.Yaml.Utf8YamlReader, System.AsyncCallback, System.Object) virtual System.IAsyncResult
+System.Text.Yaml.Serialization.YamlTypeClassifier.EndInvoke(ref System.Text.Yaml.Utf8YamlReader, System.IAsyncResult) virtual System.Type
+System.Text.Yaml.Serialization.YamlTypeClassifier.Invoke(ref System.Text.Yaml.Utf8YamlReader) virtual System.Type
+System.Text.Yaml.Serialization.YamlTypeClassifier.ctor(System.Object, System.IntPtr)
+System.Text.Yaml.Serialization.YamlTypeClassifierContext.DeclaringType property System.Type { get; }
+System.Text.Yaml.Serialization.YamlTypeClassifierContext.DerivedTypes property System.Collections.Generic.IReadOnlyList`1[System.Text.Yaml.Serialization.Metadata.YamlDerivedType] { get; }
+System.Text.Yaml.Serialization.YamlTypeClassifierContext.Kind property System.Text.Yaml.Serialization.YamlTypeClassifierKind { get; }
+System.Text.Yaml.Serialization.YamlTypeClassifierContext.TypeDiscriminatorPropertyName property System.String { get; }
+System.Text.Yaml.Serialization.YamlTypeClassifierContext.UnionCases property System.Collections.Generic.IReadOnlyList`1[System.Text.Yaml.Serialization.Metadata.YamlUnionCaseInfo] { get; }
+System.Text.Yaml.Serialization.YamlTypeClassifierFactory.CanClassify(System.Text.Yaml.Serialization.YamlTypeClassifierContext) abstract System.Boolean
+System.Text.Yaml.Serialization.YamlTypeClassifierFactory.CreateYamlClassifier(System.Text.Yaml.Serialization.YamlTypeClassifierContext, System.Text.Yaml.YamlSerializerOptions) abstract System.Text.Yaml.Serialization.YamlTypeClassifier
+System.Text.Yaml.Serialization.YamlTypeClassifierFactory.ctor()
+System.Text.Yaml.Serialization.YamlTypeClassifierFactory`1[T].CanClassify(System.Text.Yaml.Serialization.YamlTypeClassifierContext) System.Boolean
+System.Text.Yaml.Serialization.YamlTypeClassifierFactory`1[T].ctor()
+System.Text.Yaml.Serialization.YamlTypeClassifierKind.None field const System.Text.Yaml.Serialization.YamlTypeClassifierKind = 0
+System.Text.Yaml.Serialization.YamlTypeClassifierKind.PolymorphicType field const System.Text.Yaml.Serialization.YamlTypeClassifierKind = 2
+System.Text.Yaml.Serialization.YamlTypeClassifierKind.Union field const System.Text.Yaml.Serialization.YamlTypeClassifierKind = 1
+System.Text.Yaml.Serialization.YamlUnionAttribute.TypeClassifier property System.Type { get; set; }
+System.Text.Yaml.Serialization.YamlUnionAttribute.ctor()
+System.Text.Yaml.Serialization.YamlUnionTypeStructuralClassifier.CanClassify(System.Text.Yaml.Serialization.YamlTypeClassifierContext) virtual System.Boolean
+System.Text.Yaml.Serialization.YamlUnionTypeStructuralClassifier.CreateYamlClassifier(System.Text.Yaml.Serialization.YamlTypeClassifierContext, System.Text.Yaml.YamlSerializerOptions) virtual System.Text.Yaml.Serialization.YamlTypeClassifier
+System.Text.Yaml.Serialization.YamlUnionTypeStructuralClassifier.ctor()
+System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling.FailSerialization field const System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling = 0
+System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling.FallBackToBaseType field const System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling = 1
+System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling.FallBackToNearestAncestor field const System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling = 2
+System.Text.Yaml.Serialization.YamlUnknownTypeHandling.YamlElement field const System.Text.Yaml.Serialization.YamlUnknownTypeHandling = 0
+System.Text.Yaml.Serialization.YamlUnknownTypeHandling.YamlNode field const System.Text.Yaml.Serialization.YamlUnknownTypeHandling = 1
+System.Text.Yaml.Serialization.YamlUnmappedMemberHandling.Disallow field const System.Text.Yaml.Serialization.YamlUnmappedMemberHandling = 1
+System.Text.Yaml.Serialization.YamlUnmappedMemberHandling.Skip field const System.Text.Yaml.Serialization.YamlUnmappedMemberHandling = 0
+System.Text.Yaml.Serialization.YamlUnmappedMemberHandlingAttribute.UnmappedMemberHandling property System.Text.Yaml.Serialization.YamlUnmappedMemberHandling { get; }
+System.Text.Yaml.Serialization.YamlUnmappedMemberHandlingAttribute.ctor(System.Text.Yaml.Serialization.YamlUnmappedMemberHandling)
+System.Text.Yaml.Utf8YamlReader.BytesConsumed property System.Int64 { get; }
+System.Text.Yaml.Utf8YamlReader.CopyString(System.Span`1[System.Byte]) System.Int32
+System.Text.Yaml.Utf8YamlReader.CopyString(System.Span`1[System.Char]) System.Int32
+System.Text.Yaml.Utf8YamlReader.CurrentDepth property System.Int32 { get; }
+System.Text.Yaml.Utf8YamlReader.CurrentState property System.Text.Yaml.YamlReaderState { get; }
+System.Text.Yaml.Utf8YamlReader.GetBoolean() System.Boolean
+System.Text.Yaml.Utf8YamlReader.GetByte() System.Byte
+System.Text.Yaml.Utf8YamlReader.GetBytesFromBase64() System.Byte[]
+System.Text.Yaml.Utf8YamlReader.GetComment() System.String
+System.Text.Yaml.Utf8YamlReader.GetDateTime() System.DateTime
+System.Text.Yaml.Utf8YamlReader.GetDateTimeOffset() System.DateTimeOffset
+System.Text.Yaml.Utf8YamlReader.GetDecimal() System.Decimal
+System.Text.Yaml.Utf8YamlReader.GetDouble() System.Double
+System.Text.Yaml.Utf8YamlReader.GetGuid() System.Guid
+System.Text.Yaml.Utf8YamlReader.GetInt16() System.Int16
+System.Text.Yaml.Utf8YamlReader.GetInt32() System.Int32
+System.Text.Yaml.Utf8YamlReader.GetInt64() System.Int64
+System.Text.Yaml.Utf8YamlReader.GetSByte() System.SByte
+System.Text.Yaml.Utf8YamlReader.GetSingle() System.Single
+System.Text.Yaml.Utf8YamlReader.GetString() System.String
+System.Text.Yaml.Utf8YamlReader.GetUInt16() System.UInt16
+System.Text.Yaml.Utf8YamlReader.GetUInt32() System.UInt32
+System.Text.Yaml.Utf8YamlReader.GetUInt64() System.UInt64
+System.Text.Yaml.Utf8YamlReader.HasValueSequence property System.Boolean { get; }
+System.Text.Yaml.Utf8YamlReader.IsFinalBlock property System.Boolean { get; }
+System.Text.Yaml.Utf8YamlReader.Position property System.SequencePosition { get; }
+System.Text.Yaml.Utf8YamlReader.Read() System.Boolean
+System.Text.Yaml.Utf8YamlReader.Skip() System.Void
+System.Text.Yaml.Utf8YamlReader.TokenStartIndex property System.Int64 { get; }
+System.Text.Yaml.Utf8YamlReader.TokenType property System.Text.Yaml.YamlTokenType { get; }
+System.Text.Yaml.Utf8YamlReader.TryGetByte(out System.Byte) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetBytesFromBase64(out System.Byte[]) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetDateTime(out System.DateTime) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetDateTimeOffset(out System.DateTimeOffset) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetDecimal(out System.Decimal) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetDouble(out System.Double) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetGuid(out System.Guid) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetInt16(out System.Int16) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetInt32(out System.Int32) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetInt64(out System.Int64) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetSByte(out System.SByte) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetSingle(out System.Single) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetUInt16(out System.UInt16) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetUInt32(out System.UInt32) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TryGetUInt64(out System.UInt64) System.Boolean
+System.Text.Yaml.Utf8YamlReader.TrySkip() System.Boolean
+System.Text.Yaml.Utf8YamlReader.ValueIsEscaped property System.Boolean { get; }
+System.Text.Yaml.Utf8YamlReader.ValueSequence property System.Buffers.ReadOnlySequence`1[System.Byte] { get; }
+System.Text.Yaml.Utf8YamlReader.ValueSpan property System.ReadOnlySpan`1[System.Byte] { get; }
+System.Text.Yaml.Utf8YamlReader.ValueTextEquals(System.ReadOnlySpan`1[System.Byte]) System.Boolean
+System.Text.Yaml.Utf8YamlReader.ValueTextEquals(System.ReadOnlySpan`1[System.Char]) System.Boolean
+System.Text.Yaml.Utf8YamlReader.ValueTextEquals(System.String) System.Boolean
+System.Text.Yaml.Utf8YamlReader.ctor(System.Buffers.ReadOnlySequence`1[System.Byte], System.Boolean, System.Text.Yaml.YamlReaderState)
+System.Text.Yaml.Utf8YamlReader.ctor(System.Buffers.ReadOnlySequence`1[System.Byte], System.Text.Yaml.YamlReaderOptions)
+System.Text.Yaml.Utf8YamlReader.ctor(System.ReadOnlySpan`1[System.Byte], System.Boolean, System.Text.Yaml.YamlReaderState)
+System.Text.Yaml.Utf8YamlReader.ctor(System.ReadOnlySpan`1[System.Byte], System.Text.Yaml.YamlReaderOptions)
+System.Text.Yaml.Utf8YamlWriter.BytesCommitted property System.Int64 { get; }
+System.Text.Yaml.Utf8YamlWriter.BytesPending property System.Int32 { get; }
+System.Text.Yaml.Utf8YamlWriter.CurrentDepth property System.Int32 { get; }
+System.Text.Yaml.Utf8YamlWriter.Dispose() System.Void
+System.Text.Yaml.Utf8YamlWriter.DisposeAsync() System.Threading.Tasks.ValueTask
+System.Text.Yaml.Utf8YamlWriter.Flush() System.Void
+System.Text.Yaml.Utf8YamlWriter.FlushAsync(System.Threading.CancellationToken) System.Threading.Tasks.Task
+System.Text.Yaml.Utf8YamlWriter.Options property System.Text.Yaml.YamlWriterOptions { get; }
+System.Text.Yaml.Utf8YamlWriter.Reset() System.Void
+System.Text.Yaml.Utf8YamlWriter.Reset(System.Buffers.IBufferWriter`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.Reset(System.Buffers.IBufferWriter`1[System.Byte], System.Text.Yaml.YamlWriterOptions) System.Void
+System.Text.Yaml.Utf8YamlWriter.Reset(System.IO.Stream) System.Void
+System.Text.Yaml.Utf8YamlWriter.Reset(System.IO.Stream, System.Text.Yaml.YamlWriterOptions) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBase64String(System.ReadOnlySpan`1[System.Byte], System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBase64String(System.ReadOnlySpan`1[System.Char], System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBase64String(System.String, System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBase64String(System.Text.Yaml.YamlEncodedText, System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBase64StringSegment(System.ReadOnlySpan`1[System.Byte], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBase64StringValue(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBoolean(System.ReadOnlySpan`1[System.Byte], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBoolean(System.ReadOnlySpan`1[System.Char], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBoolean(System.String, System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBoolean(System.Text.Yaml.YamlEncodedText, System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteBooleanValue(System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteCommentValue(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteCommentValue(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteCommentValue(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteEndArray() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteEndObject() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNull(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNull(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNull(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNull(System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNullValue() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Byte], System.Decimal) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Byte], System.Double) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Byte], System.Int32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Byte], System.Int64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Byte], System.Single) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Byte], System.UInt32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Byte], System.UInt64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Char], System.Decimal) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Char], System.Double) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Char], System.Int32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Char], System.Int64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Char], System.Single) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Char], System.UInt32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.ReadOnlySpan`1[System.Char], System.UInt64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.String, System.Decimal) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.String, System.Double) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.String, System.Int32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.String, System.Int64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.String, System.Single) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.String, System.UInt32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.String, System.UInt64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.Text.Yaml.YamlEncodedText, System.Decimal) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.Text.Yaml.YamlEncodedText, System.Double) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.Text.Yaml.YamlEncodedText, System.Int32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.Text.Yaml.YamlEncodedText, System.Int64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.Text.Yaml.YamlEncodedText, System.Single) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.Text.Yaml.YamlEncodedText, System.UInt32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumber(System.Text.Yaml.YamlEncodedText, System.UInt64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumberValue(System.Decimal) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumberValue(System.Double) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumberValue(System.Int32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumberValue(System.Int64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumberValue(System.Single) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumberValue(System.UInt32) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteNumberValue(System.UInt64) System.Void
+System.Text.Yaml.Utf8YamlWriter.WritePropertyName(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WritePropertyName(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WritePropertyName(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WritePropertyName(System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteRawValue(System.Buffers.ReadOnlySequence`1[System.Byte], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteRawValue(System.ReadOnlySpan`1[System.Byte], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteRawValue(System.ReadOnlySpan`1[System.Char], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteRawValue(System.String, System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartArray() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartArray(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartArray(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartArray(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartArray(System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartObject() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartObject(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartObject(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartObject(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartObject(System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Byte], System.DateTime) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Byte], System.DateTimeOffset) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Byte], System.Guid) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Byte], System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Byte], System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Byte], System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Byte], System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Char], System.DateTime) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Char], System.DateTimeOffset) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Char], System.Guid) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Char], System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Char], System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Char], System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.ReadOnlySpan`1[System.Char], System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.String, System.DateTime) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.String, System.DateTimeOffset) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.String, System.Guid) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.String, System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.String, System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.String, System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.String, System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.Text.Yaml.YamlEncodedText, System.DateTime) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.Text.Yaml.YamlEncodedText, System.DateTimeOffset) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.Text.Yaml.YamlEncodedText, System.Guid) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.Text.Yaml.YamlEncodedText, System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.Text.Yaml.YamlEncodedText, System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.Text.Yaml.YamlEncodedText, System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteString(System.Text.Yaml.YamlEncodedText, System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValue(System.DateTime) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValue(System.DateTimeOffset) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValue(System.Guid) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValue(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValue(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValue(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValue(System.Text.Yaml.YamlEncodedText) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValueSegment(System.ReadOnlySpan`1[System.Byte], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStringValueSegment(System.ReadOnlySpan`1[System.Char], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.ctor(System.Buffers.IBufferWriter`1[System.Byte], System.Text.Yaml.YamlWriterOptions)
+System.Text.Yaml.Utf8YamlWriter.ctor(System.IO.Stream, System.Text.Yaml.YamlWriterOptions)
+System.Text.Yaml.YamlCommentHandling.Allow field const System.Text.Yaml.YamlCommentHandling = 2
+System.Text.Yaml.YamlCommentHandling.Disallow field const System.Text.Yaml.YamlCommentHandling = 0
+System.Text.Yaml.YamlCommentHandling.Skip field const System.Text.Yaml.YamlCommentHandling = 1
+System.Text.Yaml.YamlDocument.Dispose() System.Void
+System.Text.Yaml.YamlDocument.Parse(System.Buffers.ReadOnlySequence`1[System.Byte], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlDocument.Parse(System.IO.Stream, System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlDocument.Parse(System.ReadOnlyMemory`1[System.Byte], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlDocument.Parse(System.ReadOnlyMemory`1[System.Char], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlDocument.Parse(System.String, System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlDocument.ParseAsync(System.IO.Stream, System.Text.Yaml.YamlDocumentOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task`1[System.Text.Yaml.YamlDocument]
+System.Text.Yaml.YamlDocument.ParseValue(ref System.Text.Yaml.Utf8YamlReader) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlDocument.RootElement property System.Text.Yaml.YamlElement { get; }
+System.Text.Yaml.YamlDocument.TryParseValue(ref System.Text.Yaml.Utf8YamlReader, out System.Text.Yaml.YamlDocument) static System.Boolean
+System.Text.Yaml.YamlDocument.WriteTo(System.Text.Yaml.Utf8YamlWriter) System.Void
+System.Text.Yaml.YamlDocumentOptions.AllowDuplicateProperties property System.Boolean { get; set; }
+System.Text.Yaml.YamlDocumentOptions.AllowTrailingCommas property System.Boolean { get; set; }
+System.Text.Yaml.YamlDocumentOptions.CommentHandling property System.Text.Yaml.YamlCommentHandling { get; set; }
+System.Text.Yaml.YamlDocumentOptions.MaxDepth property System.Int32 { get; set; }
+System.Text.Yaml.YamlElement+ArrayEnumerator.Current property System.Text.Yaml.YamlElement { get; }
+System.Text.Yaml.YamlElement+ArrayEnumerator.Dispose() System.Void
+System.Text.Yaml.YamlElement+ArrayEnumerator.GetEnumerator() System.Text.Yaml.YamlElement+ArrayEnumerator
+System.Text.Yaml.YamlElement+ArrayEnumerator.MoveNext() System.Boolean
+System.Text.Yaml.YamlElement+ArrayEnumerator.Reset() System.Void
+System.Text.Yaml.YamlElement+ObjectEnumerator.Current property System.Text.Yaml.YamlProperty { get; }
+System.Text.Yaml.YamlElement+ObjectEnumerator.Dispose() System.Void
+System.Text.Yaml.YamlElement+ObjectEnumerator.GetEnumerator() System.Text.Yaml.YamlElement+ObjectEnumerator
+System.Text.Yaml.YamlElement+ObjectEnumerator.MoveNext() System.Boolean
+System.Text.Yaml.YamlElement+ObjectEnumerator.Reset() System.Void
+System.Text.Yaml.YamlElement.Clone() System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.DeepEquals(System.Text.Yaml.YamlElement, System.Text.Yaml.YamlElement) static System.Boolean
+System.Text.Yaml.YamlElement.EnumerateArray() System.Text.Yaml.YamlElement+ArrayEnumerator
+System.Text.Yaml.YamlElement.EnumerateObject() System.Text.Yaml.YamlElement+ObjectEnumerator
+System.Text.Yaml.YamlElement.GetArrayLength() System.Int32
+System.Text.Yaml.YamlElement.GetBoolean() System.Boolean
+System.Text.Yaml.YamlElement.GetByte() System.Byte
+System.Text.Yaml.YamlElement.GetBytesFromBase64() System.Byte[]
+System.Text.Yaml.YamlElement.GetDateTime() System.DateTime
+System.Text.Yaml.YamlElement.GetDateTimeOffset() System.DateTimeOffset
+System.Text.Yaml.YamlElement.GetDecimal() System.Decimal
+System.Text.Yaml.YamlElement.GetDouble() System.Double
+System.Text.Yaml.YamlElement.GetGuid() System.Guid
+System.Text.Yaml.YamlElement.GetInt16() System.Int16
+System.Text.Yaml.YamlElement.GetInt32() System.Int32
+System.Text.Yaml.YamlElement.GetInt64() System.Int64
+System.Text.Yaml.YamlElement.GetProperty(System.ReadOnlySpan`1[System.Byte]) System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.GetProperty(System.ReadOnlySpan`1[System.Char]) System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.GetProperty(System.String) System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.GetPropertyCount() System.Int32
+System.Text.Yaml.YamlElement.GetRawText() System.String
+System.Text.Yaml.YamlElement.GetSByte() System.SByte
+System.Text.Yaml.YamlElement.GetSingle() System.Single
+System.Text.Yaml.YamlElement.GetString() System.String
+System.Text.Yaml.YamlElement.GetUInt16() System.UInt16
+System.Text.Yaml.YamlElement.GetUInt32() System.UInt32
+System.Text.Yaml.YamlElement.GetUInt64() System.UInt64
+System.Text.Yaml.YamlElement.Item[System.Int32] property System.Text.Yaml.YamlElement { get; }
+System.Text.Yaml.YamlElement.Parse(System.ReadOnlySpan`1[System.Byte], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.Parse(System.ReadOnlySpan`1[System.Char], System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.Parse(System.String, System.Text.Yaml.YamlDocumentOptions) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.ParseValue(ref System.Text.Yaml.Utf8YamlReader) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlElement.ToString() virtual System.String
+System.Text.Yaml.YamlElement.TryGetByte(out System.Byte) System.Boolean
+System.Text.Yaml.YamlElement.TryGetBytesFromBase64(out System.Byte[]) System.Boolean
+System.Text.Yaml.YamlElement.TryGetDateTime(out System.DateTime) System.Boolean
+System.Text.Yaml.YamlElement.TryGetDateTimeOffset(out System.DateTimeOffset) System.Boolean
+System.Text.Yaml.YamlElement.TryGetDecimal(out System.Decimal) System.Boolean
+System.Text.Yaml.YamlElement.TryGetDouble(out System.Double) System.Boolean
+System.Text.Yaml.YamlElement.TryGetGuid(out System.Guid) System.Boolean
+System.Text.Yaml.YamlElement.TryGetInt16(out System.Int16) System.Boolean
+System.Text.Yaml.YamlElement.TryGetInt32(out System.Int32) System.Boolean
+System.Text.Yaml.YamlElement.TryGetInt64(out System.Int64) System.Boolean
+System.Text.Yaml.YamlElement.TryGetProperty(System.ReadOnlySpan`1[System.Byte], out System.Text.Yaml.YamlElement) System.Boolean
+System.Text.Yaml.YamlElement.TryGetProperty(System.ReadOnlySpan`1[System.Char], out System.Text.Yaml.YamlElement) System.Boolean
+System.Text.Yaml.YamlElement.TryGetProperty(System.String, out System.Text.Yaml.YamlElement) System.Boolean
+System.Text.Yaml.YamlElement.TryGetSByte(out System.SByte) System.Boolean
+System.Text.Yaml.YamlElement.TryGetSingle(out System.Single) System.Boolean
+System.Text.Yaml.YamlElement.TryGetUInt16(out System.UInt16) System.Boolean
+System.Text.Yaml.YamlElement.TryGetUInt32(out System.UInt32) System.Boolean
+System.Text.Yaml.YamlElement.TryGetUInt64(out System.UInt64) System.Boolean
+System.Text.Yaml.YamlElement.TryParseValue(ref System.Text.Yaml.Utf8YamlReader, out System.Nullable`1[System.Text.Yaml.YamlElement]) static System.Boolean
+System.Text.Yaml.YamlElement.ValueEquals(System.ReadOnlySpan`1[System.Byte]) System.Boolean
+System.Text.Yaml.YamlElement.ValueEquals(System.ReadOnlySpan`1[System.Char]) System.Boolean
+System.Text.Yaml.YamlElement.ValueEquals(System.String) System.Boolean
+System.Text.Yaml.YamlElement.ValueKind property System.Text.Yaml.YamlValueKind { get; }
+System.Text.Yaml.YamlElement.WriteTo(System.Text.Yaml.Utf8YamlWriter) System.Void
+System.Text.Yaml.YamlEncodedText.Encode(System.ReadOnlySpan`1[System.Byte], System.Text.Encodings.Web.JavaScriptEncoder) static System.Text.Yaml.YamlEncodedText
+System.Text.Yaml.YamlEncodedText.Encode(System.ReadOnlySpan`1[System.Char], System.Text.Encodings.Web.JavaScriptEncoder) static System.Text.Yaml.YamlEncodedText
+System.Text.Yaml.YamlEncodedText.Encode(System.String, System.Text.Encodings.Web.JavaScriptEncoder) static System.Text.Yaml.YamlEncodedText
+System.Text.Yaml.YamlEncodedText.EncodedUtf8Bytes property System.ReadOnlySpan`1[System.Byte] { get; }
+System.Text.Yaml.YamlEncodedText.Equals(System.Object) virtual System.Boolean
+System.Text.Yaml.YamlEncodedText.Equals(System.Text.Yaml.YamlEncodedText) System.Boolean
+System.Text.Yaml.YamlEncodedText.GetHashCode() virtual System.Int32
+System.Text.Yaml.YamlEncodedText.ToString() virtual System.String
+System.Text.Yaml.YamlEncodedText.Value property System.String { get; }
+System.Text.Yaml.YamlException.BytePositionInLine property System.Nullable`1[System.Int64] { get; }
+System.Text.Yaml.YamlException.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext) virtual System.Void
+System.Text.Yaml.YamlException.LineNumber property System.Nullable`1[System.Int64] { get; }
+System.Text.Yaml.YamlException.Message property System.String { get; }
+System.Text.Yaml.YamlException.Path property System.String { get; }
+System.Text.Yaml.YamlException.ctor()
+System.Text.Yaml.YamlException.ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)
+System.Text.Yaml.YamlException.ctor(System.String)
+System.Text.Yaml.YamlException.ctor(System.String, System.Exception)
+System.Text.Yaml.YamlException.ctor(System.String, System.String, System.Nullable`1[System.Int64], System.Nullable`1[System.Int64])
+System.Text.Yaml.YamlException.ctor(System.String, System.String, System.Nullable`1[System.Int64], System.Nullable`1[System.Int64], System.Exception)
+System.Text.Yaml.YamlNamingPolicy.CamelCase property System.Text.Yaml.YamlNamingPolicy { get; }
+System.Text.Yaml.YamlNamingPolicy.ConvertName(System.String) abstract System.String
+System.Text.Yaml.YamlNamingPolicy.KebabCaseLower property System.Text.Yaml.YamlNamingPolicy { get; }
+System.Text.Yaml.YamlNamingPolicy.KebabCaseUpper property System.Text.Yaml.YamlNamingPolicy { get; }
+System.Text.Yaml.YamlNamingPolicy.PascalCase property System.Text.Yaml.YamlNamingPolicy { get; }
+System.Text.Yaml.YamlNamingPolicy.SnakeCaseLower property System.Text.Yaml.YamlNamingPolicy { get; }
+System.Text.Yaml.YamlNamingPolicy.SnakeCaseUpper property System.Text.Yaml.YamlNamingPolicy { get; }
+System.Text.Yaml.YamlNamingPolicy.ctor()
+System.Text.Yaml.YamlProperty.Name property System.String { get; }
+System.Text.Yaml.YamlProperty.NameEquals(System.ReadOnlySpan`1[System.Byte]) System.Boolean
+System.Text.Yaml.YamlProperty.NameEquals(System.ReadOnlySpan`1[System.Char]) System.Boolean
+System.Text.Yaml.YamlProperty.NameEquals(System.String) System.Boolean
+System.Text.Yaml.YamlProperty.ToString() virtual System.String
+System.Text.Yaml.YamlProperty.Value property System.Text.Yaml.YamlElement { get; }
+System.Text.Yaml.YamlProperty.WriteTo(System.Text.Yaml.Utf8YamlWriter) System.Void
+System.Text.Yaml.YamlReaderOptions.AllowMultipleValues property System.Boolean { get; set; }
+System.Text.Yaml.YamlReaderOptions.AllowTrailingCommas property System.Boolean { get; set; }
+System.Text.Yaml.YamlReaderOptions.CommentHandling property System.Text.Yaml.YamlCommentHandling { get; set; }
+System.Text.Yaml.YamlReaderOptions.MaxDepth property System.Int32 { get; set; }
+System.Text.Yaml.YamlReaderState.Options property System.Text.Yaml.YamlReaderOptions { get; }
+System.Text.Yaml.YamlReaderState.ctor(System.Text.Yaml.YamlReaderOptions)
+System.Text.Yaml.YamlSerializer.Deserialize(System.IO.Stream, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.IO.Stream, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.IO.Stream, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.ReadOnlySpan`1[System.Byte], System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.ReadOnlySpan`1[System.Byte], System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.ReadOnlySpan`1[System.Byte], System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.ReadOnlySpan`1[System.Char], System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.ReadOnlySpan`1[System.Char], System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.ReadOnlySpan`1[System.Char], System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.String, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.String, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.String, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.Nodes.YamlNode, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.Nodes.YamlNode, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.Nodes.YamlNode, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.YamlDocument, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.YamlDocument, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.YamlDocument, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.YamlElement, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.YamlElement, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(System.Text.Yaml.YamlElement, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(ref System.Text.Yaml.Utf8YamlReader, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(ref System.Text.Yaml.Utf8YamlReader, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize(ref System.Text.Yaml.Utf8YamlReader, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Object
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.IO.Stream, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.IO.Stream, System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.ReadOnlySpan`1[System.Byte], System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.ReadOnlySpan`1[System.Byte], System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.ReadOnlySpan`1[System.Char], System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.ReadOnlySpan`1[System.Char], System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.String, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.String, System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.Text.Yaml.Nodes.YamlNode, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.Text.Yaml.Nodes.YamlNode, System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.Text.Yaml.YamlDocument, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.Text.Yaml.YamlDocument, System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.Text.Yaml.YamlElement, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(System.Text.Yaml.YamlElement, System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(ref System.Text.Yaml.Utf8YamlReader, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static TValue
+System.Text.Yaml.YamlSerializer.Deserialize<TValue>(ref System.Text.Yaml.Utf8YamlReader, System.Text.Yaml.YamlSerializerOptions) static TValue
+System.Text.Yaml.YamlSerializer.DeserializeAsync(System.IO.Pipelines.PipeReader, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[System.Object]
+System.Text.Yaml.YamlSerializer.DeserializeAsync(System.IO.Pipelines.PipeReader, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[System.Object]
+System.Text.Yaml.YamlSerializer.DeserializeAsync(System.IO.Pipelines.PipeReader, System.Type, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[System.Object]
+System.Text.Yaml.YamlSerializer.DeserializeAsync(System.IO.Stream, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[System.Object]
+System.Text.Yaml.YamlSerializer.DeserializeAsync(System.IO.Stream, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[System.Object]
+System.Text.Yaml.YamlSerializer.DeserializeAsync(System.IO.Stream, System.Type, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[System.Object]
+System.Text.Yaml.YamlSerializer.DeserializeAsync<TValue>(System.IO.Pipelines.PipeReader, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsync<TValue>(System.IO.Pipelines.PipeReader, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsync<TValue>(System.IO.Stream, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsync<TValue>(System.IO.Stream, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.ValueTask`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Pipelines.PipeReader, System.Boolean, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Pipelines.PipeReader, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Boolean, System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Pipelines.PipeReader, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Pipelines.PipeReader, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Stream, System.Boolean, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Stream, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Boolean, System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Stream, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.DeserializeAsyncEnumerable<TValue>(System.IO.Stream, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Collections.Generic.IAsyncEnumerable`1[TValue]
+System.Text.Yaml.YamlSerializer.IsReflectionEnabledByDefault property System.Boolean { get; }
+System.Text.Yaml.YamlSerializer.Serialize(System.IO.Stream, System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize(System.IO.Stream, System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize(System.IO.Stream, System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize(System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.String
+System.Text.Yaml.YamlSerializer.Serialize(System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.String
+System.Text.Yaml.YamlSerializer.Serialize(System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.String
+System.Text.Yaml.YamlSerializer.Serialize(System.Text.Yaml.Utf8YamlWriter, System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize(System.Text.Yaml.Utf8YamlWriter, System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize(System.Text.Yaml.Utf8YamlWriter, System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize<TValue>(System.IO.Stream, TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize<TValue>(System.IO.Stream, TValue, System.Text.Yaml.YamlSerializerOptions) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize<TValue>(System.Text.Yaml.Utf8YamlWriter, TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize<TValue>(System.Text.Yaml.Utf8YamlWriter, TValue, System.Text.Yaml.YamlSerializerOptions) static System.Void
+System.Text.Yaml.YamlSerializer.Serialize<TValue>(TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static System.String
+System.Text.Yaml.YamlSerializer.Serialize<TValue>(TValue, System.Text.Yaml.YamlSerializerOptions) static System.String
+System.Text.Yaml.YamlSerializer.SerializeAsync(System.IO.Pipelines.PipeWriter, System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync(System.IO.Pipelines.PipeWriter, System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync(System.IO.Pipelines.PipeWriter, System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync(System.IO.Stream, System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync(System.IO.Stream, System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync(System.IO.Stream, System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync<TValue>(System.IO.Pipelines.PipeWriter, TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync<TValue>(System.IO.Pipelines.PipeWriter, TValue, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync<TValue>(System.IO.Stream, TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsync<TValue>(System.IO.Stream, TValue, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsyncEnumerable<TValue>(System.IO.Pipelines.PipeWriter, System.Collections.Generic.IAsyncEnumerable`1[TValue], System.Boolean, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsyncEnumerable<TValue>(System.IO.Pipelines.PipeWriter, System.Collections.Generic.IAsyncEnumerable`1[TValue], System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Boolean, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsyncEnumerable<TValue>(System.IO.Stream, System.Collections.Generic.IAsyncEnumerable`1[TValue], System.Boolean, System.Text.Yaml.YamlSerializerOptions, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeAsyncEnumerable<TValue>(System.IO.Stream, System.Collections.Generic.IAsyncEnumerable`1[TValue], System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue], System.Boolean, System.Threading.CancellationToken) static System.Threading.Tasks.Task
+System.Text.Yaml.YamlSerializer.SerializeToDocument(System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlSerializer.SerializeToDocument(System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlSerializer.SerializeToDocument(System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlSerializer.SerializeToDocument<TValue>(TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlSerializer.SerializeToDocument<TValue>(TValue, System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.YamlDocument
+System.Text.Yaml.YamlSerializer.SerializeToElement(System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlSerializer.SerializeToElement(System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlSerializer.SerializeToElement(System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlSerializer.SerializeToElement<TValue>(TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlSerializer.SerializeToElement<TValue>(TValue, System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlSerializer.SerializeToNode(System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.YamlSerializer.SerializeToNode(System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.YamlSerializer.SerializeToNode(System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.YamlSerializer.SerializeToNode<TValue>(TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.YamlSerializer.SerializeToNode<TValue>(TValue, System.Text.Yaml.YamlSerializerOptions) static System.Text.Yaml.Nodes.YamlNode
+System.Text.Yaml.YamlSerializer.SerializeToUtf8Bytes(System.Object, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) static System.Byte[]
+System.Text.Yaml.YamlSerializer.SerializeToUtf8Bytes(System.Object, System.Type, System.Text.Yaml.Serialization.YamlSerializerContext) static System.Byte[]
+System.Text.Yaml.YamlSerializer.SerializeToUtf8Bytes(System.Object, System.Type, System.Text.Yaml.YamlSerializerOptions) static System.Byte[]
+System.Text.Yaml.YamlSerializer.SerializeToUtf8Bytes<TValue>(TValue, System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[TValue]) static System.Byte[]
+System.Text.Yaml.YamlSerializer.SerializeToUtf8Bytes<TValue>(TValue, System.Text.Yaml.YamlSerializerOptions) static System.Byte[]
+System.Text.Yaml.YamlSerializerDefaults.General field const System.Text.Yaml.YamlSerializerDefaults = 0
+System.Text.Yaml.YamlSerializerDefaults.Strict field const System.Text.Yaml.YamlSerializerDefaults = 2
+System.Text.Yaml.YamlSerializerDefaults.Web field const System.Text.Yaml.YamlSerializerDefaults = 1
+System.Text.Yaml.YamlSerializerOptions.AddContext<TContext>() System.Void
+System.Text.Yaml.YamlSerializerOptions.AllowDuplicateProperties property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.AllowOutOfOrderMetadataProperties property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.AllowTrailingCommas property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.Converters property System.Collections.Generic.IList`1[System.Text.Yaml.Serialization.YamlConverter] { get; }
+System.Text.Yaml.YamlSerializerOptions.Default property System.Text.Yaml.YamlSerializerOptions { get; }
+System.Text.Yaml.YamlSerializerOptions.DefaultBufferSize property System.Int32 { get; set; }
+System.Text.Yaml.YamlSerializerOptions.DefaultIgnoreCondition property System.Text.Yaml.Serialization.YamlIgnoreCondition { get; set; }
+System.Text.Yaml.YamlSerializerOptions.DictionaryKeyPolicy property System.Text.Yaml.YamlNamingPolicy { get; set; }
+System.Text.Yaml.YamlSerializerOptions.Encoder property System.Text.Encodings.Web.JavaScriptEncoder { get; set; }
+System.Text.Yaml.YamlSerializerOptions.GetConverter(System.Type) System.Text.Yaml.Serialization.YamlConverter
+System.Text.Yaml.YamlSerializerOptions.GetTypeInfo(System.Type) System.Text.Yaml.Serialization.Metadata.YamlTypeInfo
+System.Text.Yaml.YamlSerializerOptions.GetTypeInfo<T>() System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T]
+System.Text.Yaml.YamlSerializerOptions.IgnoreNullValues property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IgnoreReadOnlyFields property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IgnoreReadOnlyProperties property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IncludeFields property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IndentCharacter property System.Char { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IndentSize property System.Int32 { get; set; }
+System.Text.Yaml.YamlSerializerOptions.InferClosedTypePolymorphism property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IsReadOnly property System.Boolean { get; }
+System.Text.Yaml.YamlSerializerOptions.MakeReadOnly() System.Void
+System.Text.Yaml.YamlSerializerOptions.MakeReadOnly(System.Boolean) System.Void
+System.Text.Yaml.YamlSerializerOptions.MaxDepth property System.Int32 { get; set; }
+System.Text.Yaml.YamlSerializerOptions.NewLine property System.String { get; set; }
+System.Text.Yaml.YamlSerializerOptions.NumberHandling property System.Text.Yaml.Serialization.YamlNumberHandling { get; set; }
+System.Text.Yaml.YamlSerializerOptions.PreferredObjectCreationHandling property System.Text.Yaml.Serialization.YamlObjectCreationHandling { get; set; }
+System.Text.Yaml.YamlSerializerOptions.PropertyNameCaseInsensitive property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.PropertyNamingPolicy property System.Text.Yaml.YamlNamingPolicy { get; set; }
+System.Text.Yaml.YamlSerializerOptions.ReadCommentHandling property System.Text.Yaml.YamlCommentHandling { get; set; }
+System.Text.Yaml.YamlSerializerOptions.ReferenceHandler property System.Text.Yaml.Serialization.ReferenceHandler { get; set; }
+System.Text.Yaml.YamlSerializerOptions.RespectNullableAnnotations property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.RespectRequiredConstructorParameters property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.Strict property System.Text.Yaml.YamlSerializerOptions { get; }
+System.Text.Yaml.YamlSerializerOptions.TryGetTypeInfo(System.Type, out System.Text.Yaml.Serialization.Metadata.YamlTypeInfo) System.Boolean
+System.Text.Yaml.YamlSerializerOptions.TryGetTypeInfo<T>(out System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T]) System.Boolean
+System.Text.Yaml.YamlSerializerOptions.TypeClassifiers property System.Collections.Generic.IList`1[System.Text.Yaml.Serialization.YamlTypeClassifierFactory] { get; }
+System.Text.Yaml.YamlSerializerOptions.TypeInfoResolver property System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver { get; set; }
+System.Text.Yaml.YamlSerializerOptions.TypeInfoResolverChain property System.Collections.Generic.IList`1[System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver] { get; }
+System.Text.Yaml.YamlSerializerOptions.UnknownTypeHandling property System.Text.Yaml.Serialization.YamlUnknownTypeHandling { get; set; }
+System.Text.Yaml.YamlSerializerOptions.UnmappedMemberHandling property System.Text.Yaml.Serialization.YamlUnmappedMemberHandling { get; set; }
+System.Text.Yaml.YamlSerializerOptions.Web property System.Text.Yaml.YamlSerializerOptions { get; }
+System.Text.Yaml.YamlSerializerOptions.WriteIndented property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.ctor()
+System.Text.Yaml.YamlSerializerOptions.ctor(System.Text.Yaml.YamlSerializerDefaults)
+System.Text.Yaml.YamlSerializerOptions.ctor(System.Text.Yaml.YamlSerializerOptions)
+System.Text.Yaml.YamlTokenType.Comment field const System.Text.Yaml.YamlTokenType = 6
+System.Text.Yaml.YamlTokenType.EndArray field const System.Text.Yaml.YamlTokenType = 4
+System.Text.Yaml.YamlTokenType.EndObject field const System.Text.Yaml.YamlTokenType = 2
+System.Text.Yaml.YamlTokenType.False field const System.Text.Yaml.YamlTokenType = 10
+System.Text.Yaml.YamlTokenType.None field const System.Text.Yaml.YamlTokenType = 0
+System.Text.Yaml.YamlTokenType.Null field const System.Text.Yaml.YamlTokenType = 11
+System.Text.Yaml.YamlTokenType.Number field const System.Text.Yaml.YamlTokenType = 8
+System.Text.Yaml.YamlTokenType.PropertyName field const System.Text.Yaml.YamlTokenType = 5
+System.Text.Yaml.YamlTokenType.StartArray field const System.Text.Yaml.YamlTokenType = 3
+System.Text.Yaml.YamlTokenType.StartObject field const System.Text.Yaml.YamlTokenType = 1
+System.Text.Yaml.YamlTokenType.String field const System.Text.Yaml.YamlTokenType = 7
+System.Text.Yaml.YamlTokenType.True field const System.Text.Yaml.YamlTokenType = 9
+System.Text.Yaml.YamlValueKind.Array field const System.Text.Yaml.YamlValueKind = 2
+System.Text.Yaml.YamlValueKind.False field const System.Text.Yaml.YamlValueKind = 6
+System.Text.Yaml.YamlValueKind.Null field const System.Text.Yaml.YamlValueKind = 7
+System.Text.Yaml.YamlValueKind.Number field const System.Text.Yaml.YamlValueKind = 4
+System.Text.Yaml.YamlValueKind.Object field const System.Text.Yaml.YamlValueKind = 1
+System.Text.Yaml.YamlValueKind.String field const System.Text.Yaml.YamlValueKind = 3
+System.Text.Yaml.YamlValueKind.True field const System.Text.Yaml.YamlValueKind = 5
+System.Text.Yaml.YamlValueKind.Undefined field const System.Text.Yaml.YamlValueKind = 0
+System.Text.Yaml.YamlWriterOptions.Encoder property System.Text.Encodings.Web.JavaScriptEncoder { get; set; }
+System.Text.Yaml.YamlWriterOptions.IndentCharacter property System.Char { get; set; }
+System.Text.Yaml.YamlWriterOptions.IndentSize property System.Int32 { get; set; }
+System.Text.Yaml.YamlWriterOptions.Indented property System.Boolean { get; set; }
+System.Text.Yaml.YamlWriterOptions.MaxDepth property System.Int32 { get; set; }
+System.Text.Yaml.YamlWriterOptions.NewLine property System.String { get; set; }
+System.Text.Yaml.YamlWriterOptions.SkipValidation property System.Boolean { get; set; }
+abstract class System.Text.Yaml.Nodes.YamlNode
+abstract class System.Text.Yaml.Nodes.YamlValue : System.Text.Yaml.Nodes.YamlNode
+abstract class System.Text.Yaml.Serialization.Metadata.YamlParameterInfo
+abstract class System.Text.Yaml.Serialization.Metadata.YamlPropertyInfo
+abstract class System.Text.Yaml.Serialization.Metadata.YamlTypeInfo
+abstract class System.Text.Yaml.Serialization.ReferenceHandler
+abstract class System.Text.Yaml.Serialization.ReferenceResolver
+abstract class System.Text.Yaml.Serialization.YamlAttribute : System.Attribute
+abstract class System.Text.Yaml.Serialization.YamlConverter
+abstract class System.Text.Yaml.Serialization.YamlConverterFactory : System.Text.Yaml.Serialization.YamlConverter
+abstract class System.Text.Yaml.Serialization.YamlConverter`1[T] : System.Text.Yaml.Serialization.YamlConverter
+abstract class System.Text.Yaml.Serialization.YamlSerializerContext : System.Text.Yaml.Serialization.Metadata.IBuiltInYamlTypeInfoResolver, System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver
+abstract class System.Text.Yaml.Serialization.YamlTypeClassifierFactory
+abstract class System.Text.Yaml.Serialization.YamlTypeClassifierFactory`1[T] : System.Text.Yaml.Serialization.YamlTypeClassifierFactory
+abstract class System.Text.Yaml.YamlNamingPolicy
+class System.Text.Yaml.Serialization.Metadata.DefaultYamlTypeInfoResolver : System.Text.Yaml.Serialization.Metadata.IBuiltInYamlTypeInfoResolver, System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver
+class System.Text.Yaml.Serialization.Metadata.YamlPolymorphismOptions
+class System.Text.Yaml.Serialization.YamlConverterAttribute : System.Text.Yaml.Serialization.YamlAttribute
+class System.Text.Yaml.Serialization.YamlDerivedTypeAttribute : System.Text.Yaml.Serialization.YamlAttribute
+class System.Text.Yaml.Serialization.YamlNamingPolicyAttribute : System.Text.Yaml.Serialization.YamlAttribute
+class System.Text.Yaml.Serialization.YamlStringEnumConverter : System.Text.Yaml.Serialization.YamlConverterFactory
+class System.Text.Yaml.Serialization.YamlStringEnumConverter`1[TEnum] : System.Text.Yaml.Serialization.YamlConverterFactory
+class System.Text.Yaml.Serialization.YamlStringEnumMemberNameAttribute : System.Attribute
+class System.Text.Yaml.Serialization.YamlUnionTypeStructuralClassifier : System.Text.Yaml.Serialization.YamlTypeClassifierFactory
+class System.Text.Yaml.Serialization.YamlUnmappedMemberHandlingAttribute : System.Text.Yaml.Serialization.YamlAttribute
+class System.Text.Yaml.YamlException : System.Exception
+enum System.Text.Yaml.Serialization.Metadata.YamlTypeInfoKind
+enum System.Text.Yaml.Serialization.YamlIgnoreCondition
+enum System.Text.Yaml.Serialization.YamlKnownNamingPolicy
+enum System.Text.Yaml.Serialization.YamlKnownReferenceHandler
+enum System.Text.Yaml.Serialization.YamlNumberHandling
+enum System.Text.Yaml.Serialization.YamlObjectCreationHandling
+enum System.Text.Yaml.Serialization.YamlSourceGenerationMode
+enum System.Text.Yaml.Serialization.YamlTypeClassifierKind
+enum System.Text.Yaml.Serialization.YamlUnknownDerivedTypeHandling
+enum System.Text.Yaml.Serialization.YamlUnknownTypeHandling
+enum System.Text.Yaml.Serialization.YamlUnmappedMemberHandling
+enum System.Text.Yaml.YamlCommentHandling
+enum System.Text.Yaml.YamlSerializerDefaults
+enum System.Text.Yaml.YamlTokenType
+enum System.Text.Yaml.YamlValueKind
+interface System.Text.Yaml.Serialization.IYamlOnDeserialized
+interface System.Text.Yaml.Serialization.IYamlOnDeserializing
+interface System.Text.Yaml.Serialization.IYamlOnSerialized
+interface System.Text.Yaml.Serialization.IYamlOnSerializing
+interface System.Text.Yaml.Serialization.Metadata.IYamlTypeInfoResolver
+sealed class System.Text.Yaml.Nodes.YamlArray : System.Text.Yaml.Nodes.YamlNode, System.Collections.Generic.ICollection`1[System.Text.Yaml.Nodes.YamlNode], System.Collections.Generic.IEnumerable`1[System.Text.Yaml.Nodes.YamlNode], System.Collections.Generic.IList`1[System.Text.Yaml.Nodes.YamlNode], System.Collections.IEnumerable
+sealed class System.Text.Yaml.Nodes.YamlObject : System.Text.Yaml.Nodes.YamlNode, System.Collections.Generic.ICollection`1[System.Collections.Generic.KeyValuePair`2[System.String, System.Text.Yaml.Nodes.YamlNode]], System.Collections.Generic.IDictionary`2[System.String, System.Text.Yaml.Nodes.YamlNode], System.Collections.Generic.IEnumerable`1[System.Collections.Generic.KeyValuePair`2[System.String, System.Text.Yaml.Nodes.YamlNode]], System.Collections.Generic.IList`1[System.Collections.Generic.KeyValuePair`2[System.String, System.Text.Yaml.Nodes.YamlNode]], System.Collections.IEnumerable
+sealed class System.Text.Yaml.Schema.YamlSchemaExporterOptions
+sealed class System.Text.Yaml.Serialization.Metadata.YamlCollectionInfoValues`1[TCollection]
+sealed class System.Text.Yaml.Serialization.Metadata.YamlObjectInfoValues`1[T]
+sealed class System.Text.Yaml.Serialization.Metadata.YamlParameterInfoValues
+sealed class System.Text.Yaml.Serialization.Metadata.YamlPropertyInfoValues`1[T]
+sealed class System.Text.Yaml.Serialization.Metadata.YamlTypeInfo`1[T] : System.Text.Yaml.Serialization.Metadata.YamlTypeInfo
+sealed class System.Text.Yaml.Serialization.Metadata.YamlUnionCaseInfo
+sealed class System.Text.Yaml.Serialization.Metadata.YamlUnionInfoValues`1[T]
+sealed class System.Text.Yaml.Serialization.ReferenceHandler`1[T] : System.Text.Yaml.Serialization.ReferenceHandler
+sealed class System.Text.Yaml.Serialization.YamlConstructorAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlExtensionDataAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlIgnoreAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlIncludeAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlNumberEnumConverter`1[TEnum] : System.Text.Yaml.Serialization.YamlConverterFactory
+sealed class System.Text.Yaml.Serialization.YamlNumberHandlingAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlObjectCreationHandlingAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlPolymorphicAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlPropertyNameAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlPropertyOrderAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlRequiredAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlSerializableAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Serialization.YamlTypeClassifierContext
+sealed class System.Text.Yaml.Serialization.YamlUnionAttribute : System.Text.Yaml.Serialization.YamlAttribute
+sealed class System.Text.Yaml.Utf8YamlWriter : System.IAsyncDisposable, System.IDisposable
+sealed class System.Text.Yaml.YamlDocument : System.IDisposable
+sealed class System.Text.Yaml.YamlSerializerOptions
+sealed delegate System.Text.Yaml.Serialization.YamlTypeClassifier : System.MulticastDelegate
+static class System.Runtime.InteropServices.YamlMarshal
+static class System.Text.Yaml.Schema.YamlSchemaExporter
+static class System.Text.Yaml.Serialization.Metadata.YamlMetadataServices
+static class System.Text.Yaml.Serialization.Metadata.YamlTypeInfoResolver
+static class System.Text.Yaml.YamlSerializer
+struct System.Text.Yaml.Nodes.YamlNodeOptions
+struct System.Text.Yaml.Schema.YamlSchemaExporterContext
+struct System.Text.Yaml.Serialization.Metadata.YamlDerivedType
+struct System.Text.Yaml.Utf8YamlReader
+struct System.Text.Yaml.YamlDocumentOptions
+struct System.Text.Yaml.YamlElement
+struct System.Text.Yaml.YamlElement+ArrayEnumerator : System.Collections.Generic.IEnumerable`1[System.Text.Yaml.YamlElement], System.Collections.Generic.IEnumerator`1[System.Text.Yaml.YamlElement], System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+struct System.Text.Yaml.YamlElement+ObjectEnumerator : System.Collections.Generic.IEnumerable`1[System.Text.Yaml.YamlProperty], System.Collections.Generic.IEnumerator`1[System.Text.Yaml.YamlProperty], System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+struct System.Text.Yaml.YamlEncodedText : System.IEquatable`1[System.Text.Yaml.YamlEncodedText]
+struct System.Text.Yaml.YamlProperty
+struct System.Text.Yaml.YamlReaderOptions
+struct System.Text.Yaml.YamlReaderState
+struct System.Text.Yaml.YamlWriterOptions

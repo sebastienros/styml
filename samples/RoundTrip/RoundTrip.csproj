@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The consumer sample (samples/RoundTrip/Program.cs). By default it references the projects. With
+       -p:StymlPackageVersion=<version> it references the packed Styml package from artifacts/packages instead, on
+       net11.0, net10.0 and net481 (the netstandard2.0 asset), as a consumer would: the generator comes from the
+       package's analyzers folder and the feature-switch mapping from its buildTransitive targets. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <TargetFramework Condition="'$(StymlPackageVersion)' == ''">$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks Condition="'$(StymlPackageVersion)' != ''">$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetFrameworkCurrent)</TargetFrameworks>
+    <RestoreAdditionalProjectSources Condition="'$(StymlPackageVersion)' != ''">$(RepoRoot)artifacts/packages</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="IsExternalInit.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(StymlPackageVersion)' == ''">
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <!-- A package consumer gets the analyzer from analyzers/dotnet/cs; a ProjectReference needs it explicitly. -->
+    <ProjectReference Include="$(RepoRoot)src\Styml.SourceGeneration\Styml.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(StymlPackageVersion)' != ''">
+    <PackageReference Include="Styml" VersionOverride="$(StymlPackageVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

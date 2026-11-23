@@ -1,0 +1,14 @@
+# The public API added by M3a, on every target.
+# Alias token (D5), YamlScalarStyle, and the reader's ScalarStyle, Anchor, Tag and IsFlow.
+System.Text.Yaml.Utf8YamlReader.Anchor property System.ReadOnlySpan`1[System.Byte] { get; }
+System.Text.Yaml.Utf8YamlReader.IsFlow property System.Boolean { get; }
+System.Text.Yaml.Utf8YamlReader.ScalarStyle property System.Text.Yaml.YamlScalarStyle { get; }
+System.Text.Yaml.Utf8YamlReader.Tag property System.ReadOnlySpan`1[System.Byte] { get; }
+System.Text.Yaml.YamlScalarStyle.DoubleQuoted field const System.Text.Yaml.YamlScalarStyle = 3
+System.Text.Yaml.YamlScalarStyle.Folded field const System.Text.Yaml.YamlScalarStyle = 5
+System.Text.Yaml.YamlScalarStyle.Literal field const System.Text.Yaml.YamlScalarStyle = 4
+System.Text.Yaml.YamlScalarStyle.None field const System.Text.Yaml.YamlScalarStyle = 0
+System.Text.Yaml.YamlScalarStyle.Plain field const System.Text.Yaml.YamlScalarStyle = 1
+System.Text.Yaml.YamlScalarStyle.SingleQuoted field const System.Text.Yaml.YamlScalarStyle = 2
+System.Text.Yaml.YamlTokenType.Alias field const System.Text.Yaml.YamlTokenType = 12
+enum System.Text.Yaml.YamlScalarStyle

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Feature parity with YamlDotNet and SharpYaml (docs/feature-parity.md, decision D9): every row of the two
+       tables is asserted for the three libraries. A failing assertion names the row to update. .NET only: both
+       libraries are pinned here and not needed on .NET Framework. -->
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious)</TargetFrameworks>
+    <AssemblyName>Styml.Parity.Tests</AssemblyName>
+    <RootNamespace>System.Text.Yaml.Parity.Tests</RootNamespace>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The M6a documents (bench/corpus), for the cross-read of block output (M4a,
+         oracle 3). -->
+    <None Include="..\..\bench\corpus\*.json" LinkBase="BenchCorpus" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="SharpYaml" />
+  </ItemGroup>
+</Project>

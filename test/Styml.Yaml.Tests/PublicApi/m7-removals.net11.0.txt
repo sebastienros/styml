@@ -1,0 +1,3 @@
+# M7c: the formatter-based serialization members, obsolete on .NET (SYSLIB0051), removed there; .NET Standard keeps them.
+System.Text.Yaml.YamlException.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext) virtual System.Void
+System.Text.Yaml.YamlException.ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)

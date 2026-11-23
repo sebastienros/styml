@@ -1,0 +1,57 @@
+<Project>
+  <!-- Versions come from dotnet/runtime v11.0.0 (eng/Versions.props, eng/Version.Details.props) and, for xunit,
+       from Microsoft.DotNet.Arcade.Sdk 11.0.0-beta.26465.108 tools/DefaultVersions.props. Each was confirmed by
+       an actual restore. -->
+  <ItemGroup Label="Library (netstandard2.0 only)">
+    <PackageVersion Include="System.Text.Encodings.Web" Version="11.0.0" />
+    <PackageVersion Include="System.IO.Pipelines" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="11.0.0" />
+    <PackageVersion Include="System.Buffers" Version="4.6.1" />
+    <PackageVersion Include="System.Memory" Version="4.6.3" />
+    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageVersion Include="System.ValueTuple" Version="4.6.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Build tooling">
+    <!-- Source generator Roslyn API floor (upstream: MicrosoftCodeAnalysisVersion_4_4). -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.4.0" />
+    <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
+  </ItemGroup>
+
+  <ItemGroup Label="Tests">
+    <PackageVersion Include="xunit.core" Version="2.9.3" />
+    <PackageVersion Include="xunit.assert" Version="2.9.3" />
+    <PackageVersion Include="xunit.analyzers" Version="2.0.0-pre.51" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0-pre.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="Microsoft.DotNet.XUnitAssert" Version="3.2.2-beta.26257.113" />
+    <PackageVersion Include="Microsoft.DotNet.XUnitExtensions" Version="11.0.0-beta.26465.108" />
+    <PackageVersion Include="Microsoft.DotNet.RemoteExecutor" Version="11.0.0-beta.26465.108" />
+    <!-- RemoteExecutor asks for Microsoft.Diagnostics.Runtime >= 4.1.737102 and Microsoft.Diagnostics.NETCore.Client
+         >= 0.2.740901, which neither nuget.org nor dotnet-eng serves (NU1603); these are the versions they resolve to. -->
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="4.1.745802" />
+    <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.745401" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageVersion Include="JsonSchema.Net" Version="7.0.2" />
+    <!-- Generator unit tests (upstream: MicrosoftCodeAnalysisVersion_4_8). -->
+    <PackageVersion Include="Microsoft.CodeAnalysis" Version="4.8.0" />
+    <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <!-- net481 test legs: replace upstream's ProjectReferences to live-built libraries. -->
+    <PackageVersion Include="System.Collections.Immutable" Version="11.0.0" />
+    <PackageVersion Include="System.Linq.AsyncEnumerable" Version="11.0.0" />
+    <PackageVersion Include="System.Reflection.Metadata" Version="11.0.0" />
+    <PackageVersion Include="System.Composition" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Primitives" Version="11.0.0" />
+    <!-- Styml.Yaml.Tests on net481: the real System.Text.Json is the JSON-equivalence oracle. -->
+    <PackageVersion Include="System.Text.Json" Version="11.0.0" />
+    <!-- Feature parity tests (test/Styml.Parity.Tests, docs/feature-parity.md): the measured versions. -->
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
+    <PackageVersion Include="SharpYaml" Version="3.17.0" />
+  </ItemGroup>
+  <ItemGroup Label="Benchmarks (bench/, docs/benchmarks)">
+    <PackageVersion Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
+    <PackageVersion Include="VYaml" Version="1.6.1" />
+    <PackageVersion Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="18.1.0" />
+  </ItemGroup>
+</Project>

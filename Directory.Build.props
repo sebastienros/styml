@@ -1,0 +1,52 @@
+<Project>
+  <!-- Plain-SDK reproduction of the dotnet/runtime build settings that System.Text.Json relies on
+       (dotnet/runtime Directory.Build.props, src/libraries/Directory.Build.props). No Arcade. -->
+
+  <PropertyGroup>
+    <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)'))</RepoRoot>
+
+    <!-- Upstream path properties, repointed at the vendored copies (see UPSTREAM.md). -->
+    <CommonPath>$(RepoRoot)src/Vendored/Common/</CommonPath>
+    <CoreLibSharedDir>$(RepoRoot)src/Vendored/CoreLib/</CoreLibSharedDir>
+    <VendoredSystemCollectionsDir>$(RepoRoot)src/Vendored/System.Collections/</VendoredSystemCollectionsDir>
+    <CommonTestPath>$(RepoRoot)test/Vendored/</CommonTestPath>
+    <TestShimsPath>$(RepoRoot)test/TestShims/</TestShimsPath>
+
+    <!-- Same target frameworks as upstream at v11.0.0 (NetCoreAppCurrent / NetCoreAppPrevious / NetFrameworkCurrent). -->
+    <NetCoreAppCurrent>net11.0</NetCoreAppCurrent>
+    <NetCoreAppPrevious>net10.0</NetCoreAppPrevious>
+    <NetFrameworkCurrent>net481</NetFrameworkCurrent>
+
+    <IsTestProject Condition="'$(IsTestProject)' == '' and $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
+    <IsTestSupportProject Condition="'$(IsTestSupportProject)' == '' and $(MSBuildProjectDirectory.Contains('$([System.IO.Path]::DirectorySeparatorChar)test$([System.IO.Path]::DirectorySeparatorChar)'))">true</IsTestSupportProject>
+    <IsTestSupportProject Condition="'$(IsTestProject)' == 'true'">false</IsTestSupportProject>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- The compiler settings System.Text.Json builds with in dotnet/runtime. -->
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <LangVersion>preview</LangVersion>
+    <Features>strict;nullablePublicOnly</Features>
+    <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">
+    <Nullable>annotations</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0050;SYSLIB0051;IL2121</NoWarn>
+    <!-- xUnit1051 recommends TestContext.Current.CancellationToken (xunit v3); upstream suppresses it too. -->
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
+</Project>

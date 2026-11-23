@@ -1,0 +1,113 @@
+# Styml upstream import manifest.
+# Format: <kind> <upstream path at the tag> <destination in this repo>
+#   dir  : whole directory (minus entries in exclude.txt)
+#   file : single file
+# Upstream paths are relative to the dotnet/runtime repo root; destinations to this repo root.
+
+# --- System.Text.Json itself -----------------------------------------------------------------
+dir  src/libraries/System.Text.Json/src                                   src/Styml
+dir  src/libraries/System.Text.Json/gen                                   src/Styml.SourceGeneration
+dir  src/libraries/System.Text.Json/Common                                src/Common
+dir  src/libraries/System.Text.Json/tests/Common                          test/Common
+dir  src/libraries/System.Text.Json/tests/System.Text.Json.Tests          test/Styml.Tests
+dir  src/libraries/System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests       test/Styml.SourceGeneration.Tests
+dir  src/libraries/System.Text.Json/tests/System.Text.Json.SourceGeneration.Unit.Tests  test/Styml.SourceGeneration.Unit.Tests
+dir  src/libraries/System.Text.Json/tests/System.Text.Json.SourceGeneration.TestLibrary test/Styml.SourceGeneration.TestLibrary
+dir  src/libraries/System.Text.Json/docs                                  docs/upstream
+file src/libraries/System.Text.Json/README.md                             docs/upstream/README.md
+
+# --- Licensing -------------------------------------------------------------------------------
+file LICENSE.TXT                                                          LICENSE
+file THIRD-PARTY-NOTICES.TXT                                              docs/upstream/THIRD-PARTY-NOTICES.TXT
+
+# --- $(CommonPath) = src/libraries/Common/src : linked by the csprojs ---------------------------
+file src/libraries/Common/src/Polyfills/ArrayPolyfills.cs                 src/Vendored/Common/Polyfills/ArrayPolyfills.cs
+file src/libraries/Common/src/Polyfills/BitArrayPolyfills.cs              src/Vendored/Common/Polyfills/BitArrayPolyfills.cs
+file src/libraries/Common/src/Polyfills/BitConverterPolyfills.cs          src/Vendored/Common/Polyfills/BitConverterPolyfills.cs
+file src/libraries/Common/src/Polyfills/DictionaryPolyfills.cs            src/Vendored/Common/Polyfills/DictionaryPolyfills.cs
+file src/libraries/Common/src/Polyfills/DoublePolyfills.cs                src/Vendored/Common/Polyfills/DoublePolyfills.cs
+file src/libraries/Common/src/Polyfills/ReflectionPolyfills.cs            src/Vendored/Common/Polyfills/ReflectionPolyfills.cs
+file src/libraries/Common/src/Polyfills/RuntimeHelpersPolyfills.cs        src/Vendored/Common/Polyfills/RuntimeHelpersPolyfills.cs
+file src/libraries/Common/src/Polyfills/SinglePolyfills.cs                src/Vendored/Common/Polyfills/SinglePolyfills.cs
+file src/libraries/Common/src/Polyfills/StackPolyfills.cs                 src/Vendored/Common/Polyfills/StackPolyfills.cs
+file src/libraries/Common/src/Polyfills/StopwatchPolyfills.cs             src/Vendored/Common/Polyfills/StopwatchPolyfills.cs
+file src/libraries/Common/src/Polyfills/StreamMemoryPolyfills.cs          src/Vendored/Common/Polyfills/StreamMemoryPolyfills.cs
+file src/libraries/Common/src/Polyfills/StringBuilderPolyfills.cs         src/Vendored/Common/Polyfills/StringBuilderPolyfills.cs
+file src/libraries/Common/src/System/Buffers/ArrayBufferWriter.cs         src/Vendored/Common/System/Buffers/ArrayBufferWriter.cs
+file src/libraries/Common/src/System/Collections/Generic/EnumerableHelpers.cs  src/Vendored/Common/System/Collections/Generic/EnumerableHelpers.cs
+file src/libraries/Common/src/System/Collections/Generic/ValueListBuilder.cs   src/Vendored/Common/System/Collections/Generic/ValueListBuilder.cs
+file src/libraries/Common/src/System/Collections/Generic/ValueListBuilder.Pop.cs src/Vendored/Common/System/Collections/Generic/ValueListBuilder.Pop.cs
+file src/libraries/Common/src/System/HexConverter.cs                      src/Vendored/Common/System/HexConverter.cs
+file src/libraries/Common/src/System/Net/ArrayBuffer.cs                   src/Vendored/Common/System/Net/ArrayBuffer.cs
+file src/libraries/Common/src/System/Obsoletions.cs                       src/Vendored/Common/System/Obsoletions.cs
+file src/libraries/Common/src/System/Text/Json/PooledByteBufferWriter.cs  src/Vendored/Common/System/Text/Json/PooledByteBufferWriter.cs
+file src/libraries/Common/src/System/Text/ValueStringBuilder.cs           src/Vendored/Common/System/Text/ValueStringBuilder.cs
+file src/libraries/Common/src/Roslyn/DiagnosticDescriptorHelper.cs        src/Vendored/Common/Roslyn/DiagnosticDescriptorHelper.cs
+file src/libraries/Common/src/Roslyn/GetBestTypeByMetadataName.cs         src/Vendored/Common/Roslyn/GetBestTypeByMetadataName.cs
+file src/libraries/Common/src/SourceGenerators/CSharpSyntaxUtilities.cs   src/Vendored/Common/SourceGenerators/CSharpSyntaxUtilities.cs
+file src/libraries/Common/src/SourceGenerators/ImmutableEquatableArray.cs src/Vendored/Common/SourceGenerators/ImmutableEquatableArray.cs
+file src/libraries/Common/src/SourceGenerators/SourceWriter.cs            src/Vendored/Common/SourceGenerators/SourceWriter.cs
+file src/libraries/Common/src/SourceGenerators/TypeModelHelper.cs         src/Vendored/Common/SourceGenerators/TypeModelHelper.cs
+file src/libraries/Common/src/SourceGenerators/TypeRef.cs                 src/Vendored/Common/SourceGenerators/TypeRef.cs
+# injected by runtime build infra (eng/resources.targets, src/libraries/Directory.Build.targets)
+file src/libraries/Common/src/System/SR.cs                                src/Vendored/Common/System/SR.cs
+file src/libraries/Common/src/SkipLocalsInit.cs                           src/Vendored/Common/SkipLocalsInit.cs
+file src/libraries/Common/src/Polyfills/ExceptionPolyfills.cs             src/Vendored/Common/Polyfills/ExceptionPolyfills.cs
+file src/libraries/Common/src/Polyfills/MemoryExtensionsPolyfills.cs      src/Vendored/Common/Polyfills/MemoryExtensionsPolyfills.cs
+file src/libraries/Common/src/Polyfills/EncodingPolyfills.cs              src/Vendored/Common/Polyfills/EncodingPolyfills.cs
+file src/libraries/Common/src/System/StringPolyfills.cs                   src/Vendored/Common/System/StringPolyfills.cs
+file src/libraries/Common/src/System/Buffers/SearchValuesPolyfills.cs     src/Vendored/Common/System/Buffers/SearchValuesPolyfills.cs
+file src/libraries/Common/src/System/Text/AsciiPolyfills.cs               src/Vendored/Common/System/Text/AsciiPolyfills.cs
+
+# --- $(CoreLibSharedDir) = src/libraries/System.Private.CoreLib/src ----------------------------
+file src/libraries/System.Private.CoreLib/src/System/Marvin.cs            src/Vendored/CoreLib/System/Marvin.cs
+file src/libraries/System.Private.CoreLib/src/System/ObsoleteAttribute.cs src/Vendored/CoreLib/System/ObsoleteAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Collections/HashHelpers.cs src/Vendored/CoreLib/System/Collections/HashHelpers.cs
+file src/libraries/System.Private.CoreLib/src/System/Collections/Generic/DebugViewDictionaryItem.cs src/Vendored/CoreLib/System/Collections/Generic/DebugViewDictionaryItem.cs
+file src/libraries/System.Private.CoreLib/src/System/Collections/Generic/ICollectionDebugView.cs src/Vendored/CoreLib/System/Collections/Generic/ICollectionDebugView.cs
+file src/libraries/System.Private.CoreLib/src/System/Collections/Generic/IDictionaryDebugView.cs src/Vendored/CoreLib/System/Collections/Generic/IDictionaryDebugView.cs
+file src/libraries/System.Private.CoreLib/src/System/Collections/Generic/ReferenceEqualityComparer.cs src/Vendored/CoreLib/System/Collections/Generic/ReferenceEqualityComparer.cs
+file src/libraries/System.Private.CoreLib/src/System/Collections/ObjectModel/CollectionHelpers.cs src/Vendored/CoreLib/System/Collections/ObjectModel/CollectionHelpers.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/DynamicDependencyAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/DynamicDependencyAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/DynamicallyAccessedMemberTypes.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/DynamicallyAccessedMemberTypes.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/DynamicallyAccessedMembersAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/DynamicallyAccessedMembersAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/FeatureSwitchDefinitionAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/FeatureSwitchDefinitionAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/NullableAttributes.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/RequiresDynamicCodeAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/RequiresDynamicCodeAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/RequiresUnreferencedCodeAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/RequiresUnreferencedCodeAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/SetsRequiredMembersAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/SetsRequiredMembersAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/StringSyntaxAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/StringSyntaxAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/UnconditionalSuppressMessageAttribute.cs src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/UnconditionalSuppressMessageAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Numerics/Hashing/HashHelpers.cs src/Vendored/CoreLib/System/Numerics/Hashing/HashHelpers.cs
+file src/libraries/System.Private.CoreLib/src/System/Reflection/NullabilityInfo.cs src/Vendored/CoreLib/System/Reflection/NullabilityInfo.cs
+file src/libraries/System.Private.CoreLib/src/System/Reflection/NullabilityInfoContext.cs src/Vendored/CoreLib/System/Reflection/NullabilityInfoContext.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/CallerArgumentExpressionAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/CallerArgumentExpressionAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/CompilerFeatureRequiredAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/CompilerFeatureRequiredAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/CompilerLoweringPreserveAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/CompilerLoweringPreserveAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/IUnion.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/IUnion.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/IsClosedTypeAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/IsClosedTypeAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/IsExternalInit.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/IsExternalInit.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/ParamCollectionAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/ParamCollectionAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/RequiredMemberAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/RequiredMemberAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/ScopedRefAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/ScopedRefAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/UnionAttribute.cs src/Vendored/CoreLib/System/Runtime/CompilerServices/UnionAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Runtime/Versioning/RequiresPreviewFeaturesAttribute.cs src/Vendored/CoreLib/System/Runtime/Versioning/RequiresPreviewFeaturesAttribute.cs
+file src/libraries/System.Private.CoreLib/src/System/Text/Rune.cs         src/Vendored/CoreLib/System/Text/Rune.cs
+file src/libraries/System.Private.CoreLib/src/System/Text/UnicodeDebug.cs src/Vendored/CoreLib/System/Text/UnicodeDebug.cs
+file src/libraries/System.Private.CoreLib/src/System/Text/UnicodeUtility.cs src/Vendored/CoreLib/System/Text/UnicodeUtility.cs
+file src/libraries/System.Private.CoreLib/src/System/Text/Unicode/Utf16Utility.cs src/Vendored/CoreLib/System/Text/Unicode/Utf16Utility.cs
+
+# --- System.Collections (OrderedDictionary for netstandard2.0) ---------------------------------
+file src/libraries/System.Collections/src/System/Collections/Generic/OrderedDictionary.cs src/Vendored/System.Collections/System/Collections/Generic/OrderedDictionary.cs
+file src/libraries/System.Collections/src/System/Collections/Generic/OrderedDictionaryDebugView.cs src/Vendored/System.Collections/System/Collections/Generic/OrderedDictionaryDebugView.cs
+file src/libraries/System.Collections/src/System/Collections/ThrowHelper.cs src/Vendored/System.Collections/System/Collections/ThrowHelper.cs
+
+# --- $(CommonTestPath) = src/libraries/Common/tests ----------------------------------------------
+file src/libraries/Common/tests/System/DateTimeTestHelpers.cs             test/Vendored/System/DateTimeTestHelpers.cs
+file src/libraries/Common/tests/System/IO/WrappedMemoryStream.cs          test/Vendored/System/IO/WrappedMemoryStream.cs
+file src/libraries/Common/tests/SourceGenerators/GeneratorTestHelpers.cs  test/Vendored/SourceGenerators/GeneratorTestHelpers.cs
+file src/libraries/Common/tests/SourceGenerators/RoslynTestUtils.cs       test/Vendored/SourceGenerators/RoslynTestUtils.cs
+# TestUtilities subset (the rest of TestUtilities is replaced by test/TestShims)
+file src/libraries/Common/tests/TestUtilities/System/AssertExtensions.cs  test/Vendored/TestUtilities/System/AssertExtensions.cs
+file src/libraries/Common/tests/TestUtilities/System/ThreadCultureChange.cs test/Vendored/TestUtilities/System/ThreadCultureChange.cs
+file src/libraries/Common/tests/TestUtilities/System/LineEndingsHelper.cs test/Vendored/TestUtilities/System/LineEndingsHelper.cs

@@ -1,0 +1,5 @@
+# M7c: the inherited obsolete APIs removed, on every target.
+# The exception serialization members, obsolete on .NET only, are removed there: m7-removals.net10.0.txt and
+# m7-removals.net11.0.txt.
+System.Text.Yaml.YamlSerializerOptions.AddContext<TContext>() System.Void
+System.Text.Yaml.YamlSerializerOptions.IgnoreNullValues property System.Boolean { get; set; }

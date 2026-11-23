@@ -1,0 +1,6 @@
+WriteBlockNonAscii Styml_Block_AsciiNames ascii 17909 5125DFE1D3C1C913
+WriteBlockNonAscii Styml_Block_EncodedAsciiNames ascii 17909 5125DFE1D3C1C913
+WriteBlockNonAscii Styml_Block_AsciiNames latin 24202 76D424CB45903F38
+WriteBlockNonAscii Styml_Block_EncodedAsciiNames latin 24202 76D424CB45903F38
+WriteBlockNonAscii Styml_Block_AsciiNames cjk 38000 FAB9973D1D9989D6
+WriteBlockNonAscii Styml_Block_EncodedAsciiNames cjk 38000 FAB9973D1D9989D6

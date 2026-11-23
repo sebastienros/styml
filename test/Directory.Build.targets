@@ -1,0 +1,53 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- The library's buildTransitive targets are not imported through a ProjectReference; import them so that
+       YamlSerializerIsReflectionEnabledByDefault behaves as it would for a package consumer. -->
+  <Import Project="$(RepoRoot)src/Styml/buildTransitive/Styml.targets" />
+
+  <!-- xunit wiring, equivalent of dotnet/runtime eng/testing/xunit/xunit.props. -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <PackageReference Include="xunit.core" PrivateAssets="all" ExcludeAssets="build" />
+    <PackageReference Include="xunit.analyzers" PrivateAssets="all" />
+    <PackageReference Include="xunit.assert" PrivateAssets="all" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" PrivateAssets="all" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" />
+    <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <None Include="$(MSBuildThisFileDirectory)xunit.runner.json" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <!-- The writer's default style for the test process (legs Y and YJ), and a
+       check that the reader reads YAML. The JSON grammar (decision D1) and its leg J were deleted in M7a (D8). -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <Compile Include="$(TestShimsPath)GrammarModeInitializer.cs" Link="TestShims\GrammarModeInitializer.cs" />
+  </ItemGroup>
+
+  <!-- Default test filter for a bare 'dotnet test', the same one eng/test/run-tests.sh passes: upstream's outer-loop
+       and known-failing tests are excluded, and so are the tests that need JSON-compatible output (category
+       jsonoutput, M4c), unless STYML_TEST_WRITER=json restores that writer
+       default (leg YJ). A filter given on the dotnet test command line replaces this value. -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(VSTestTestCaseFilter)' == ''">
+    <VSTestTestCaseFilter>category!=OuterLoop&amp;category!=failing</VSTestTestCaseFilter>
+    <VSTestTestCaseFilter Condition="'$(STYML_TEST_WRITER)' != 'json'">$(VSTestTestCaseFilter)&amp;category!=jsonoutput</VSTestTestCaseFilter>
+  </PropertyGroup>
+
+  <!-- Upstream TestUtilities (src/libraries/Directory.Build.props adds it to every test project). -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <ProjectReference Include="$(TestShimsPath)TestUtilities.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(UsesJsonSchemaNet)' == 'true'">
+    <PackageReference Include="JsonSchema.Net" />
+    <Compile Include="$(TestShimsPath)JsonSchemaNetBridge.cs" Link="TestShims\JsonSchemaNetBridge.cs" />
+  </ItemGroup>
+
+  <!-- .NET Framework reference assemblies so net481 builds on any OS. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

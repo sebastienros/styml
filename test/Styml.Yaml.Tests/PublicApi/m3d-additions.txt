@@ -1,0 +1,12 @@
+# M3d, on every target: the expanded tag (13.3).
+System.Text.Yaml.Utf8YamlReader.GetExpandedTag() System.String
+System.Text.Yaml.Utf8YamlReader.TryCopyExpandedTag(System.Span`1[System.Byte], out System.Int32) System.Boolean
+# M3d: the opt-in YAML 1.1 schema (13.4). The enum is YamlSchemaKind because System.Text.Yaml.Schema.YamlSchema (the
+# schema exporter's model, internal) already exists.
+System.Text.Yaml.YamlReaderOptions.Schema property System.Text.Yaml.YamlSchemaKind { get; set; }
+System.Text.Yaml.YamlSchemaKind.Core field const System.Text.Yaml.YamlSchemaKind = 0
+System.Text.Yaml.YamlSchemaKind.Yaml11 field const System.Text.Yaml.YamlSchemaKind = 1
+enum System.Text.Yaml.YamlSchemaKind
+# M3d review round 2: implicit collection keys can be turned off.
+System.Text.Yaml.YamlReaderOptions.DisallowImplicitCollectionKeys property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.DisallowImplicitCollectionKeys property System.Boolean { get; set; }

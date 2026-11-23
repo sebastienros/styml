@@ -1,0 +1,12 @@
+bin/
+obj/
+artifacts/
+TestResults/
+*.trx
+.vs/
+.idea/
+*.user
+# BenchmarkDotNet 0.16 build folders (bench/)
+.bdn/
+# BenchmarkDotNet run logs (the exports next to them are committed)
+bench/results/**/Styml.Benchmarks.*.log

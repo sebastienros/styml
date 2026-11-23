@@ -1,0 +1,13 @@
+# M7b: the parity follow-ups. Item 1, a collection's style on the
+# DOM (read on YamlElement, settable on YamlObject and YamlArray); item 3, DefaultScalarStyle on the writer options, the
+# serializer options and the source-generation attribute; item 4, the collection-key entries of YamlObject. Items 2 and
+# 5 add no API.
+System.Text.Yaml.Nodes.YamlArray.CollectionStyle property System.Text.Yaml.YamlCollectionStyle { get; set; }
+System.Text.Yaml.Nodes.YamlObject.AddCollectionKey(System.Text.Yaml.Nodes.YamlNode, System.Text.Yaml.Nodes.YamlNode) System.Void
+System.Text.Yaml.Nodes.YamlObject.CollectionKeys property System.Collections.Generic.IReadOnlyList`1[System.Collections.Generic.KeyValuePair`2[System.Text.Yaml.Nodes.YamlNode, System.Text.Yaml.Nodes.YamlNode]] { get; }
+System.Text.Yaml.Nodes.YamlObject.CollectionStyle property System.Text.Yaml.YamlCollectionStyle { get; set; }
+System.Text.Yaml.Nodes.YamlObject.RemoveCollectionKey(System.Text.Yaml.Nodes.YamlNode) System.Boolean
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.DefaultScalarStyle property System.Text.Yaml.YamlScalarStyle { get; set; }
+System.Text.Yaml.YamlElement.CollectionStyle property System.Nullable`1[System.Text.Yaml.YamlCollectionStyle] { get; }
+System.Text.Yaml.YamlSerializerOptions.DefaultScalarStyle property System.Text.Yaml.YamlScalarStyle { get; set; }
+System.Text.Yaml.YamlWriterOptions.DefaultScalarStyle property System.Text.Yaml.YamlScalarStyle { get; set; }

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Derived from upstream tests/System.Text.Json.SourceGeneration.TestLibrary/System.Text.Json.TestLibrary.Roslyn4.4.csproj
+       + .targets (renamed). Compile items verbatim. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Styml.SourceGeneration.TestLibrary</AssemblyName>
+    <Features>$(Features);updated-memory-safety-rules</Features>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="TestClasses.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <ProjectReference Include="$(RepoRoot)src\Styml.SourceGeneration\Styml.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,105 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Derived from upstream gen/System.Text.Json.SourceGeneration.Roslyn4.4.csproj + .targets (renamed). Only the
+       Roslyn 4.4 variant is built. Compile items are the upstream ones verbatim. -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Styml.SourceGeneration</AssemblyName>
+    <RootNamespace>System.Text.Yaml.SourceGeneration</RootNamespace>
+    <!-- upstream: FxResources.$(RootNamespace).SR (gen/System.Text.Json.SourceGeneration.targets) -->
+    <StringResourcesName>FxResources.$(RootNamespace).SR</StringResourcesName>
+    <IsGeneratorProject>true</IsGeneratorProject>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <IsPackable>false</IsPackable>
+    <!-- Suppress warning: XML comment has cref attribute that could not be resolved -->
+    <NoWarn>$(NoWarn);CS1574</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
+    <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Roslyn API floor for the 4.4 code path (upstream: MicrosoftCodeAnalysisVersion_4_4). -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\CSharpSyntaxUtilities.cs" Link="Common\SourceGenerators\CSharpSyntaxUtilities.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\ImmutableEquatableArray.cs" Link="Common\SourceGenerators\ImmutableEquatableArray.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\TypeModelHelper.cs" Link="Common\SourceGenerators\TypeModelHelper.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\TypeRef.cs" Link="Common\SourceGenerators\TypeRef.cs" />
+    <Compile Include="..\Common\YamlCamelCaseNamingPolicy.cs" Link="Common\System\Text\Yaml\YamlCamelCaseNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlNamingPolicy.cs" Link="Common\System\Text\Yaml\YamlNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlPascalCaseNamingPolicy.cs" Link="Common\System\Text\Yaml\YamlPascalCaseNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlAttribute.cs" />
+    <Compile Include="..\Common\YamlCommentHandling.cs" Link="Common\System\Text\Yaml\YamlCommentHandling.cs" />
+    <Compile Include="..\Common\YamlConstants.cs" Link="Common\System\Text\Yaml\YamlConstants.cs" />
+    <Compile Include="..\Common\YamlHelpers.cs" Link="Common\System\Text\Yaml\YamlHelpers.cs" />
+    <Compile Include="..\Common\YamlIgnoreCondition.cs" Link="Common\System\Text\Yaml\Serialization\YamlIgnoreCondition.cs" />
+    <Compile Include="..\Common\YamlKebabCaseLowerNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlKebabCaseLowerNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlKebabCaseUpperNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlKebabCaseUpperNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlKnownNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlKnownNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlKnownReferenceHandler.cs" Link="Common\System\Text\Yaml\Serialization\YamlKnownReferenceHandler.cs" />
+    <Compile Include="..\Common\YamlNumberHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlNumberHandling.cs" />
+    <Compile Include="..\Common\YamlObjectCreationHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlObjectCreationHandling.cs" />
+    <Compile Include="..\Common\YamlSeparatorNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlSeparatorNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlSerializableAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlSerializableAttribute.cs" />
+    <Compile Include="..\Common\YamlTypeDiscriminatorStyle.cs" Link="Common\System\Text\Yaml\Serialization\YamlTypeDiscriminatorStyle.cs" />
+    <Compile Include="..\Common\YamlTagMappingAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlTagMappingAttribute.cs" />
+    <Compile Include="..\Common\YamlConfiguredTag.cs" Link="Common\System\Text\Yaml\Serialization\YamlConfiguredTag.cs" />
+    <Compile Include="..\Common\YamlSerializerDefaults.cs" Link="Common\System\Text\Yaml\Serialization\YamlSerializerDefaults.cs" />
+    <Compile Include="..\Common\YamlSnakeCaseLowerNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlSnakeCaseLowerNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlSnakeCaseUpperNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlSnakeCaseUpperNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlSourceGenerationMode.cs" Link="Common\System\Text\Yaml\Serialization\YamlSourceGenerationMode.cs" />
+    <Compile Include="..\Common\YamlSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlSourceGenerationOptionsAttribute.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\Serialization\YamlUnknownDerivedTypeHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlUnknownDerivedTypeHandling.cs" />
+    <Compile Include="..\Common\YamlUnknownTypeHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlUnknownTypeHandling.cs" />
+    <Compile Include="..\Common\YamlUnmappedMemberHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlUnmappedMemberHandling.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\YamlTokenType.cs" Link="Common\System\Text\Yaml\YamlTokenType.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\Writer\YamlWriterStyle.cs" Link="Common\System\Text\Yaml\YamlWriterStyle.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\Reader\YamlScalarStyle.cs" Link="Common\System\Text\Yaml\YamlScalarStyle.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\YamlSchemaKind.cs" Link="Common\System\Text\Yaml\YamlSchemaKind.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\YamlDuplicateKeyHandling.cs" Link="Common\System\Text\Yaml\YamlDuplicateKeyHandling.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\Serialization\YamlMappingOrder.cs" Link="Common\System\Text\Yaml\Serialization\YamlMappingOrder.cs" />
+    <Compile Include="..\Styml\System\Text\Yaml\Serialization\YamlValueType.cs" Link="Common\System\Text\Yaml\Serialization\YamlValueType.cs" />
+    <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Yaml\ThrowHelper.cs" />
+    <Compile Include="Helpers\SourceGeneratorHelpers.cs" />
+    <Compile Include="Helpers\KnownTypeSymbols.cs" />
+    <Compile Include="Helpers\RoslynExtensions.cs" />
+    <Compile Include="YamlConstants.cs" />
+    <Compile Include="YamlSourceGenerator.DiagnosticDescriptors.cs" />
+    <Compile Include="YamlSourceGenerator.Emitter.cs" />
+    <Compile Include="YamlSourceGenerator.Emitter.ExceptionMessages.cs" />
+    <Compile Include="YamlSourceGenerator.Parser.cs" />
+    <Compile Include="Model\ClassType.cs" />
+    <Compile Include="Model\CollectionType.cs" />
+    <Compile Include="Model\ContextGenerationSpec.cs" />
+    <Compile Include="Model\DerivedTypeSpec.cs" />
+    <Compile Include="Model\YamlPrimitiveTypeKind.cs" />
+    <Compile Include="Model\ObjectConstructionStrategy.cs" />
+    <Compile Include="Model\ParameterGenerationSpec.cs" />
+    <Compile Include="Model\PolymorphismOptionsSpec.cs" />
+    <Compile Include="Model\PropertyGenerationSpec.cs" />
+    <Compile Include="Model\PropertyInitializerGenerationSpec.cs" />
+    <Compile Include="Model\SourceGenerationOptionsSpec.cs" />
+    <Compile Include="Model\TagMappingSpec.cs" />
+    <Compile Include="Model\TypeGenerationSpec.cs" />
+    <Compile Include="Model\UnionCaseSpec.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="YamlSourceGenerator.Roslyn4.0.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+  </ItemGroup>
+</Project>

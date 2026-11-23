@@ -1,0 +1,7 @@
+# M5b (and decision 6): the serializer's alias bound,
+# merge keys on both option types, and the every-object reference mode (ReferenceHandler and the source-generation enum).
+System.Text.Yaml.Serialization.ReferenceHandler.PreserveAll property System.Text.Yaml.Serialization.ReferenceHandler { get; }
+System.Text.Yaml.Serialization.YamlKnownReferenceHandler.PreserveAll field const System.Text.Yaml.Serialization.YamlKnownReferenceHandler = 3
+System.Text.Yaml.YamlDocumentOptions.ResolveMergeKeys property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.MaxAliasExpansion property System.Int32 { get; set; }
+System.Text.Yaml.YamlSerializerOptions.ResolveMergeKeys property System.Boolean { get; set; }

@@ -1,0 +1,132 @@
+Corpus: bench/corpus
+Switch System.Text.Yaml.Utf8YamlWriter.UseJsonCompatibleStyle: True
+workflow-s: 16 graphs equal (1,234 chars)
+workflow-s: 8 token streams equal (90 scalars, 26 collection starts)
+workflow-s: 6 scalar texts equal (915 chars)
+workflow-s: Serialize VYaml generated reads back with the final line break of some strings dropped (VYaml's plain scalars)
+workflow-s: 13 written outputs read back equal
+workflow-s: 3 block outputs read back equal
+compose-s: 16 graphs equal (881 chars)
+compose-s: 8 token streams equal (62 scalars, 16 collection starts)
+compose-s: 6 scalar texts equal (666 chars)
+compose-s: 13 written outputs read back equal
+compose-s: 3 block outputs read back equal
+k8s-s: 16 graphs equal (1,627 chars)
+k8s-s: 8 token streams equal (131 scalars, 34 collection starts)
+k8s-s: 6 scalar texts equal (1,187 chars)
+k8s-s: 13 written outputs read back equal
+k8s-s: 3 block outputs read back equal
+records-s: 16 graphs equal (909 chars)
+records-s: 8 token streams equal (98 scalars, 13 collection starts)
+records-s: 6 scalar texts equal (622 chars)
+records-s: 13 written outputs read back equal
+records-s: 3 block outputs read back equal
+workflow-m: 16 graphs equal (19,582 chars)
+workflow-m: 8 token streams equal (1,325 scalars, 330 collection starts)
+workflow-m: 6 scalar texts equal (14,950 chars)
+workflow-m: Serialize VYaml generated reads back with the final line break of some strings dropped (VYaml's plain scalars)
+workflow-m: 13 written outputs read back equal
+workflow-m: 3 block outputs read back equal
+compose-m: 16 graphs equal (37,188 chars)
+compose-m: 8 token streams equal (2,342 scalars, 472 collection starts)
+compose-m: 6 scalar texts equal (29,317 chars)
+compose-m: 13 written outputs read back equal
+compose-m: 3 block outputs read back equal
+k8s-m: 16 graphs equal (56,129 chars)
+k8s-m: 8 token streams equal (4,555 scalars, 1,149 collection starts)
+k8s-m: 6 scalar texts equal (40,943 chars)
+k8s-m: 13 written outputs read back equal
+k8s-m: 3 block outputs read back equal
+openapi-m: 16 graphs equal (64,336 chars)
+openapi-m: 8 token streams equal (5,729 scalars, 2,051 collection starts)
+openapi-m: 6 scalar texts equal (43,384 chars)
+openapi-m: 13 written outputs read back equal
+openapi-m: 3 block outputs read back equal
+records-m: 16 graphs equal (90,643 chars)
+records-m: 8 token streams equal (9,591 scalars, 1,225 collection starts)
+records-m: 6 scalar texts equal (62,586 chars)
+records-m: 13 written outputs read back equal
+records-m: 3 block outputs read back equal
+openapi-l: 16 graphs equal (667,704 chars)
+openapi-l: 8 token streams equal (58,769 scalars, 21,031 collection starts)
+openapi-l: 6 scalar texts equal (452,792 chars)
+openapi-l: 13 written outputs read back equal
+openapi-l: 3 block outputs read back equal
+k8s-l: 16 graphs equal (1,795,649 chars)
+k8s-l: 8 token streams equal (146,053 scalars, 36,756 collection starts)
+k8s-l: 6 scalar texts equal (1,309,283 chars)
+k8s-l: 13 written outputs read back equal
+k8s-l: 3 block outputs read back equal
+records-l: 19 graphs equal (3,087,010 chars)
+records-l: 10 token streams equal (324,838 scalars, 41,473 collection starts)
+records-l: 8 scalar texts equal (2,136,658 chars)
+records-l: 13 written outputs read back equal
+records-l: 3 block outputs read back equal
+workflow-s: generated VYaml read by Styml: the final line break of some strings dropped (VYaml's plain scalars)
+workflow-s: generated VYaml read by its library: the final line break of some strings dropped (VYaml's plain scalars)
+workflow-s: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+workflow-s: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+workflow-s: output bytes Styml_Block 1,403, Styml_Block_Writer 1,403, Styml_Json 1,262, YamlDotNet 1,397, SharpYaml 1,587, VYaml 1,400, Stj 1,262
+workflow-s: 6 DOM walks equal (90 scalars, 26 collections, 0 aliases); SharpYaml syntax tree 465 tokens (not compared)
+compose-s: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+compose-s: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+compose-s: output bytes Styml_Block 976, Styml_Block_Writer 976, Styml_Json 881, YamlDotNet 974, SharpYaml 1,016, VYaml 994, Stj 881
+compose-s: 6 DOM walks equal (62 scalars, 16 collections, 0 aliases); SharpYaml syntax tree 295 tokens (not compared)
+k8s-s: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+k8s-s: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+k8s-s: output bytes Styml_Block 2,103, Styml_Block_Writer 2,103, Styml_Json 1,632, YamlDotNet 2,095, SharpYaml 2,460, VYaml 2,113, Stj 1,632
+k8s-s: 6 DOM walks equal (131 scalars, 34 collections, 0 aliases); SharpYaml syntax tree 573 tokens (not compared)
+records-s: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+records-s: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+records-s: output bytes Styml_Block 946, Styml_Block_Writer 946, Styml_Json 919, YamlDotNet 938, SharpYaml 974, VYaml 946, Stj 919
+records-s: 6 DOM walks equal (98 scalars, 13 collections, 0 aliases); SharpYaml syntax tree 416 tokens (not compared)
+workflow-m: generated VYaml read by Styml: the final line break of some strings dropped (VYaml's plain scalars)
+workflow-m: generated VYaml read by its library: the final line break of some strings dropped (VYaml's plain scalars)
+workflow-m: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+workflow-m: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+workflow-m: output bytes Styml_Block 23,000, Styml_Block_Writer 23,000, Styml_Json 20,142, YamlDotNet 22,956, SharpYaml 26,414, VYaml 22,940, Stj 20,142
+workflow-m: 6 DOM walks equal (1,325 scalars, 330 collections, 0 aliases); SharpYaml syntax tree 6,887 tokens (not compared)
+compose-m: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+compose-m: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+compose-m: output bytes Styml_Block 42,299, Styml_Block_Writer 42,299, Styml_Json 37,188, YamlDotNet 42,201, SharpYaml 44,115, VYaml 43,085, Stj 37,188
+compose-m: 6 DOM walks equal (2,342 scalars, 472 collections, 0 aliases); SharpYaml syntax tree 10,927 tokens (not compared)
+k8s-m: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+k8s-m: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+k8s-m: output bytes Styml_Block 74,824, Styml_Block_Writer 74,824, Styml_Json 56,334, YamlDotNet 74,540, SharpYaml 88,625, VYaml 75,212, Stj 56,334
+k8s-m: 6 DOM walks equal (4,555 scalars, 1,149 collections, 0 aliases); SharpYaml syntax tree 19,907 tokens (not compared)
+openapi-m: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+openapi-m: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+openapi-m: output bytes Styml_Block 87,918, Styml_Block_Writer 87,918, Styml_Json 64,336, YamlDotNet 87,526, SharpYaml 107,104, VYaml 87,976, Stj 64,336
+openapi-m: 6 DOM walks equal (5,729 scalars, 2,051 collections, 0 aliases); SharpYaml syntax tree 28,257 tokens (not compared)
+records-m: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+records-m: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+records-m: output bytes Styml_Block 93,902, Styml_Block_Writer 93,902, Styml_Json 91,643, YamlDotNet 93,086, SharpYaml 95,948, VYaml 93,902, Stj 91,643
+records-m: 6 DOM walks equal (9,591 scalars, 1,225 collections, 0 aliases); SharpYaml syntax tree 39,940 tokens (not compared)
+openapi-l: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+openapi-l: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+openapi-l: output bytes Styml_Block 910,466, Styml_Block_Writer 910,466, Styml_Json 667,704, YamlDotNet 906,434, SharpYaml 1,107,752, VYaml 911,044, Stj 667,704
+openapi-l: 6 DOM walks equal (58,769 scalars, 21,031 collections, 0 aliases); SharpYaml syntax tree 289,817 tokens (not compared)
+k8s-l: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+k8s-l: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+k8s-l: output bytes Styml_Block 2,404,537, Styml_Block_Writer 2,404,537, Styml_Json 1,802,409, YamlDotNet 2,395,457, SharpYaml 2,854,217, VYaml 2,417,189, Stj 1,802,409
+k8s-l: 6 DOM walks equal (146,053 scalars, 36,756 collections, 0 aliases); SharpYaml syntax tree 638,210 tokens (not compared)
+records-l: 13 M6b serialize outputs, 22 read-backs equal; block rows block, JSON rows JSON; writer row = block bytes (reflection), = (generated)
+records-l: generated Styml_Block fast path (handler bytes = serializer bytes); generated Styml_Json fast path (handler bytes = serializer bytes)
+records-l: output bytes Styml_Block 3,197,622, Styml_Block_Writer 3,197,622, Styml_Json 3,121,645, YamlDotNet 3,169,974, SharpYaml 3,266,690, VYaml 3,197,622, Stj 3,121,645
+records-l: 6 DOM walks equal (324,838 scalars, 41,473 collections, 0 aliases); SharpYaml syntax tree 1,352,585 tokens (not compared)
+k8s-m: 5 string outputs equal the byte rows' text
+records-l: 5 string outputs equal the byte rows' text
+anchors-s: 1,943 bytes, 4 aliases; 4 token streams equal (98 scalars, 24 collections, 4 aliases); twin 140 scalars, 30 starts (not compared)
+anchors-s: DOM Styml document = YamlDotNet (98 scalars, 24 collections, 4 aliases); SharpYaml = Styml expanded (140 scalars, 30 collections, 0 aliases); Styml node 140 scalars, 30 collections, 0 aliases; expanded = twin yes
+anchors-s: 8 graphs equal the expanded twin's, Styml with its default alias limits
+anchors-s: serialize, 6 shared-member blocks in 2 instances, every output reads back equal, shared where kept: Styml_Block 1,760 bytes, 4 aliases; YamlDotNet 1,764 bytes, 4 aliases; SharpYaml 1,874 bytes, 4 aliases; VYaml_Expanded 2,426 bytes, 0 aliases; Stj_Expanded 2,094 bytes, 0 aliases; Styml metadata path (handler bytes != serializer bytes)
+anchors-m: 26,213 bytes, 48 aliases; 4 token streams equal (1,330 scalars, 289 collections, 48 aliases); twin 1,834 scalars, 361 starts (not compared)
+anchors-m: DOM Styml document = YamlDotNet (1,330 scalars, 289 collections, 48 aliases); SharpYaml = Styml expanded (1,834 scalars, 361 collections, 0 aliases); Styml node 1,834 scalars, 361 collections, 0 aliases; expanded = twin yes
+anchors-m: 8 graphs equal the expanded twin's, Styml with its default alias limits
+anchors-m: serialize, 84 shared-member blocks in 36 instances, every output reads back equal, shared where kept: Styml_Block 24,774 bytes, 48 aliases; YamlDotNet 24,798 bytes, 48 aliases; SharpYaml 26,232 bytes, 48 aliases; VYaml_Expanded 32,888 bytes, 0 aliases; Stj_Expanded 28,257 bytes, 0 aliases; Styml metadata path (handler bytes != serializer bytes)
+merge-s: 1,273 bytes, 2 aliases; 4 token streams equal (69 scalars, 18 collections, 2 aliases); twin 98 scalars, 21 starts (not compared)
+merge-s: DOM Styml document = YamlDotNet (69 scalars, 18 collections, 2 aliases); SharpYaml = Styml expanded (133 scalars, 28 collections, 0 aliases); Styml node 133 scalars, 28 collections, 0 aliases
+merge-s: 5 graphs equal the expanded twin's, Styml with its default alias limits and ResolveMergeKeys
+merge-m: 46,748 bytes, 144 aliases; 4 token streams equal (2,200 scalars, 657 collections, 144 aliases); twin 6,559 scalars, 1,228 starts (not compared)
+merge-m: DOM Styml document = YamlDotNet (2,200 scalars, 657 collections, 144 aliases); SharpYaml = Styml expanded (6,808 scalars, 1,377 collections, 0 aliases); Styml node 6,808 scalars, 1,377 collections, 0 aliases
+merge-m: 5 graphs equal the expanded twin's, Styml with its default alias limits and ResolveMergeKeys

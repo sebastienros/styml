@@ -1,0 +1,563 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Derived from upstream src/System.Text.Json.csproj (renamed). The Compile item groups below are the
+       upstream ones verbatim except that $(LibrariesProjectRoot)System.Collections\src\ is repointed at
+       $(VendoredSystemCollectionsDir). Project/package references are replaced (M2). -->
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);netstandard2.0</TargetFrameworks>
+    <AssemblyName>Styml</AssemblyName>
+    <RootNamespace>System.Text.Yaml</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS8969</NoWarn>
+    <!-- CS0282: Utf8YamlReader's YAML fields live in the Utf8YamlReader.Yaml.cs partial (M3: YAML code in new
+         files). Field order is irrelevant for this ref struct (never marshalled or laid out explicitly). -->
+    <NoWarn>$(NoWarn);CS0282</NoWarn>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
+    <!-- Upstream: IsNETCoreAppSrc implies SkipLocalsInit on .NETCoreApp. -->
+    <SkipLocalsInit>true</SkipLocalsInit>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <PackageId>Styml</PackageId>
+    <!-- The version: VersionPrefix here; CI previews add VersionSuffix (preview.<run>), a release tag sets Version. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Authors>Sébastien Ros</Authors>
+    <Copyright>Copyright (c) 2026 Sébastien Ros. Portions Copyright (c) .NET Foundation and Contributors.</Copyright>
+    <PackageDescription>The System.Text.Json API, for YAML. A YAML 1.2 reader, writer, document model and serializer: Utf8YamlReader, Utf8YamlWriter, YamlDocument, YamlNode, YamlSerializer and a source generator. Derived from System.Text.Json (dotnet/runtime v11.0.0); not a Microsoft product.</PackageDescription>
+    <PackageTags>yaml;yaml-1.2;serialization;serializer;parser;system.text.json;source-generator;aot</PackageTags>
+    <PackageProjectUrl>https://github.com/sebastienros/styml</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sebastienros/styml</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>PACKAGE.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- M7c: the trim and AOT analyzers on the
+       .NETCoreApp targets; every warning is fixed or justified in place. -->
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Polyfills\ReflectionPolyfills.cs" Link="Common\Polyfills\ReflectionPolyfills.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
+    <Compile Include="..\Common\YamlCamelCaseNamingPolicy.cs" Link="Common\System\Text\Yaml\YamlCamelCaseNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlNamingPolicy.cs" Link="Common\System\Text\Yaml\YamlNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlPascalCaseNamingPolicy.cs" Link="Common\System\Text\Yaml\YamlPascalCaseNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlAttribute.cs" />
+    <Compile Include="..\Common\YamlCommentHandling.cs" Link="Common\System\Text\Yaml\YamlCommentHandling.cs" />
+    <Compile Include="..\Common\YamlConstants.cs" Link="Common\System\Text\Yaml\YamlConstants.cs" />
+    <Compile Include="..\Common\YamlHelpers.cs" Link="Common\System\Text\Yaml\YamlHelpers.cs" />
+    <Compile Include="..\Common\YamlIgnoreCondition.cs" Link="Common\System\Text\Yaml\Serialization\YamlIgnoreCondition.cs" />
+    <Compile Include="..\Common\YamlKebabCaseLowerNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlKebabCaseLowerNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlKebabCaseUpperNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlKebabCaseUpperNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlKnownNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlKnownNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlKnownReferenceHandler.cs" Link="Common\System\Text\Yaml\Serialization\YamlKnownReferenceHandler.cs" />
+    <Compile Include="..\Common\YamlNumberHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlNumberHandling.cs" />
+    <Compile Include="..\Common\YamlObjectCreationHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlObjectCreationHandling.cs" />
+    <Compile Include="..\Common\YamlSeparatorNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlSeparatorNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlSerializableAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlSerializableAttribute.cs" />
+    <Compile Include="..\Common\YamlTypeDiscriminatorStyle.cs" Link="Common\System\Text\Yaml\Serialization\YamlTypeDiscriminatorStyle.cs" />
+    <Compile Include="..\Common\YamlTagMappingAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlTagMappingAttribute.cs" />
+    <Compile Include="..\Common\YamlConfiguredTag.cs" Link="Common\System\Text\Yaml\Serialization\YamlConfiguredTag.cs" />
+    <Compile Include="..\Common\YamlSerializerDefaults.cs" Link="Common\System\Text\Yaml\Serialization\YamlSerializerDefaults.cs" />
+    <Compile Include="..\Common\YamlSnakeCaseLowerNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlSnakeCaseLowerNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlSnakeCaseUpperNamingPolicy.cs" Link="Common\System\Text\Yaml\Serialization\YamlSnakeCaseUpperNamingPolicy.cs" />
+    <Compile Include="..\Common\YamlSourceGenerationMode.cs" Link="Common\System\Text\Yaml\Serialization\YamlSourceGenerationMode.cs" />
+    <Compile Include="..\Common\YamlSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Yaml\Serialization\YamlSourceGenerationOptionsAttribute.cs" />
+    <Compile Include="..\Common\YamlUnknownTypeHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlUnknownTypeHandling.cs" />
+    <Compile Include="..\Common\YamlUnmappedMemberHandling.cs" Link="Common\System\Text\Yaml\Serialization\YamlUnmappedMemberHandling.cs" />
+    <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Yaml\Serialization\ReflectionExtensions.cs" />
+    <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Yaml\ThrowHelper.cs" />
+    <Compile Include="System\Runtime\InteropServices\YamlMarshal.cs" />
+    <Compile Include="System\Text\Yaml\AppContextSwitchHelper.cs" />
+    <Compile Include="System\Text\Yaml\BitStack.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.PropertyNameSet.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.ComplexKeys.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.Yaml.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.Yaml.Traversals.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.Merge.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.DbRow.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.MetadataDb.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.Parse.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.StackRow.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.StackRowStack.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.TryGetProperty.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocumentOptions.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlElement.ArrayEnumerator.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlElement.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlElement.ObjectEnumerator.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlElement.Parse.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlProperty.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlValueKind.cs" />
+    <Compile Include="System\Text\Yaml\YamlConstants.cs" />
+    <Compile Include="System\Text\Yaml\YamlEncodedText.cs" />
+    <Compile Include="System\Text\Yaml\YamlException.cs" />
+    <Compile Include="System\Text\Yaml\YamlHelpers.cs" />
+    <Compile Include="System\Text\Yaml\YamlHelpers.Date.cs" />
+    <Compile Include="System\Text\Yaml\YamlHelpers.Escaping.cs" />
+    <Compile Include="System\Text\Yaml\YamlTokenType.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlArray.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlArray.IList.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlValueOfElement.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlNode.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlNode.Operators.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlNode.Parse.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlNode.To.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlNodeOptions.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlObject.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlObject.IDictionary.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlObject.IList.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlValue.CreateOverloads.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlValue.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlValueOfTCustomized.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlValueOfT.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlValueOfYamlPrimitive.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlValueOfTPrimitive.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlReaderException.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlReaderHelper.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlReaderHelper.Unescaping.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlReaderOptions.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlReaderState.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.MultiSegment.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.TryGet.cs" />
+    <!-- YAML grammar (M3) -->
+    <Compile Include="System\Text\Yaml\Reader\YamlParseState.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlAnchorTable.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlScalarStyle.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlKeyKind.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Documents.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Block.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Flow.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Keys.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.KeyProbe.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Segments.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlTagDirectives.cs" />
+    <Compile Include="System\Text\Yaml\YamlSchemaKind.cs" />
+    <Compile Include="System\Text\Yaml\YamlDuplicateKeyHandling.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Scalars.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Numbers.cs" />
+    <Compile Include="System\Text\Yaml\Reader\Utf8YamlReader.Yaml.Lenient.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlReaderHelper.YamlScanning.cs" />
+    <Compile Include="System\Text\Yaml\Reader\YamlReaderHelper.YamlUnescaping.cs" />
+    <Compile Include="System\Text\Yaml\ThrowHelper.Yaml.cs" />
+    <Compile Include="System\Text\Yaml\Schema\YamlSchema.cs" />
+    <Compile Include="System\Text\Yaml\Schema\YamlSchemaExporter.cs" />
+    <Compile Include="System\Text\Yaml\Schema\YamlSchemaExporterOptions.cs" />
+    <Compile Include="System\Text\Yaml\Schema\YamlSchemaExporterContext.cs" />
+    <Compile Include="System\Text\Yaml\Schema\YamlSchemaType.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\AsyncEnumeratorState.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Arguments.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ArgumentState.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlObjectCreationHandlingAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlConstructorAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlConverterAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlDerivedTypeAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlExtensionDataAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlIgnoreAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlIncludeAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlNumberHandlingAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlNamingPolicyAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlPolymorphicAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlPropertyNameAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlRequiredAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlPropertyOrderAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlCommentAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlScalarStyleAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlUnmappedMemberHandlingAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\CastingConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ReadOnlyMemoryConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\MemoryConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\RootLevelListConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\YamlMetadataServicesConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Large.Reflection.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\MemoryConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\ReadOnlyMemoryByteConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\MemoryByteConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\YamlPrimitiveConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\IgnoreReferenceResolver.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\IYamlOnDeserialized.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\IYamlOnDeserializing.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\IYamlOnSerialized.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\IYamlOnSerializing.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\IReadBufferState.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlNumberEnumConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Document.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Element.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Node.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Pipe.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.Document.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.Element.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.Node.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializerContext.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlUnknownDerivedTypeHandling.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\DefaultYamlTypeInfoResolver.Converters.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\DefaultYamlTypeInfoResolver.Helpers.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\DefaultYamlTypeInfoResolver.Union.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\DefaultYamlTypeInfoResolver.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\IYamlTypeInfoResolver.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlDerivedType.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlPolymorphismOptions.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfoOfT.ReadHelper.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfoOfT.WriteHelpers.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfoResolver.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfoKind.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfoResolverChain.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfoResolverWithAddedModifiers.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\PropertyRefCacheBuilder.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\PipeReadBufferState.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\PolymorphicSerializationState.cs" />
+    <Compile Include="System\Text\Yaml\ValueQueue.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.StringSegment.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriterCache.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ReferenceEqualsWrapper.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ConverterStrategy.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ConfigurationList.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ArrayConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ConcurrentStackOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\DictionaryDefaultConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\DictionaryOfTKeyTValueConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IAsyncEnumerableConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IAsyncEnumerableOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ICollectionOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IDictionaryConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IDictionaryOfTKeyTValueConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IEnumerableConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IEnumerableConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IEnumerableConverterFactoryHelpers.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IEnumerableDefaultConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IEnumerableOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\StackOrQueueConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IListConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IListOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ImmutableEnumerableOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IReadOnlyDictionaryOfTKeyTValueConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ISetOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\YamlCollectionConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\YamlDictionaryConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\ListOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\QueueOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\StackOfTConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\FSharp\FSharpListConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\FSharp\FSharpMapConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\FSharp\FSharpSetConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\FSharp\FSharpTypeConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\FSharp\FSharpUnionConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\FSharp\FSharpOptionConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\FSharp\FSharpValueOptionConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Node\YamlArrayConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Node\YamlNodeConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Node\YamlNodeConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Node\YamlObjectConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Node\YamlValueConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\YamlObjectConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\ObjectConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\ObjectConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\ObjectDefaultConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Large.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Small.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\BooleanConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\ByteArrayConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\ByteConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\CharConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\DateTimeConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\DateTimeOffsetConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\DecimalConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\DoubleConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\EnumConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\EnumConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\EnumConverterOptions.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\GuidConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\Int16Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\Int32Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\Int64Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\YamlDocumentConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\YamlElementConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\NullableConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\NullableConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\SByteConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\SingleConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\StringConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\TimeSpanConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\UInt16Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\UInt32Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\UInt64Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\UnsupportedTypeConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\UnsupportedTypeConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\UriConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\VersionConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\IgnoreReferenceHandler.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlConverter.MetadataHandling.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlConverterFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlConverterOfT.ReadCore.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlConverterOfT.WriteCore.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlConverterOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlResumableConverterOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Helpers.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.HandleMetadata.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.HandlePropertyName.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Span.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Stream.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.String.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Utf8YamlReader.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Read.Utf8YamlReader.Yaml.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.ByteArray.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.HandleMetadata.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.Stream.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.String.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.Pipe.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializer.Write.Utf8YamlWriter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializerOptions.Caching.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializerOptions.Converters.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializerOptions.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlMappingOrder.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlStringEnumConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlStringEnumMemberNameAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlCollectionInfoValuesOfTCollection.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlMetadataServices.Collections.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlMetadataServices.Converters.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlMetadataServices.Helpers.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlMetadataServices.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlObjectInfoValuesOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlUnionInfoValuesOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlParameterInfoValues.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlParameterInfo.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlParameterInfoOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlPropertyInfo.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlPropertyInfoOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlPropertyInfoValuesOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfoOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfo.Cache.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlTypeInfo.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\MemberAccessor.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\PolymorphicTypeResolver.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\PropertyRef.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.Cache.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\ReflectionEmitMemberAccessor.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\ReflectionMemberAccessor.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\MetadataPropertyName.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\PreserveReferenceHandler.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\PreserveReferenceResolver.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\StreamReadBufferState.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ReadStack.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ReadStackFrame.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlAliasReader.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlTags.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlComplexKeys.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlAnchorWriter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ReferenceHandler.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ReferenceHandlerOfT.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ReferenceResolver.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\StackFrameObjectState.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\StackFramePropertyState.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\WriteStack.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\WriteStackFrame.cs" />
+    <Compile Include="System\Text\Yaml\ThrowHelper.cs" />
+    <Compile Include="System\Text\Yaml\ThrowHelper.Node.cs" />
+    <Compile Include="System\Text\Yaml\ThrowHelper.Serialization.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterHelper.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterHelper.Date.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterHelper.Escaping.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterOptions.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterStyleDefault.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterStyle.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterHelper.Block.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlBlockEncoder.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.Block.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.Block.Raw.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.Block.Nodes.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlWriterHelper.Nodes.cs" />
+    <Compile Include="System\Text\Yaml\Writer\YamlCollectionStyle.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.Bytes.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.DateTime.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.DateTimeOffset.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.Decimal.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.Double.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.Float.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.FormattedNumber.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.Guid.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.Helpers.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.Literal.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.SignedNumber.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.String.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteProperties.UnsignedNumber.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Bytes.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Comment.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.DateTime.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.DateTimeOffset.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Decimal.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Double.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Float.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.FormattedNumber.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Guid.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Helpers.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Literal.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.Raw.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.SignedNumber.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.String.cs" />
+    <Compile Include="System\Text\Yaml\Writer\Utf8YamlWriter.WriteValues.UnsignedNumber.cs" />
+    <Compile Include="System\ReflectionExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlTypeClassifier.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlTypeClassifierContext.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlTypeClassifierFactory.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlTypeClassifierKind.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlUnionTypeStructuralClassifier.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlValueType.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\ValueBitArray.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Attributes\YamlUnionAttribute.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Metadata\YamlUnionCaseInfo.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Union\YamlUnionConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Union\YamlUnionConverterFactory.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\ParamCollectionAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\ScopedRefAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfo.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfoContext.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DoublePolyfills.cs" Link="Common\Polyfills\DoublePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\SinglePolyfills.cs" Link="Common\Polyfills\SinglePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitArrayPolyfills.cs" Link="Common\Polyfills\BitArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs" Link="Common\Polyfills\DictionaryPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\RuntimeHelpersPolyfills.cs" Link="Common\Polyfills\RuntimeHelpersPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StopwatchPolyfills.cs" Link="Common\Polyfills\StopwatchPolyfills.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs" Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs" Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs" Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\ObjectModel\CollectionHelpers.cs" Link="Common\System\Collections\ObjectModel\CollectionHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs" Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
+    <Compile Include="$(VendoredSystemCollectionsDir)System\Collections\Generic\OrderedDictionary.cs" Link="Common\System\Collections\Generic\OrderedDictionary.cs" />
+    <Compile Include="$(VendoredSystemCollectionsDir)System\Collections\Generic\OrderedDictionaryDebugView.cs" Link="Common\System\Collections\Generic\OrderedDictionaryDebugView.cs" />
+    <Compile Include="$(VendoredSystemCollectionsDir)System\Collections\ThrowHelper.cs" Link="Common\System\Collections\ThrowHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System.Text.Yaml.Typeforwards.netcoreapp.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\DateOnlyConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\HalfConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\Int128Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\TimeOnlyConverter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\UInt128Converter.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\YamlSerializerOptionsUpdateHandler.cs" />
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Collection\IReadOnlySetOfTConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\Text\Yaml\Serialization\Converters\Value\Ieee754FloatingPointConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\StreamMemoryPolyfills.cs" Link="Common\Polyfills\StreamMemoryPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StringBuilderPolyfills.cs" Link="Common\Polyfills\StringBuilderPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StackPolyfills.cs" Link="Common\Polyfills\StackPolyfills.cs" />
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Text\Rune.cs" Link="System\Text\Rune.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf16Utility.cs" Link="System\Text\Unicode\Utf16Utility.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Arcade adds this for CLSCompliant=true source projects (upstream default). -->
+    <AssemblyAttribute Include="System.CLSCompliantAttribute">
+      <_Parameter1>true</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- Upstream: "Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's
+       dependencies." Upstream ProjectReferences the live 11.0 System.Text.Encodings.Web / System.IO.Pipelines on every
+       TFM; on net11.0 they are in-box at that version, on net10.0 the 11.0 packages are needed so that netstandard2.0
+       libraries compiled against Styml load on a net10.0 application. -->
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppPrevious)'">
+    <PackageReference Include="System.Text.Encodings.Web" />
+    <PackageReference Include="System.IO.Pipelines" />
+  </ItemGroup>
+
+  <!-- netstandard2.0 dependencies (upstream: ProjectReferences to the live-built libraries + PackageReferences). -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Text.Encodings.Web" />
+    <PackageReference Include="System.IO.Pipelines" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="System.Buffers" />
+    <PackageReference Include="System.Memory" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+
+  <!-- Single (Roslyn 4.4) source generator, shipped inside the package. Every reference to the generator leaves its
+       target framework to the SDK's negotiation (no SetTargetFramework): the project has one, so each caller then
+       evaluates it with the solution's own global properties, and a parallel build has one instance of it, not two
+       writing the same obj and bin folders. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Styml.SourceGeneration\Styml.SourceGeneration.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="PACKAGE.md" Pack="true" PackagePath="\" />
+    <None Include="$(RepoRoot)assets\icon.png" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(RepoRoot)THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="buildTransitive\Styml.targets" Pack="true" PackagePath="buildTransitive\" />
+  </ItemGroup>
+
+  <Target Name="PackSourceGenerator" BeforeTargets="_GetPackageFiles">
+    <MSBuild Projects="..\Styml.SourceGeneration\Styml.SourceGeneration.csproj" Targets="GetTargetPath" RemoveProperties="TargetFramework;RuntimeIdentifier">
+      <Output TaskParameter="TargetOutputs" ItemName="_StymlGeneratorAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <None Include="@(_StymlGeneratorAssembly)" Pack="true" PackagePath="analyzers\dotnet\cs\" />
+    </ItemGroup>
+  </Target>
+  <ItemGroup>
+    <!-- The yaml-test-suite trace adapter reads Complex keys through Utf8YamlReader.CreateKeyReader (internal until
+         M5). -->
+    <InternalsVisibleTo Include="Styml.Yaml.Tests" />
+  </ItemGroup>
+</Project>

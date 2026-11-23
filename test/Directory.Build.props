@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!-- Test legs: net11.0 is upstream's only .NET leg at the tag; net10.0 and net481 are added (M2).
+         net481 runs the netstandard2.0 build of the library. -->
+    <StymlTestTargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetFrameworkCurrent)</StymlTestTargetFrameworks>
+  </PropertyGroup>
+</Project>

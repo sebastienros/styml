@@ -1,0 +1,50 @@
+# M4a, on every target: the output style (decision 3), whose unset
+# value still means JSON-compatible until M4c, and the sequence layout option.
+enum System.Text.Yaml.YamlWriterStyle
+System.Text.Yaml.YamlWriterStyle.Block field const System.Text.Yaml.YamlWriterStyle = 0
+System.Text.Yaml.YamlWriterStyle.JsonCompatible field const System.Text.Yaml.YamlWriterStyle = 1
+System.Text.Yaml.YamlWriterOptions.Style property System.Text.Yaml.YamlWriterStyle { get; set; }
+System.Text.Yaml.YamlWriterOptions.IndentSequences property System.Boolean { get; set; }
+# M4a: documents and the style hint for the next string value or property name.
+System.Text.Yaml.Utf8YamlWriter.WriteDocumentStart() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteScalarStyle(System.Text.Yaml.YamlScalarStyle) System.Void
+# M4a: what the serializer reaches.
+System.Text.Yaml.YamlSerializerOptions.WriteStyle property System.Text.Yaml.YamlWriterStyle { get; set; }
+System.Text.Yaml.YamlSerializerOptions.IndentSequences property System.Boolean { get; set; }
+# M4b: node properties and aliases, explicit keys, the end of a
+# document, directives, the collection style hint and its enum, and end-of-line comments.
+System.Text.Yaml.Utf8YamlWriter.WriteAnchor(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAnchor(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAnchor(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteTag(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteTag(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteTag(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAliasValue(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAliasValue(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAliasValue(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAliasPropertyName(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAliasPropertyName(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteAliasPropertyName(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteStartPropertyKey() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteEndPropertyKey() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteDocumentEnd() System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteDirective(System.ReadOnlySpan`1[System.Byte]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteDirective(System.ReadOnlySpan`1[System.Char]) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteDirective(System.String) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteCollectionStyle(System.Text.Yaml.YamlCollectionStyle) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteCommentValue(System.ReadOnlySpan`1[System.Byte], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteCommentValue(System.ReadOnlySpan`1[System.Char], System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteCommentValue(System.String, System.Boolean) System.Void
+enum System.Text.Yaml.YamlCollectionStyle
+System.Text.Yaml.YamlCollectionStyle.Block field const System.Text.Yaml.YamlCollectionStyle = 0
+System.Text.Yaml.YamlCollectionStyle.Flow field const System.Text.Yaml.YamlCollectionStyle = 1
+# M4b: the scalar and layout options (decisions 6, 7 and 9), and what the serializer reaches.
+System.Text.Yaml.YamlWriterOptions.MultiLineStringStyle property System.Text.Yaml.YamlScalarStyle { get; set; }
+System.Text.Yaml.YamlWriterOptions.MaxLineWidth property System.Int32 { get; set; }
+System.Text.Yaml.YamlWriterOptions.ExpandSequenceItems property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.MultiLineStringStyle property System.Text.Yaml.YamlScalarStyle { get; set; }
+System.Text.Yaml.YamlSerializerOptions.MaxLineWidth property System.Int32 { get; set; }
+System.Text.Yaml.YamlSerializerOptions.ExpandSequenceItems property System.Boolean { get; set; }
+# M4b, quirks are opt-in: the quoting for readers that resolve beyond the standards.
+System.Text.Yaml.YamlWriterOptions.QuoteForLenientReaders property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.QuoteForLenientReaders property System.Boolean { get; set; }

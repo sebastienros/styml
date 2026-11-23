@@ -1,0 +1,5 @@
+# M5e: collection keys. The key reader made public, and a
+# property's key kind and key node.
+System.Text.Yaml.Utf8YamlReader.CreateKeyReader() System.Text.Yaml.Utf8YamlReader
+System.Text.Yaml.YamlProperty.GetKeyElement() System.Text.Yaml.YamlElement
+System.Text.Yaml.YamlProperty.KeyKind property System.Text.Yaml.YamlKeyKind { get; }

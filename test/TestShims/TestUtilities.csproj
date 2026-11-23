@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Stand-in for dotnet/runtime src/libraries/Common/tests/TestUtilities/TestUtilities.csproj: the vendored
+       AssertExtensions / ThreadCultureChange / LineEndingsHelper plus a PlatformDetection subset. Like upstream it
+       is a separate assembly referenced by every test project (and is not compiled with the tests'
+       updated-memory-safety-rules feature). -->
+  <PropertyGroup>
+    <TargetFrameworks>$(StymlTestTargetFrameworks)</TargetFrameworks>
+    <AssemblyName>TestUtilities</AssemblyName>
+    <RootNamespace>System</RootNamespace>
+    <IsTestProject>false</IsTestProject>
+    <IsTestSupportProject>true</IsTestSupportProject>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)TestUtilities\System\AssertExtensions.cs" Link="System\AssertExtensions.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\ThreadCultureChange.cs" Link="System\ThreadCultureChange.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\LineEndingsHelper.cs" Link="System\LineEndingsHelper.cs" />
+    <Compile Include="PlatformDetection.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.core" ExcludeAssets="build" />
+    <PackageReference Include="xunit.assert" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" />
+  </ItemGroup>
+
+  <!-- As upstream TestUtilities.csproj -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" Link="Common\System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.Memory" />
+  </ItemGroup>
+</Project>

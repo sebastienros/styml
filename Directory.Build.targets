@@ -1,0 +1,47 @@
+<Project>
+  <!-- Files and settings that dotnet/runtime build infrastructure injects without them appearing in the csprojs
+       (src/libraries/Directory.Build.targets, eng/resources.targets). Listed explicitly here. -->
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <NoWarn>$(NoWarn);nullable;CA1510;CA1511;CA1512;CA1513;CA1845;CA1846;CA1847</NoWarn>
+  </PropertyGroup>
+
+  <!-- Nullable annotation attributes for every non-.NETCoreApp C# build. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="Vendored\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
+  <!-- Polyfills for non-.NETCoreApp, non-test builds. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" Link="Vendored\System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ExceptionPolyfills.cs" Link="Vendored\Common\Polyfills\ExceptionPolyfills.cs" />
+  </ItemGroup>
+
+  <!-- IncludeSpanPolyfills -->
+  <ItemGroup Condition="'$(IncludeSpanPolyfills)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\MemoryExtensionsPolyfills.cs" Link="Vendored\Common\Polyfills\MemoryExtensionsPolyfills.cs" />
+    <Compile Include="$(CommonPath)System\StringPolyfills.cs" Link="Vendored\Common\System\StringPolyfills.cs" />
+    <Compile Include="$(CommonPath)System\Buffers\SearchValuesPolyfills.cs" Link="Vendored\Common\System\Buffers\SearchValuesPolyfills.cs" />
+    <Compile Include="$(CommonPath)System\Text\AsciiPolyfills.cs" Link="Vendored\Common\System\Text\AsciiPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\EncodingPolyfills.cs" Link="Vendored\Common\Polyfills\EncodingPolyfills.cs" />
+  </ItemGroup>
+
+  <!-- IncludeInternalObsoleteAttribute -->
+  <Choose>
+    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+      <ItemGroup>
+        <Compile Include="$(CoreLibSharedDir)System\ObsoleteAttribute.cs" Link="Vendored\System\ObsoleteAttribute.cs" />
+      </ItemGroup>
+      <PropertyGroup>
+        <NoWarn>$(NoWarn);CS0436</NoWarn>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <!-- SkipLocalsInit for .NETCoreApp library builds. -->
+  <ItemGroup Condition="'$(SkipLocalsInit)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="$(CommonPath)SkipLocalsInit.cs" Link="Vendored\Common\SkipLocalsInit.cs" />
+  </ItemGroup>
+
+  <Import Project="$(RepoRoot)eng/Resources.targets" />
+</Project>

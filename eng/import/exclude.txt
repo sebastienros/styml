@@ -1,0 +1,12 @@
+# Upstream paths (relative to the runtime repo root) dropped from 'dir' imports. Reasons in UPSTREAM.md.
+src/libraries/System.Text.Json/src/CompatibilitySuppressions.xml
+src/libraries/System.Text.Json/src/ILLink/ILLink.Descriptors.LibraryBuild.xml
+src/libraries/System.Text.Json/gen/Resources/xlf
+src/libraries/System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn3.11.csproj
+src/libraries/System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.0.csproj
+src/libraries/System.Text.Json/gen/JsonSourceGenerator.Roslyn3.11.cs
+src/libraries/System.Text.Json/tests/System.Text.Json.Tests/TrimmingTests
+src/libraries/System.Text.Json/tests/System.Text.Json.SourceGeneration.TestLibrary/System.Text.Json.TestLibrary.Roslyn3.11.csproj
+src/libraries/System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests/System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj
+src/libraries/System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests/roslyn3.11.rd.xml
+src/libraries/System.Text.Json/tests/System.Text.Json.SourceGeneration.Unit.Tests/System.Text.Json.SourceGeneration.Roslyn3.11.Unit.Tests.csproj

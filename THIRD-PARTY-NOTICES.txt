@@ -1,0 +1,73 @@
+Styml third-party notices
+
+Styml is distributed under the MIT license (see LICENSE). It incorporates material from the projects below, under
+the terms given with each.
+
+dotnet/runtime
+--------------
+Source: https://github.com/dotnet/runtime (tag v11.0.0, commit deae2e32bf0e018e09d64597b7c59b62b73bb3ce)
+Use: Styml is a derivative of System.Text.Json. The library (src/Styml), its source generator
+(src/Styml.SourceGeneration) and their shared sources (src/Common) derive from System.Text.Json's src, gen and
+Common folders, renamed to System.Text.Yaml and adapted to YAML 1.2. src/Vendored holds files that System.Text.Json
+links from dotnet/runtime's shared Common, System.Private.CoreLib and System.Collections sources. The test projects
+test/Styml.Tests, test/Styml.SourceGeneration.Tests, test/Styml.SourceGeneration.Unit.Tests,
+test/Styml.SourceGeneration.TestLibrary, test/Common and test/Vendored derive from System.Text.Json's tests and
+dotnet/runtime's shared test utilities, and docs/upstream holds System.Text.Json's documents. Files that came from
+dotnet/runtime keep its file header, modified or not; UPSTREAM.md records the import, the rename and every local
+deviation. dotnet/runtime's own third-party notices are kept verbatim in docs/upstream/THIRD-PARTY-NOTICES.TXT.
+
+The MIT License (MIT)
+
+Copyright (c) .NET Foundation and Contributors
+
+All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+yaml-test-suite
+---------------
+Source: https://github.com/yaml/yaml-test-suite (data release: tag data-2022-01-17, commit
+6e6c296ae9c9d2d5c4134b4b64d01b29ac19ff6f, the generated data branch; licence from the source release: tag
+v2022-01-17, commit 45db50aecf9b1520f8258938c88f396e96f30831)
+Use: test/yaml-test-suite/data holds the suite's 402 test cases (in.yaml, test.event, and where present error,
+in.json, out.yaml, emit.yaml, ===), vendored unmodified by eng/test/vendor-yaml-test-suite.sh; the name/ and tags/
+symlink indexes are not vendored. The suite is test data only: nothing from it is compiled into or shipped with
+Styml. The licence text is also in test/yaml-test-suite/License.
+
+MIT License
+
+Copyright (c) 2016-2020 Ingy döt Net
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

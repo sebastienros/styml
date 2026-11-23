@@ -1,0 +1,10 @@
+<Project>
+  <!-- The .NET SDK maps the JsonSerializerIsReflectionEnabledByDefault MSBuild property to the
+       System.Text.Json runtime feature switch only for the real System.Text.Json. This is the equivalent
+       mapping for Styml's renamed switch (see YamlSerializer.Helpers.cs, [FeatureSwitchDefinition]). -->
+  <ItemGroup Condition="'$(YamlSerializerIsReflectionEnabledByDefault)' != ''">
+    <RuntimeHostConfigurationOption Include="System.Text.Yaml.YamlSerializer.IsReflectionEnabledByDefault"
+                                    Value="$(YamlSerializerIsReflectionEnabledByDefault)"
+                                    Trim="true" />
+  </ItemGroup>
+</Project>

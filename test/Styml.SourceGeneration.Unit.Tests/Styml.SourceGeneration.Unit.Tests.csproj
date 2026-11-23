@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Derived from upstream tests/System.Text.Json.SourceGeneration.Unit.Tests/System.Text.Json.SourceGeneration.Roslyn4.4.Unit.Tests.csproj
+       + System.Text.Json.SourceGeneration.Unit.Tests.targets (renamed). Compile item groups verbatim. -->
+  <PropertyGroup>
+    <TargetFrameworks>$(StymlTestTargetFrameworks)</TargetFrameworks>
+    <AssemblyName>Styml.SourceGeneration.Unit.Tests</AssemblyName>
+    <Features>$(Features);updated-memory-safety-rules</Features>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
+    <DefineConstants Condition="'$(UpdateBaselines)' == 'true'">$(DefineConstants);UPDATE_BASELINES</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)SourceGenerators\GeneratorTestHelpers.cs" Link="SourceGenerators\GeneratorTestHelpers.cs" />
+    <Compile Include="$(CommonTestPath)SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
+    <Compile Include="CompilationHelper.cs" />
+    <!-- M5d's own tests (not imported). -->
+    <Compile Include="TagDiscriminatorGeneratorTests.cs" />
+    <Compile Include="WriteFeatureGeneratorTests.cs" />
+    <Compile Include="YamlSourceGeneratorDiagnosticsTests.cs" />
+    <Compile Include="YamlSourceGeneratorIncrementalTests.cs" />
+    <Compile Include="YamlSourceGeneratorOutputTests.cs" />
+    <Compile Include="YamlSourceGeneratorTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Baselines\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Upstream: Microsoft.CodeAnalysis $(MicrosoftCodeAnalysisVersion_4_8) + live System.Composition. -->
+    <PackageReference Include="Microsoft.CodeAnalysis" />
+    <PackageReference Include="System.Composition" />
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <ProjectReference Include="$(RepoRoot)src\Styml.SourceGeneration\Styml.SourceGeneration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.IO.Pipelines" />
+    <PackageReference Include="System.Reflection.Metadata" />
+    <Reference Include="System" />
+  </ItemGroup>
+
+  <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

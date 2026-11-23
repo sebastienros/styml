@@ -1,0 +1,306 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Derived from upstream tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj (renamed). Compile item
+       groups are upstream's verbatim (BitStack.cs repointed at src/Styml). References (M2). -->
+
+  <PropertyGroup>
+    <TargetFrameworks>$(StymlTestTargetFrameworks)</TargetFrameworks>
+    <AssemblyName>Styml.Tests</AssemblyName>
+    <RootNamespace>System.Text.Yaml.Tests</RootNamespace>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- SYSLIB0020: YamlSerializerOptions.IgnoreNullValues is obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+    <!-- SYSLIB0049: YamlSerializerOptions.AddContext is obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0049</NoWarn>
+    <!-- Disable analyzers warnings about JSON being misformatted in string literals -->
+    <NoWarn>$(NoWarn);JSON001</NoWarn>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <UsesJsonSchemaNet>true</UsesJsonSchemaNet>
+    <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
+    <Features>$(Features.Replace('nullablePublicOnly', ''));updated-memory-safety-rules</Features>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\DateTimeTestHelpers.cs" Link="CommonTest\System\DateTimeTestHelpers.cs" />
+    <Compile Include="..\Common\AsyncEnumerableTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\AsyncEnumerableTests.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.AsyncEnumerable.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Concurrent.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Generic.Read.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Generic.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Generic.Write.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Generic.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Immutable.Read.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Immutable.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.KeyValuePair.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.KeyValuePair.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Memory.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Memory.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.NonGeneric.Read.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.NonGeneric.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.NonGeneric.Write.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.NonGeneric.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.ObjectModel.Read.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.ObjectModel.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.ObjectModel.Write.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.ObjectModel.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Specialized.Read.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Specialized.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Specialized.Write.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Specialized.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Immutable.Write.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\CollectionTests\CollectionTests.Immutable.Write.cs" />
+    <Compile Include="..\Common\ConstructorTests\ConstructorTests.AttributePresence.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ConstructorTests\ConstructorTests.AttributePresence.cs" />
+    <Compile Include="..\Common\ConstructorTests\ConstructorTests.Cache.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ConstructorTests\ConstructorTests.Cache.cs" />
+    <Compile Include="..\Common\ConstructorTests\ConstructorTests.Exceptions.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ConstructorTests\ConstructorTests.Exceptions.cs" />
+    <Compile Include="..\Common\ConstructorTests\ConstructorTests.ParameterMatching.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ConstructorTests\ConstructorTests.ParameterMatching.cs" />
+    <Compile Include="..\Common\ConstructorTests\ConstructorTests.Stream.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
+    <Compile Include="..\Common\ExtensionDataTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ExtensionDataTests.cs" />
+    <Compile Include="..\Common\StreamingYamlSerializerWrapper.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\StreamingYamlSerializerWrapper.cs" />
+    <Compile Include="..\Common\YamlCreationHandlingTests.Dictionary.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\YamlCreationHandlingTests.Dictionary.cs" />
+    <Compile Include="..\Common\YamlCreationHandlingTests.Enumerable.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\YamlCreationHandlingTests.Enumerable.cs" />
+    <Compile Include="..\Common\YamlCreationHandlingTests.Generic.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\YamlCreationHandlingTests.Generic.cs" />
+    <Compile Include="..\Common\YamlCreationHandlingTests.Object.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\YamlCreationHandlingTests.Object.cs" />
+    <Compile Include="..\Common\YamlNumberTestData.cs" Link="CommonTest\System\Text\Yaml\Tests\YamlNumberTestData" />
+    <Compile Include="..\Common\YamlSerializerWrapper.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\YamlSerializerWrapper.cs" />
+    <Compile Include="..\Common\YamlSchemaExporterTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\YamlSchemaExporterTests.cs" />
+    <Compile Include="..\Common\YamlSchemaExporterTests.TestTypes.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\YamlSchemaExporterTests.TestTypes.cs" />
+    <Compile Include="..\Common\YamlTestHelper.cs" Link="CommonTest\System\Text\Yaml\YamlTestHelper.cs" />
+    <Compile Include="..\Common\YamlTestSerializerOptions.cs" Link="CommonTest\System\Text\Yaml\YamlTestSerializerOptions.cs" />
+    <Compile Include="..\Common\MetadataTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\MetadataTests\MetadataTests.cs" />
+    <Compile Include="..\Common\MetadataTests.YamlSerializer.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\MetadataTests\MetadataTests.YamlSerializer.cs" />
+    <Compile Include="..\Common\MetadataTests.Options.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\MetadataTests\MetadataTests.Options.cs" />
+    <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\NodeInteropTests.cs" />
+    <Compile Include="..\Common\NullableAnnotationsTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\NullableAnnotationsTests.cs" />
+    <Compile Include="..\Common\NumberHandlingTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\NumberHandlingTests.cs" />
+    <Compile Include="..\Common\PipeYamlSerializerWrapper.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PipeYamlSerializerWrapper.cs" />
+    <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PropertyNameTests.cs" />
+    <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
+    <Compile Include="..\Common\PropertyVisibilityTests.NonPublicAccessors.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
+    <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.cs" />
+    <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.Deserialize.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.Deserialize.cs" />
+    <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.IgnoreCycles.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.IgnoreCycles.cs" />
+    <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.Serialize.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.Serialize.cs" />
+    <Compile Include="..\Common\RequiredKeywordTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\RequiredKeywordTests.cs" />
+    <Compile Include="..\Common\SampleTestData.OrderPayload.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\SampleTestData.OrderPayload.cs" />
+    <Compile Include="..\Common\SerializerTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\SerializerTests.cs" />
+    <Compile Include="..\Common\StructuralYamlTypeClassifierTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\StructuralYamlTypeClassifierTests.cs" />
+    <Compile Include="..\Common\Utf8MemoryStream.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\Utf8MemoryStream.cs" />
+    <Compile Include="..\Common\UnmappedMemberHandlingTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\UnmappedMemberHandlingTests.cs" />
+    <Compile Include="..\Common\UnionTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\UnionTests.cs" />
+    <Compile Include="..\Common\PolymorphicTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PolymorphicTests.cs" />
+    <Compile Include="..\Common\PolymorphicTests.ClosedTypeInference.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PolymorphicTests.ClosedTypeInference.cs" />
+    <Compile Include="..\Common\PolymorphicTests.CustomTypeHierarchies.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PolymorphicTests.CustomTypeHierarchies.cs" />
+    <Compile Include="..\Common\PolymorphicTests.TypeClassifier.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\PolymorphicTests.TypeClassifier.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.ConcurrentCollections.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.Constructor.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.Constructor.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.GenericCollections.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.GenericCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.ImmutableCollections.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.ImmutableCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.NonGenericCollections.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.NonGenericCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.Polymorphic.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.Polymorphic.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClass.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestClass.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithFields.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithFields.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithNullables.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithNullables.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithObject.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithObject.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithObjectArrays.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithObjectArrays.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestStruct.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestStruct.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestStructWithFields.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.ValueTypedMember.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
+    <Compile Include="..\Common\TestClasses\TestData.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\TestClasses\TestData.cs" />
+    <Compile Include="..\Common\UnsupportedTypesTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\UnsupportedTypesTests.cs" />
+    <Compile Include="BitStackTests.cs" />
+    <Compile Include="BufferFactory.cs" />
+    <Compile Include="BufferSegment.cs" />
+    <Compile Include="DebuggerTests.cs" />
+    <Compile Include="FixedSizedBufferWriter.cs" />
+    <Compile Include="InvalidBufferWriter.cs" />
+    <Compile Include="YamlBase64TestData.cs" />
+    <Compile Include="YamlDateTimeTestData.cs" />
+    <Compile Include="YamlDocumentTests.cs" />
+    <Compile Include="YamlElementCloneTests.cs" />
+    <Compile Include="YamlElementParseTests.cs" />
+    <Compile Include="YamlElementWriteTests.cs" />
+    <Compile Include="YamlEncodedTextTests.cs" />
+    <Compile Include="YamlGuidTestData.cs" />
+    <Compile Include="YamlNode\Common.cs" />
+    <Compile Include="YamlNode\YamlArrayTests.cs" />
+    <Compile Include="YamlNode\YamlNodeTests.cs" />
+    <Compile Include="YamlNode\YamlNodeOperatorTests.cs" />
+    <Compile Include="YamlNode\YamlObjectTests.cs" />
+    <Compile Include="YamlNode\YamlValueTests.cs" />
+    <Compile Include="YamlNode\ParseTests.cs" />
+    <Compile Include="YamlNode\ParentPathRootTests.cs" />
+    <Compile Include="YamlNode\ToStringTests.cs" />
+    <Compile Include="YamlPropertyTests.cs" />
+    <Compile Include="YamlReaderStateAndOptionsTests.cs" />
+    <Compile Include="YamlTestHelper.cs" />
+    <Compile Include="YamlWriterOptionsTests.cs" />
+    <Compile Include="NewtonsoftTests\CamelCaseTests.cs" />
+    <Compile Include="NewtonsoftTests\CustomObjectConverterTests.cs" />
+    <Compile Include="NewtonsoftTests\DateTimeConverterTests.cs" />
+    <Compile Include="NewtonsoftTests\EnumConverterTests.cs" />
+    <Compile Include="NewtonsoftTests\ImmutableCollectionsTests.cs" />
+    <Compile Include="NewtonsoftTests\YamlSerializerTests.cs" />
+    <Compile Include="Serialization\Array.ReadTests.cs" />
+    <Compile Include="Serialization\Array.WriteTests.cs" />
+    <Compile Include="Serialization\AsyncEnumerableTests.cs" />
+    <Compile Include="Serialization\CacheTests.cs" />
+    <Compile Include="Serialization\CollectionTests.cs" />
+    <Compile Include="Serialization\ConstructorTests.cs" />
+    <Compile Include="Serialization\ContinuationTests.cs" />
+    <Compile Include="Serialization\ContinuationTests.NullToken.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Array.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Attribute.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.BadConverters.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Callback.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ContravariantDictionaryConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DerivedTypes.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryEnumConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryGuidConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryInt32StringConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryInt32StringKeyValueConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryKeyValueConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.Tests.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Enum.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Exceptions.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.HandleNull.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Interface.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.InvalidCast.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.KeyConverters.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.List.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullValueType.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullableTypes.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Object.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Point.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Polymorphic.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ReadAhead.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
+    <Compile Include="Serialization\YamlCreationHandlingTests.cs" />
+    <Compile Include="Serialization\YamlSchemaExporterTests.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultYamlPropertyInfo.cs" />
+    <Compile Include="Serialization\Pipe.ReadTests.cs" />
+    <Compile Include="Serialization\Pipe.WriteTests.cs" />
+    <Compile Include="Serialization\PipeTests.cs" />
+    <Compile Include="Serialization\RequiredKeywordTests.cs" />
+    <Compile Include="Serialization\CyclicTests.cs" />
+    <Compile Include="Serialization\DomTests.cs" />
+    <Compile Include="Serialization\DynamicTests.cs" />
+    <Compile Include="Serialization\EnumConverterTests.cs" />
+    <Compile Include="Serialization\EnumTests.cs" />
+    <Compile Include="Serialization\ExceptionTests.cs" />
+    <Compile Include="Serialization\ExtensionDataTests.cs" />
+    <Compile Include="Serialization\InvalidYamlTests.cs" />
+    <Compile Include="Serialization\InvalidTypeTests.cs" />
+    <Compile Include="Serialization\YamlDocumentTests.cs" />
+    <Compile Include="Serialization\YamlElementTests.cs" />
+    <Compile Include="Serialization\YamlPolymorphismOptionsTests.cs" />
+    <Compile Include="Serialization\YamlSerializerApiValidation.cs" />
+    <Compile Include="Serialization\YamlSerializerWrapper.Reflection.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultYamlTypeInfoResolverMultiContextTests.cs" />
+    <Compile Include="Serialization\MetadataTests\YamlTypeInfoResolverTests.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultYamlTypeInfoResolverTests.YamlPropertyInfo.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultYamlTypeInfoResolverTests.YamlTypeInfo.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultYamlTypeInfoResolverTests.cs" />
+    <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
+    <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
+    <Compile Include="Serialization\NamingPolicyUnitTests.cs" />
+    <Compile Include="Serialization\NodeInteropTests.cs" />
+    <Compile Include="Serialization\Null.ReadTests.cs" />
+    <Compile Include="Serialization\Null.WriteTests.cs" />
+    <Compile Include="Serialization\NullableTests.cs" />
+    <Compile Include="Serialization\NullableAnnotationsTests.cs" />
+    <Compile Include="Serialization\NumberHandlingTests.cs" />
+    <Compile Include="Serialization\Object.ReadTests.cs" />
+    <Compile Include="Serialization\Object.WriteTests.cs" />
+    <Compile Include="Serialization\OnSerializeTests.cs" />
+    <Compile Include="Serialization\OptionsTests.cs" />
+    <Compile Include="Serialization\PolymorphicTests.cs" />
+    <Compile Include="Serialization\StructuralYamlTypeClassifierTests.cs" />
+    <Compile Include="Serialization\UnionTests.cs" />
+    <Compile Include="Serialization\PropertyNameTests.cs" />
+    <Compile Include="Serialization\PropertyOrderTests.cs" />
+    <Compile Include="Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="Serialization\ReadScenarioTests.cs" />
+    <Compile Include="Serialization\ReadValueTests.cs" />
+    <Compile Include="Serialization\ReferenceHandlerTests.cs" />
+    <Compile Include="Serialization\SpanTests.cs" />
+    <Compile Include="Serialization\StreamTests.cs" />
+    <Compile Include="Serialization\Stream.Collections.cs" />
+    <Compile Include="Serialization\Stream.ReadTests.cs" />
+    <Compile Include="Serialization\Stream.WriteTests.cs" />
+    <Compile Include="Serialization\StreamTests.ChunkedReaderStream.cs" />
+    <Compile Include="Serialization\TypeInfoResolverFunctionalTests.cs" />
+    <Compile Include="Serialization\UnmappedMemberHandlingTests.cs" />
+    <Compile Include="Serialization\UnsupportedTypesTests.cs" />
+    <Compile Include="Serialization\Value.ReadTests.cs" />
+    <Compile Include="Serialization\Value.WriteTests.cs" />
+    <Compile Include="Serialization\WriteValueTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\*.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\*.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\*.cs" />
+    <Compile Include="SourceGenRegressionTests\Net90RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net90\*.cs" />
+    <Compile Include="TestCaseType.cs" />
+    <Compile Include="Utf8YamlReaderTests.cs" />
+    <Compile Include="Utf8YamlReaderTests.MultiSegment.cs" />
+    <Compile Include="Utf8YamlReaderTests.TryGet.cs" />
+    <Compile Include="Utf8YamlReaderTests.TryGet.Date.cs" />
+    <Compile Include="Utf8YamlReaderTests.ValueTextEquals.cs" />
+    <Compile Include="Utf8YamlWriterTests.Values.StringSegment.cs" />
+    <Compile Include="Utf8YamlWriterTests.cs" />
+    <Compile Include="Utf8YamlWriterTests.WriteRaw.cs" />
+    <Compile Include="$(RepoRoot)src\Styml\System\Text\Yaml\BitStack.cs" Link="BitStack.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="Serialization\ConvertersForUnsupportedTypesFunctionalTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="..\Common\Ieee754NumericConverterTests.cs" Link="CommonTest\System\Text\Yaml\Tests\Serialization\Ieee754NumericConverterTests.cs" />
+    <Compile Include="Serialization\Ieee754NumericConverterTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IUnion.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\IUnion.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsClosedTypeAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\IsClosedTypeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\UnionAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\UnionAttribute.cs" />
+  </ItemGroup>
+
+  <!-- Upstream links these for .NET Framework only; they are in the net11.0 ref pack but not in net10.0. -->
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppPrevious)'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IUnion.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\IUnion.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsClosedTypeAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\IsClosedTypeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\UnionAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\UnionAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <ProjectReference Include="$(RepoRoot)src\Styml.SourceGeneration\Styml.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.Collections.Immutable" />
+    <PackageReference Include="System.IO.Pipelines" />
+    <PackageReference Include="System.Linq.AsyncEnumerable" />
+    <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="System.ComponentModel.Annotations" />
+  </ItemGroup>
+</Project>

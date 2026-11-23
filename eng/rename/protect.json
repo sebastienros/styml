@@ -1,0 +1,107 @@
+{
+  "roots": [
+    "src",
+    "test"
+  ],
+  "text_extensions": [
+    ".cs",
+    ".csproj",
+    ".targets",
+    ".props",
+    ".resx",
+    ".xml",
+    ".txt",
+    ".md",
+    ".slnx",
+    ".json"
+  ],
+  "content_exclude": [
+    "src/Vendored/CoreLib/System/Diagnostics/CodeAnalysis/StringSyntaxAttribute.cs",
+    "test/EXCLUSIONS.md"
+  ],
+  "path_exclude": [
+    "src/Vendored/*",
+    "test/Vendored/*"
+  ],
+  "protect": {
+    "global": [
+      "\\bStringSyntaxAttribute\\.Json\\b",
+      "\\bNewtonsoft\\.Json(?:\\.[A-Za-z_][A-Za-z0-9_]*)*",
+      "\\bSystem\\.Net\\.Http\\.Json\\b",
+      "\\bSystem\\.Runtime\\.Serialization\\.Json\\b",
+      "\\bMicrosoft\\.AspNetCore\\.SignalR\\.Protocols\\.Json\\b",
+      "\\bJsonSchema\\.Net\\b",
+      "\\bUnsafeRelaxedJsonEscaping\\b"
+    ],
+    "scoped": [
+      {
+        "name": "JsonSchema.Net types (files importing the Json.Schema namespace)",
+        "when": "\\busing Json\\.Schema;",
+        "tokens": [
+          "\\bJson\\.Schema\\b",
+          "\\bJsonSchema\\b"
+        ]
+      },
+      {
+        "name": "Newtonsoft.Json types that System.Text.Json does not define (files mentioning Newtonsoft)",
+        "when": "\\bNewtonsoft\\b",
+        "tokens": [
+          "\\bJsonConvert\\b",
+          "\\bJsonSerializationException\\b",
+          "\\bJsonSerializerSettings\\b",
+          "\\bJsonTextReader\\b",
+          "\\bJsonTextWriter\\b",
+          "\\bJsonToken\\b",
+          "\\bJsonWriter\\b"
+        ],
+        "comment": "Derived from Newtonsoft.Json 13.0.4 exported types (reflection) intersected with identifiers used in files mentioning Newtonsoft, minus names System.Text.Json also defines."
+      },
+      {
+        "name": "naming-policy test data (input/expected pairs copied from Json.NET; renaming one side breaks the pair)",
+        "when": ".",
+        "files": [
+          "test/Styml.Tests/Serialization/NamingPolicyUnitTests.cs"
+        ],
+        "tokens": [
+          "\"[^\"\\n]*Json[^\"\\n]*\""
+        ]
+      }
+    ]
+  },
+  "diagnostic_ids": {
+    "comment": "System.Text.Json source generator ranges only (SYSLIB1030-1039, 1220-1229, 1240-1249). SYSLIB0xxx obsoletions are left alone.",
+    "pattern": "\\bSYSLIB(103[0-9]|122[0-9]|124[0-9])\\b",
+    "replacement": "STYML\\1"
+  },
+  "fixups": [
+    {
+      "name": "generator identity in source-generator baselines",
+      "comment": "Upstream baselines hard-code the generator assembly name and Arcade's dev version 42.42.42.42. The generator assembly is Styml.SourceGeneration, and the test substitutes %VERSION% with the generator's real version.",
+      "files": [
+        "test/Styml.SourceGeneration.Unit.Tests/Baselines/*"
+      ],
+      "pattern": "GeneratedCodeAttribute\\(\"System\\.Text\\.Yaml\\.SourceGeneration\", \"42\\.42\\.42\\.42\"\\)",
+      "replacement": "GeneratedCodeAttribute(\"Styml.SourceGeneration\", \"%VERSION%\")"
+    }
+  ],
+  "expected_counts": {
+    "\"[^\"\\n]*Json[^\"\\n]*\"": 9,
+    "\\bJsonConvert\\b": 26,
+    "\\bJsonSchema\\.Net\\b": 2,
+    "\\bJsonSchema\\b": 2,
+    "\\bJsonSerializationException\\b": 2,
+    "\\bJsonSerializerSettings\\b": 2,
+    "\\bJsonTextReader\\b": 11,
+    "\\bJsonTextWriter\\b": 36,
+    "\\bJsonToken\\b": 24,
+    "\\bJsonWriter\\b": 1,
+    "\\bJson\\.Schema\\b": 1,
+    "\\bMicrosoft\\.AspNetCore\\.SignalR\\.Protocols\\.Json\\b": 5,
+    "\\bNewtonsoft\\.Json(?:\\.[A-Za-z_][A-Za-z0-9_]*)*": 73,
+    "\\bStringSyntaxAttribute\\.Json\\b": 23,
+    "\\bSystem\\.Net\\.Http\\.Json\\b": 2,
+    "\\bSystem\\.Runtime\\.Serialization\\.Json\\b": 4,
+    "\\bUnsafeRelaxedJsonEscaping\\b": 59,
+    "fixup: generator identity in source-generator baselines": 38
+  }
+}

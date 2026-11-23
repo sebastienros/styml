@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tests of the YAML grammar (M3). -->
+  <PropertyGroup>
+    <TargetFrameworks>$(StymlTestTargetFrameworks)</TargetFrameworks>
+    <AssemblyName>Styml.Yaml.Tests</AssemblyName>
+    <RootNamespace>System.Text.Yaml.Tests</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="YamlTestSuite\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\yaml-test-suite\data\**\*" LinkBase="yaml-test-suite" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="YamlTestSuite\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="JsonCorpus\corpus.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="BlockQuotingSpecPatternTests.overquoted.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The M6a documents (bench/corpus), read through sequences by SequenceTests (M3c). Copied so the tests also run
+         where only the test output is present (the net481 leg on another machine). -->
+    <None Include="..\..\bench\corpus\*.yaml;..\..\bench\corpus\*.json" LinkBase="BenchCorpus" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="PublicApi\*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <ProjectReference Include="$(RepoRoot)src\Styml.SourceGeneration\Styml.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- The JSON oracle is System.Text.Json 11.0.0, the version Styml was cloned from, on every TFM: in-box on net11.0,
+       the package elsewhere. On net10.0 the in-box 10.0 differs (for example, positions reported through
+       Deserialize<T>(ref Utf8JsonReader) are relative to the value there). -->
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.Memory" />
+    <!-- Records (init accessors) need it on .NET Framework, as in the imported test projects. -->
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <!-- M5c: `required` members in the tests, as Styml.Tests links them for .NET Framework. -->
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
+  </ItemGroup>
+</Project>

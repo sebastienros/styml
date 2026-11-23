@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- M6a read-side benchmarks. Run:
+         dotnet run -c Release -f net11.0 (project bench/Styml.Benchmarks), then 'check' or BenchmarkDotNet arguments
+       Not part of the solution build (Styml.slnx) and not a test project. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Styml.Benchmarks</RootNamespace>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <!-- BenchmarkDotNet's generated projects inherit these files; keep analyzers and warnings from breaking them. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS1591;CA1822;CA1050</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- M4: keeps the writer's default style JSON-compatible once M4a
+         adds the switch, so that the dll swap against 9835d4d compares like with like. Older Styml.dll files ignore it. -->
+    <RuntimeHostConfigurationOption Include="System.Text.Yaml.Utf8YamlWriter.UseJsonCompatibleStyle" Value="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <ProjectReference Include="$(RepoRoot)src\Styml.SourceGeneration\Styml.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Styml.Benchmarks.Model\Styml.Benchmarks.Model.csproj" />
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
+    <PackageReference Include="SharpYaml" />
+    <PackageReference Include="VYaml" />
+  </ItemGroup>
+</Project>
