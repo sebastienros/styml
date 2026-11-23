@@ -1,0 +1,5 @@
+12, 12, 12
+quoted: YamlException: The YAML value could not be converted to System.Int32. Path: $.a | LineNumber: 0 | BytePositionInLine: 7.
+lenient: 12
+string: true
+object: YamlElement 12

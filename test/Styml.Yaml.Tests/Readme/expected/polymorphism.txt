@@ -1,0 +1,6 @@
+- !circle
+  Radius: 1.5
+- !box
+  Side: 2
+
+Circle, Square

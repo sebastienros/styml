@@ -70,6 +70,767 @@ Styml is an independent project. It is not a Microsoft or .NET Foundation produc
 Most of its code is System.Text.Json's, under the MIT license of the .NET Foundation and its contributors; see
 [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 
+## Usage
+
+- [Serialize and deserialize](#serialize-and-deserialize)
+- [Choose the output](#choose-the-output)
+- [Scalar styles and quoting](#scalar-styles-and-quoting)
+- [Comments, order and omitted members](#comments-order-and-omitted-members)
+- [Schemas and typed reads](#schemas-and-typed-reads)
+- [Duplicate keys and empty input](#duplicate-keys-and-empty-input)
+- [Anchors and aliases](#anchors-and-aliases)
+- [Merge keys](#merge-keys)
+- [Tags and polymorphism](#tags-and-polymorphism)
+- [Collection keys](#collection-keys)
+- [Several documents in one stream](#several-documents-in-one-stream)
+- [The DOM](#the-dom)
+- [The reader and the writer](#the-reader-and-the-writer)
+- [JSON](#json)
+- [Options reference](docs/options.md)
+
+Every sample below is a test (`test/Styml.Yaml.Tests/Readme`) and its output is the one the test checks. The samples
+use these types:
+
+<!-- sample:types -->
+```csharp
+public record Service(string Name, string Image, int[] Ports, Dictionary<string, string> Environment);
+
+[YamlSerializable(typeof(Service))]
+[YamlSourceGenerationOptions(PropertyNamingPolicy = YamlKnownNamingPolicy.CamelCase, IndentSequences = true)]
+public partial class AppYamlContext : YamlSerializerContext;
+```
+<!-- /sample:types -->
+
+The writer ends lines with `Environment.NewLine` unless `NewLine` is set; the outputs are shown with `\n`.
+
+### Serialize and deserialize
+
+`YamlSerializer` has the methods of `JsonSerializer`: `Serialize`, `Deserialize`, `SerializeToUtf8Bytes`, the stream,
+`PipeReader` and async overloads, and `DeserializeAsyncEnumerable`. With reflection:
+
+<!-- sample:reflection -->
+```csharp
+string yaml = YamlSerializer.Serialize(service);
+Service back = YamlSerializer.Deserialize<Service>(yaml)!;
+```
+
+```yaml
+Name: web
+Image: nginx:1.27
+Ports:
+- 80
+- 443
+Environment:
+  TIER: front
+  REPLICAS: "3"
+```
+<!-- /sample:reflection -->
+
+With a source-generated context, for trimming and Native AOT. `[YamlSourceGenerationOptions]` takes System.Text.Json's
+options and the YAML ones (`WriteStyle`, `IndentSequences`, `Schema`, `DuplicateKeyHandling` and the others in the
+[options reference](docs/options.md)):
+
+<!-- sample:source-generated -->
+```csharp
+string yaml = YamlSerializer.Serialize(service, AppYamlContext.Default.Service);
+Service back = YamlSerializer.Deserialize(yaml, AppYamlContext.Default.Service)!;
+```
+
+```yaml
+name: web
+image: nginx:1.27
+ports:
+  - 80
+  - 443
+environment:
+  TIER: front
+  REPLICAS: "3"
+```
+<!-- /sample:source-generated -->
+
+Streams and async work as with System.Text.Json:
+
+<!-- sample:streams -->
+```csharp
+using var stream = new MemoryStream();
+await YamlSerializer.SerializeAsync(stream, service);
+stream.Position = 0;
+Service? back = await YamlSerializer.DeserializeAsync<Service>(stream);
+```
+
+```text
+web: 2 ports
+```
+<!-- /sample:streams -->
+
+### Choose the output
+
+Block style is the default. `WriteStyle = YamlWriterStyle.JsonCompatible` writes JSON instead, which `WriteIndented`
+formats as System.Text.Json does; block YAML is always written on lines, with `IndentSize` (2 by default, at least 2)
+and `IndentSequences` (a sequence under a key at the key's column by default):
+
+<!-- sample:output-styles -->
+```csharp
+var json = new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible, WriteIndented = true };
+var indented = new YamlSerializerOptions { IndentSequences = true, IndentSize = 4 };
+string output = YamlSerializer.Serialize(value, json) + "\n" + YamlSerializer.Serialize(value, indented);
+```
+
+```text
+{
+  "Name": "web",
+  "Ports": [
+    80,
+    443
+  ],
+  "Env": {
+    "Tier": "front"
+  }
+}
+Name: web
+Ports:
+    - 80
+    - 443
+Env:
+    Tier: front
+```
+<!-- /sample:output-styles -->
+
+A mapping that is a sequence item starts on the dash's line; `ExpandSequenceItems` puts it on the next line:
+
+<!-- sample:expanded-items -->
+```csharp
+string compact = YamlSerializer.Serialize(value);
+string expanded = YamlSerializer.Serialize(value, new YamlSerializerOptions { ExpandSequenceItems = true });
+```
+
+```yaml
+- Name: a
+  Port: 80
+- Name: b
+  Port: 81
+
+-
+  Name: a
+  Port: 80
+-
+  Name: b
+  Port: 81
+```
+<!-- /sample:expanded-items -->
+
+`MaxLineWidth` folds plain and double-quoted scalars at a space past the width, and continues a flow collection on a
+new line; 0, the default, folds nothing:
+
+<!-- sample:line-width -->
+```csharp
+var value = new
+{
+    Description = "A long description that goes on well past the width the writer is given, so it folds.",
+    Tags = new[] { "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta" },
+};
+var options = new YamlSerializerOptions { MaxLineWidth = 40 };
+string yaml = YamlSerializer.Serialize(value, options);
+string flow = YamlNode.Parse("tags: [alpha, beta, gamma, delta, epsilon, zeta, eta, theta]")!.ToYamlString(options);
+```
+
+```yaml
+Description: A long description that
+  goes on well past the width the writer
+  is given, so it folds.
+Tags:
+- alpha
+- beta
+- gamma
+- delta
+- epsilon
+- zeta
+- eta
+- theta
+
+tags: [alpha, beta, gamma, delta, epsilon,
+  zeta, eta, theta]
+```
+<!-- /sample:line-width -->
+
+`NewLine` sets the line break, `"\n"` or `"\r\n"`:
+
+<!-- sample:new-line -->
+```csharp
+var options = new YamlSerializerOptions { NewLine = "\r\n" };
+string yaml = YamlSerializer.Serialize(new { A = 1, B = 2 }, options);
+bool crlf = yaml == "A: 1\r\nB: 2\r\n";
+```
+<!-- /sample:new-line -->
+
+### Scalar styles and quoting
+
+A string is written plain unless a YAML reader would read it as something else, or the syntax requires quotes: a
+YAML 1.2 core value (`3`, `true`, `null`), a YAML 1.1 value (`yes`, a date), an indicator at the start, `: ` or ` #`
+inside. Those are double-quoted. `QuoteForLenientReaders` also quotes what some readers resolve although no standard
+does, such as Ruby's Psych reading `nan`:
+
+<!-- sample:quoting -->
+```csharp
+var values = new Dictionary<string, string>
+{
+    ["text"] = "plain text",
+    ["number"] = "3",
+    ["boolean"] = "true",
+    ["yaml11"] = "yes",
+    ["null"] = "null",
+    ["date"] = "2001-12-14",
+    ["indicator"] = "- dash",
+    ["colon"] = "a: b",
+    ["comment"] = "a #b",
+};
+string yaml = YamlSerializer.Serialize(values);
+string lenient = YamlSerializer.Serialize(new[] { "nan", "Infinity" }, new YamlSerializerOptions { QuoteForLenientReaders = true });
+```
+
+```yaml
+text: plain text
+number: "3"
+boolean: "true"
+yaml11: "yes"
+"null": "null"
+date: "2001-12-14"
+indicator: "- dash"
+colon: "a: b"
+comment: "a #b"
+
+- nan
+- Infinity
+
+- "nan"
+- "Infinity"
+```
+<!-- /sample:quoting -->
+
+A string with a line break is a literal block scalar by default (`MultiLineStringStyle`: `Literal`, `Folded` or
+`DoubleQuoted`). `[YamlScalarStyle]` sets one member's style, `DefaultScalarStyle` every other string's; a style that
+cannot hold the text gives way to the writer's own choice, and a literal or folded style applies to a string with a
+line break only:
+
+<!-- sample:styled -->
+```csharp
+public class Note
+{
+    public string Title { get; set; } = "";
+
+    [YamlScalarStyle(YamlScalarStyle.Folded)]
+    public string Summary { get; set; } = "";
+
+    public string Body { get; set; } = "";
+
+    public string Signature { get; set; } = "";
+}
+```
+<!-- /sample:styled -->
+
+<!-- sample:scalar-styles -->
+```csharp
+var note = new Note
+{
+    Title = "Release",
+    Summary = "A summary on two lines\nthat a folded scalar keeps.",
+    Body = "line one\nline two\n",
+    Signature = "the team",
+};
+string literal = YamlSerializer.Serialize(note);
+string singleQuoted = YamlSerializer.Serialize(note, new YamlSerializerOptions { DefaultScalarStyle = YamlScalarStyle.SingleQuoted });
+```
+
+```yaml
+Title: Release
+Summary: >-
+  A summary on two lines
+
+  that a folded scalar keeps.
+Body: |
+  line one
+  line two
+Signature: the team
+
+Title: 'Release'
+Summary: >-
+  A summary on two lines
+
+  that a folded scalar keeps.
+Body: 'line one
+
+  line two
+
+  '
+Signature: 'the team'
+```
+<!-- /sample:scalar-styles -->
+
+### Comments, order and omitted members
+
+`[YamlComment]` writes a comment line above a member, in block style. `MappingOrder = Sorted` writes an object's members
+by `[YamlPropertyOrder]`, then by name in ordinal order (dictionaries keep their own order), and `YamlIgnoreCondition.WhenWritingEmptyCollection` leaves out null values and empty collections, as
+YamlDotNet's `OmitNull | OmitEmptyCollections` does:
+
+<!-- sample:comments -->
+```csharp
+public class Settings
+{
+    [YamlComment("How many workers to start.")]
+    public int Workers { get; set; } = 4;
+
+    public List<string> Hosts { get; set; } = [];
+
+    public string? Region { get; set; }
+
+    public string Name { get; set; } = "api";
+}
+```
+<!-- /sample:comments -->
+
+<!-- sample:comments-order -->
+```csharp
+var options = new YamlSerializerOptions
+{
+    MappingOrder = YamlMappingOrder.Sorted,
+    DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingEmptyCollection,
+};
+string yaml = YamlSerializer.Serialize(new Settings(), options);
+```
+
+```yaml
+Name: api
+# How many workers to start.
+Workers: 4
+```
+<!-- /sample:comments-order -->
+
+### Schemas and typed reads
+
+`Schema` decides what a plain scalar is when it is read into `object` (or a `YamlElement`, a `YamlNode`): the YAML 1.2
+core schema by default; `Yaml11` adds YAML 1.1's booleans (`yes`, `on`), binary, sexagesimal and `_` separated numbers;
+`Json` reads only JSON's values and refuses any other plain scalar; `Failsafe` reads every scalar as a string:
+
+<!-- sample:schemas -->
+```csharp
+string yaml = "a: 12\nb: yes\nc: 0x1F\nd: ~\ne: 1_000\nf: 0b101\n";
+string Read(YamlSchemaKind schema) => Describe(() =>
+    YamlSerializer.Serialize(YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml, new YamlSerializerOptions { Schema = schema }),
+        new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible }));
+string output = string.Join("\n", new[] { YamlSchemaKind.Core, YamlSchemaKind.Yaml11, YamlSchemaKind.Json, YamlSchemaKind.Failsafe }
+    .Select(schema => $"{schema}: {Read(schema)}"));
+```
+
+```text
+Core: {"a":12,"b":"yes","c":31,"d":null,"e":"1_000","f":"0b101"}
+Yaml11: {"a":12,"b":true,"c":31,"d":null,"e":1000,"f":5}
+Json: YamlException: The plain scalar 'yes' is not null, a boolean or a number of the JSON schema (YamlSchemaKind.Json); quote it to read a string. Path: $.b | LineNumber: 1 | BytePositionInLine: 6.
+Failsafe: {"a":"12","b":"yes","c":"0x1F","d":"~","e":"1_000","f":"0b101"}
+```
+<!-- /sample:schemas -->
+
+A typed member reads its own type: a plain `12`, `0o14` or `0xC` into an `int`, any scalar into a `string`, and a
+number into `object` as a `YamlElement`. A quoted `'12'` is a string, so it does not read into an `int` unless
+`AcceptLenientScalars` is set, which accepts the forms other YAML libraries resolve although no standard does:
+
+<!-- sample:typed-scalars -->
+```csharp
+var plain = YamlSerializer.Deserialize<Dictionary<string, int>>("a: 12\nb: 0o14\nc: 0xC\n")!;
+string quoted = Describe(() => YamlSerializer.Deserialize<Dictionary<string, int>>("a: '12'\n"));
+string lenient = Describe(() => YamlSerializer.Deserialize<Dictionary<string, int>>("a: '12'\n",
+    new YamlSerializerOptions { AcceptLenientScalars = true })!["a"]);
+string text = YamlSerializer.Deserialize<Dictionary<string, string>>("a: 12\nb: true\n")!["b"];
+object number = YamlSerializer.Deserialize<Dictionary<string, object>>("a: 12\n")!["a"];
+```
+
+```text
+12, 12, 12
+quoted: YamlException: The YAML value could not be converted to System.Int32. Path: $.a | LineNumber: 0 | BytePositionInLine: 7.
+lenient: 12
+string: true
+object: YamlElement 12
+```
+<!-- /sample:typed-scalars -->
+
+### Duplicate keys and empty input
+
+A mapping key that appears twice is an error by default, as YAML 1.2 requires; `DuplicateKeyHandling` can keep the last
+or the first. Empty input, or input with only comments, reads as null:
+
+<!-- sample:duplicate-keys -->
+```csharp
+string yaml = "a: 1\na: 2\n";
+string error = Describe(() => YamlSerializer.Deserialize<Dictionary<string, int>>(yaml));
+int last = YamlSerializer.Deserialize<Dictionary<string, int>>(yaml,
+    new YamlSerializerOptions { DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins })!["a"];
+int first = YamlSerializer.Deserialize<Dictionary<string, int>>(yaml,
+    new YamlSerializerOptions { DuplicateKeyHandling = YamlDuplicateKeyHandling.FirstWins })!["a"];
+Service? empty = YamlSerializer.Deserialize<Service>("# nothing but a comment\n");
+```
+
+```text
+Error: YamlException: Duplicate properties not allowed during deserialization.
+LastWins: 2
+FirstWins: 1
+empty input: null
+```
+<!-- /sample:duplicate-keys -->
+
+### Anchors and aliases
+
+Aliases are always read: an alias to an object or a collection shares the instance read at its anchor.
+`ReferenceHandler.Preserve` writes an anchor for each object or collection referenced more than once, and
+`ReferenceHandler.PreserveAll` for every one:
+
+<!-- sample:anchors-types -->
+```csharp
+public class Node
+{
+    public string Name { get; set; } = "";
+    public Node? Next { get; set; }
+    public List<string>? Labels { get; set; }
+}
+```
+<!-- /sample:anchors-types -->
+
+<!-- sample:anchors -->
+```csharp
+var labels = new List<string> { "x", "y" };
+var shared = new Node { Name = "shared", Labels = labels };
+var root = new Node { Name = "root", Next = shared, Labels = labels };
+var options = new YamlSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
+string yaml = YamlSerializer.Serialize(root, options);
+Node back = YamlSerializer.Deserialize<Node>(yaml)!;
+bool sameList = ReferenceEquals(back.Labels, back.Next!.Labels);
+```
+
+```text
+Name: root
+Next:
+  Name: shared
+  Next: null
+  Labels: &1
+  - x
+  - "y"
+Labels: *1
+
+same list after reading: True
+```
+<!-- /sample:anchors -->
+
+An alias read into a scalar, a value type or `object` copies the anchored node. `MaxAliasExpansion` bounds those copies
+(by default 10,000 nodes, or the input's size in bytes when that is more), so a document of nested aliases cannot
+expand without limit:
+
+<!-- sample:alias-bound -->
+```csharp
+string bomb = "a: &a [x, x, x, x, x, x, x, x, x, x]\nb: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]\n"
+    + "c: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]\nd: [*c, *c, *c, *c, *c, *c, *c, *c, *c, *c]\n";
+string error = Describe(() => YamlSerializer.Deserialize<Dictionary<string, object>>(bomb,
+    new YamlSerializerOptions { MaxAliasExpansion = 1000 }));
+```
+
+```text
+YamlException: Reading YAML aliases would copy more than 1000 nodes (YamlSerializerOptions.MaxAliasExpansion).
+```
+<!-- /sample:alias-bound -->
+
+### Merge keys
+
+`ResolveMergeKeys` merges a `<<` key's mappings into the mapping that holds it (YAML 1.1's merge type); the mapping's own
+keys win. It is off by default, so `<<` is an ordinary key:
+
+<!-- sample:merge-keys -->
+```csharp
+string yaml = """
+    defaults: &defaults
+      image: nginx:1.27
+      restart: always
+    web:
+      <<: *defaults
+      restart: never
+    """;
+var options = new YamlSerializerOptions { ResolveMergeKeys = true };
+var config = YamlSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(yaml, options)!;
+string web = string.Join(", ", config["web"].Select(p => $"{p.Key}={p.Value}"));
+```
+
+```text
+image=nginx:1.27, restart=never
+```
+<!-- /sample:merge-keys -->
+
+### Tags and polymorphism
+
+`[YamlPolymorphic(DiscriminatorStyle = ...)]` chooses how a hierarchy writes its derived types: `Property` (the
+default, a `$type` member as System.Text.Json writes), `Tag` (a YAML tag) or `Both`. Under `Tag` and `Both` each derived
+type needs a type discriminator, which the JSON-compatible style writes as `$type`; its tag is `!` followed by the
+discriminator unless `Tag` sets another. Reading accepts the `$type` member under every style:
+
+<!-- sample:polymorphism-types -->
+```csharp
+[YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Tag)]
+[YamlDerivedType(typeof(Circle), "circle")]
+[YamlDerivedType(typeof(Square), "square", Tag = "!box")]
+public abstract class Shape;
+
+public class Circle : Shape { public double Radius { get; set; } }
+
+public class Square : Shape { public double Side { get; set; } }
+```
+<!-- /sample:polymorphism-types -->
+
+<!-- sample:polymorphism -->
+```csharp
+Shape[] shapes = [new Circle { Radius = 1.5 }, new Square { Side = 2 }];
+string yaml = YamlSerializer.Serialize(shapes);
+Shape[] back = YamlSerializer.Deserialize<Shape[]>(yaml)!;
+string types = string.Join(", ", back.Select(s => s.GetType().Name));
+```
+
+```text
+- !circle
+  Radius: 1.5
+- !box
+  Side: 2
+
+Circle, Square
+```
+<!-- /sample:polymorphism -->
+
+Outside a hierarchy, `TagMappings` (or `[YamlTagMapping]` on a context) maps a tag to a type: an explicit allow-list.
+A tag never names a .NET type: an unmapped tag is read as data, and no type is loaded:
+
+<!-- sample:tag-mappings -->
+```csharp
+var options = new YamlSerializerOptions();
+options.TagMappings.Add("!circle", typeof(Circle));
+object? mapped = YamlSerializer.Deserialize<object>("!circle {Radius: 3}", options);
+string unknown = Describe(() => YamlSerializer.Deserialize<object>("!System.IO.FileInfo {}", options)!.GetType().Name);
+```
+
+```text
+mapped: Circle
+unmapped type name: YamlElement
+```
+<!-- /sample:tag-mappings -->
+
+### Collection keys
+
+A flow collection can be a mapping key, implicitly (`[c, d]: v`) or explicitly (`? [a, b]`). It reads into a dictionary
+whose key type is a collection, and `YamlProperty.KeyKind`, `YamlObject.CollectionKeys` and `Utf8YamlReader.KeyKind`
+expose it. `DisallowImplicitCollectionKeys` turns the implicit form off, so that a stream of flow collections (JSON
+lines, for example) yields each one as soon as it is complete:
+
+<!-- sample:collection-keys -->
+```csharp
+string yaml = "? [a, b]\n: pair\n[c, d]: implicit\nplain: text\n";
+var dictionary = YamlSerializer.Deserialize<Dictionary<List<string>, string>>("? [a, b]\n: pair\n")!;
+using YamlDocument document = YamlDocument.Parse(yaml);
+string kinds = string.Join(", ", document.RootElement.EnumerateObject().Select(p => p.KeyKind));
+var node = YamlNode.Parse(yaml)!.AsObject();
+var jsonStream = new YamlSerializerOptions { DisallowImplicitCollectionKeys = true };
+int[] numbers = YamlSerializer.Deserialize<int[]>("[1, 2, 3]", jsonStream)!;
+```
+
+```text
+dictionary key: [a, b]
+key kinds: Complex, Complex, Scalar
+string keys: 1, collection keys: 2
+without implicit collection keys: 3 numbers
+```
+<!-- /sample:collection-keys -->
+
+### Several documents in one stream
+
+A YAML stream holds documents separated by `---`. `DeserializeAsyncEnumerable` with `topLevelValues: true` reads one
+value per document, and `SerializeAsyncEnumerable` writes `---` between them; `YamlReaderOptions.AllowMultipleValues`
+lets the reader continue past the first document:
+
+<!-- sample:documents -->
+```csharp
+string yaml = "a: 1\n---\na: 2\n---\na: 3\n";
+var values = new List<int>();
+using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+await foreach (var item in YamlSerializer.DeserializeAsyncEnumerable<Dictionary<string, int>>(stream, topLevelValues: true))
+{
+    values.Add(item!["a"]);
+}
+
+var output = new MemoryStream();
+await YamlSerializer.SerializeAsyncEnumerable(output, Items(), topLevelValues: true);
+static async IAsyncEnumerable<object> Items()
+{
+    yield return new { a = 1 };
+    yield return new { a = 2 };
+    await Task.CompletedTask;
+}
+```
+
+```text
+read: 1, 2, 3
+written:
+a: 1
+---
+a: 2
+```
+<!-- /sample:documents -->
+
+### The DOM
+
+`YamlNode` (`YamlObject`, `YamlArray`, `YamlValue`) and the read-only `YamlDocument` parse YAML and keep its scalar and
+collection styles, anchors and tags, so an edited document is written back in its own styles (comments are not
+kept):
+
+<!-- sample:dom -->
+```csharp
+YamlNode root = YamlNode.Parse("""
+    name: web   # not kept
+    ports: [80, 443]
+    note: 'kept quoted'
+    """)!;
+root["ports"]!.AsArray().Add(8080);
+root["replicas"] = 3;
+string edited = root.ToYamlString();
+```
+
+```yaml
+name: web
+ports: [80, 443, 8080]
+note: 'kept quoted'
+replicas: 3
+```
+<!-- /sample:dom -->
+
+`CollectionStyle` sets a collection's style. `IgnoreSourceStyles` writes a parsed document in the options' styles
+instead, so JSON read in comes out as block YAML:
+
+<!-- sample:dom-styles -->
+```csharp
+YamlNode fromJson = YamlNode.Parse("""{"name": "web", "ports": [80, 443]}""")!;
+string asIs = fromJson.ToYamlString();
+string block = fromJson.ToYamlString(new YamlSerializerOptions { IgnoreSourceStyles = true });
+YamlObject created = new() { ["tags"] = new YamlArray("a", "b") };
+created["tags"]!.AsArray().CollectionStyle = YamlCollectionStyle.Flow;
+```
+
+```yaml
+{"name": "web", "ports": [80, 443]}
+
+name: web
+ports:
+- 80
+- 443
+
+tags: [a, b]
+```
+<!-- /sample:dom-styles -->
+
+### The reader and the writer
+
+`Utf8YamlReader` reads the tokens of System.Text.Json's reader, with YAML's own information on each one: `ScalarStyle`,
+`Anchor`, `Tag` (and `GetExpandedTag`), alias tokens and `KeyKind`:
+
+<!-- sample:reader -->
+```csharp
+var reader = new Utf8YamlReader("base: &b !point {x: 1}\ncopy: *b\ntext: 'quoted'\n"u8);
+var lines = new List<string>();
+while (reader.Read())
+{
+    string anchor = reader.Anchor.IsEmpty ? "" : " &" + Encoding.UTF8.GetString(reader.Anchor.ToArray());
+    string tag = reader.Tag.IsEmpty ? "" : " " + reader.GetExpandedTag();
+    string text = reader.TokenType switch
+    {
+        YamlTokenType.Alias => " *" + Encoding.UTF8.GetString(reader.ValueSpan.ToArray()),
+        YamlTokenType.String or YamlTokenType.PropertyName or YamlTokenType.Number => $" {reader.GetString()} ({reader.ScalarStyle})",
+        _ => "",
+    };
+    lines.Add($"{reader.TokenType}{anchor}{tag}{text}");
+}
+```
+
+```text
+StartObject
+PropertyName base (Plain)
+StartObject &b !point
+PropertyName x (Plain)
+Number 1 (Plain)
+EndObject
+PropertyName copy (Plain)
+Alias *b
+PropertyName text (Plain)
+String quoted (SingleQuoted)
+EndObject
+```
+<!-- /sample:reader -->
+
+`Utf8YamlWriter` writes block style by default, and takes comments, anchors, aliases, tags, scalar and collection
+styles, directives and explicit keys:
+
+<!-- sample:writer -->
+```csharp
+using var buffer = new MemoryStream();
+using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { NewLine = "\n" }))
+{
+    writer.WriteStartObject();
+    writer.WriteCommentValue("generated", false);
+    writer.WritePropertyName("base");
+    writer.WriteAnchor("b");
+    writer.WriteTag("!point");
+    writer.WriteStartObject();
+    writer.WriteNumber("x", 1);
+    writer.WriteEndObject();
+    writer.WritePropertyName("copy");
+    writer.WriteAliasValue("b");
+    writer.WriteScalarStyle(YamlScalarStyle.SingleQuoted);
+    writer.WriteString("text", "quoted");
+    writer.WriteStartPropertyKey();
+    writer.WriteCollectionStyle(YamlCollectionStyle.Flow);
+    writer.WriteStartArray();
+    writer.WriteStringValue("a");
+    writer.WriteStringValue("b");
+    writer.WriteEndArray();
+    writer.WriteEndPropertyKey();
+    writer.WriteStringValue("a collection key");
+    writer.WriteEndObject();
+}
+string yaml = Encoding.UTF8.GetString(buffer.ToArray());
+```
+
+```yaml
+# generated
+base: &b !point
+  x: 1
+copy: *b
+text: 'quoted'
+? [a, b]
+: a collection key
+```
+<!-- /sample:writer -->
+
+### JSON
+
+JSON is YAML 1.2, so `YamlSerializer` reads JSON text as it is, with YAML's rules: duplicate keys are an error unless
+`DuplicateKeyHandling` says otherwise, `#` comments and a trailing comma in a flow collection are accepted (`AllowTrailingCommas`
+is kept for source compatibility and changes nothing). `WriteStyle = JsonCompatible` writes JSON:
+
+<!-- sample:json -->
+```csharp
+string json = """
+    {
+      "name": "web", # YAML comments are allowed
+      "ports": [80, 443,],
+    }
+    """;
+var value = YamlSerializer.Deserialize<Dictionary<string, object>>(json)!;
+string jsonOut = YamlSerializer.Serialize(value, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible });
+```
+
+```json
+{"name":"web","ports":[80,443]}
+```
+<!-- /sample:json -->
+
 ## Versions and package feeds
 
 | Source | Purpose | Package feed |

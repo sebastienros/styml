@@ -1,0 +1,2 @@
+mapped: Circle
+unmapped type name: YamlElement

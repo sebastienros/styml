@@ -1,0 +1,4 @@
+name: web
+ports: [80, 443, 8080]
+note: 'kept quoted'
+replicas: 3

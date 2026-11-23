@@ -2,17 +2,6 @@
 
 Styml is a YAML 1.2 library for .NET with the API of System.Text.Json: `YamlSerializer`, `Utf8YamlReader`,
 `Utf8YamlWriter`, `YamlDocument`, `YamlNode`, converters and a source generator, in the `System.Text.Yaml` namespace.
-It is derived from System.Text.Json (dotnet/runtime v11.0.0) and adapted to YAML. It is an independent project, not a
-Microsoft or .NET Foundation product.
-
-## Key features
-
-* Serialize and deserialize .NET types with reflection or with source-generated contracts (`[YamlSerializable]`).
-* A forward-only `Utf8YamlReader` and a `Utf8YamlWriter` that writes block style by default.
-* A read-only `YamlDocument` and a mutable `YamlNode` DOM.
-* YAML's own features: anchors and aliases, tags, block and flow styles, the core, JSON and failsafe schemas, merge
-  keys, and collection keys.
-* Trimming and Native AOT with the source generator; `net11.0`, `net10.0` and `netstandard2.0`.
 
 ## How to use
 
@@ -34,41 +23,30 @@ string yaml = YamlSerializer.Serialize(service);
 
 Service? back = YamlSerializer.Deserialize<Service>(yaml);
 
-// The same with a source-generated context (trimming and Native AOT).
-string generated = YamlSerializer.Serialize(service, SampleContext.Default.Service);
+// The same with a source-generated context, for trimming and Native AOT.
+string generated = YamlSerializer.Serialize(service, AppYamlContext.Default.Service);
 
 public record Service(string Name, string Image, int[] Ports, Dictionary<string, string> Environment);
 
 [YamlSerializable(typeof(Service))]
-internal partial class SampleContext : YamlSerializerContext;
+internal partial class AppYamlContext : YamlSerializerContext;
 ```
 
-The DOM, with an anchor, an alias and a merge key:
+## Relationship with System.Text.Json
 
-```csharp
-using System.Text.Yaml;
-using System.Text.Yaml.Nodes;
-
-YamlNode root = YamlNode.Parse(
-    """
-    defaults: &defaults
-      image: nginx:1.27
-      restart: always
-    web:
-      <<: *defaults
-      ports: [80, 443]
-    """,
-    documentOptions: new YamlDocumentOptions { ResolveMergeKeys = true })!;
-
-Console.WriteLine(root["web"]!["restart"]); // always
-```
+Styml is a clone of System.Text.Json from dotnet/runtime at tag `v11.0.0`, renamed and adapted to YAML 1.2: the same
+API shape (the serializer and its options, the reader, the writer, the DOM, converters, the contract model and the
+source generator), in the `System.Text.Yaml` namespace, plus what YAML adds: anchors and aliases, tags and tag-based
+polymorphism, block and flow styles, scalar styles and comments, schemas, merge keys, collection keys and
+multi-document streams. It writes block YAML by default and JSON as an option. Styml is an independent project, not a
+Microsoft or .NET Foundation product; most of its code is System.Text.Json's, under the MIT license of the .NET
+Foundation and its contributors, and the package carries THIRD-PARTY-NOTICES.txt.
 
 ## Benchmarks
 
 Styml against YamlDotNet 18.1.0, SharpYaml 3.17.0 and VYaml 1.6.1, with System.Text.Json on the same data as JSON as
 the reference; .NET 11.0.0, Apple M4 Pro, BenchmarkDotNet ShortRun. The first two tables are the Kubernetes manifests
-of the repository's benchmark corpus (76 KB); the charts, every document and the method are in the repository's
-docs/benchmarks.
+of the repository's benchmark corpus (76 KB).
 
 <!-- panel:pivot -->
 Mean time on k8s-m (microseconds; smaller is better):
@@ -108,15 +86,7 @@ Time against Styml's, the geometric mean over the five documents (below 1 is fas
 | Tokenize | **1.00×** | 1.79× | 4.95× | 7.43× | 0.65× |
 <!-- /panel:pivot -->
 
-## Main types
-
-* `System.Text.Yaml.YamlSerializer`
-* `System.Text.Yaml.Utf8YamlReader` and `System.Text.Yaml.Utf8YamlWriter`
-* `System.Text.Yaml.YamlDocument` and `System.Text.Yaml.Nodes.YamlNode`
-* `System.Text.Yaml.Serialization.YamlConverter<T>` and `YamlSerializerContext`
-
 ## More
 
-The repository's README covers the relationship with System.Text.Json, YAML conformance and benchmarks:
-https://github.com/sebastienros/styml. Styml is released under the MIT license; the package carries
-THIRD-PARTY-NOTICES.txt, which credits dotnet/runtime.
+The repository's README covers every option and behaviour with tested samples, YAML conformance and the charts:
+https://github.com/sebastienros/styml. The options reference: https://github.com/sebastienros/styml/blob/main/docs/options.md.

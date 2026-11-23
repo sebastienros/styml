@@ -1,0 +1,21 @@
+Title: Release
+Summary: >-
+  A summary on two lines
+
+  that a folded scalar keeps.
+Body: |
+  line one
+  line two
+Signature: the team
+
+Title: 'Release'
+Summary: >-
+  A summary on two lines
+
+  that a folded scalar keeps.
+Body: 'line one
+
+  line two
+
+  '
+Signature: 'the team'

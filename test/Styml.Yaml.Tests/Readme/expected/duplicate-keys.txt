@@ -1,0 +1,4 @@
+Error: YamlException: Duplicate properties not allowed during deserialization.
+LastWins: 2
+FirstWins: 1
+empty input: null

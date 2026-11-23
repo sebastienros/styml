@@ -1,0 +1,7 @@
+# generated
+base: &b !point
+  x: 1
+copy: *b
+text: 'quoted'
+? [a, b]
+: a collection key

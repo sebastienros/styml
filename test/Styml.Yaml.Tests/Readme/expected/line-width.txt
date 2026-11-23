@@ -1,0 +1,15 @@
+Description: A long description that
+  goes on well past the width the writer
+  is given, so it folds.
+Tags:
+- alpha
+- beta
+- gamma
+- delta
+- epsilon
+- zeta
+- eta
+- theta
+
+tags: [alpha, beta, gamma, delta, epsilon,
+  zeta, eta, theta]

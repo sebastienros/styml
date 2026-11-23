@@ -1,0 +1,16 @@
+{
+  "Name": "web",
+  "Ports": [
+    80,
+    443
+  ],
+  "Env": {
+    "Tier": "front"
+  }
+}
+Name: web
+Ports:
+    - 80
+    - 443
+Env:
+    Tier: front

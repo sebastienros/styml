@@ -1,0 +1,11 @@
+StartObject
+PropertyName base (Plain)
+StartObject &b !point
+PropertyName x (Plain)
+Number 1 (Plain)
+EndObject
+PropertyName copy (Plain)
+Alias *b
+PropertyName text (Plain)
+String quoted (SingleQuoted)
+EndObject

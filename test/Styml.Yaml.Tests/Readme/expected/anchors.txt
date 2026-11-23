@@ -1,0 +1,10 @@
+Name: root
+Next:
+  Name: shared
+  Next: null
+  Labels: &1
+  - x
+  - "y"
+Labels: *1
+
+same list after reading: True

@@ -1,0 +1,15 @@
+text: plain text
+number: "3"
+boolean: "true"
+yaml11: "yes"
+"null": "null"
+date: "2001-12-14"
+indicator: "- dash"
+colon: "a: b"
+comment: "a #b"
+
+- nan
+- Infinity
+
+- "nan"
+- "Infinity"

@@ -1,0 +1,4 @@
+dictionary key: [a, b]
+key kinds: Complex, Complex, Scalar
+string keys: 1, collection keys: 2
+without implicit collection keys: 3 numbers
