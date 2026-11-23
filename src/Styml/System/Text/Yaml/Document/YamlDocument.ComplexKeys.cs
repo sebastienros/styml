@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Text.Yaml
 {
@@ -9,8 +10,8 @@ namespace System.Text.Yaml
     {
         // ------------------------------------------------------------------------------------------------------------
         // M5e: collection keys compare structurally. The canonical form of a
-        // node is its kind, its expanded tag and its content: a scalar's decoded text, a sequence's items in order, a
-        // mapping's entries sorted (YAML mappings are unordered). Every part is length-prefixed, so two forms are equal
+        // node is its kind, its expanded tag and its content: a scalar's decoded text (a number's value), a sequence's
+        // items in order, a mapping's entries sorted (YAML mappings are unordered). Every part is length-prefixed, so two forms are equal
         // exactly when the nodes are. It is computed only where it is needed (the Error check, the merge rewrite's index,
         // the serializer's object-key set, deep equality), never at parse. An alias is followed to its node's content:
         // each expansion counts against the alias bound, the nesting against TraversalMaxDepth, and a recursive alias is
@@ -153,11 +154,14 @@ namespace System.Text.Yaml
                     AppendPart(builder, 's', GetString(index, row.TokenType) ?? "");
                     return;
 
+                case YamlTokenType.Number:
+                    AppendPart(builder, 'n', CanonicalNumber(index));
+                    return;
+
                 default:
-                    // Numbers, booleans and nulls: their kind and their text (the DOM keeps a scalar's text, 5.3 C10).
+                    // Booleans and nulls: their kind and their text (the DOM keeps a scalar's text, 5.3 C10).
                     char kind = row.TokenType switch
                     {
-                        YamlTokenType.Number => 'n',
                         YamlTokenType.True => 't',
                         YamlTokenType.False => 'f',
                         _ => 'z',
@@ -165,6 +169,47 @@ namespace System.Text.Yaml
                     AppendPart(builder, kind, YamlReaderHelper.TranscodeHelper(GetRawValue(index, includeQuotes: false).Span));
                     return;
             }
+        }
+
+        // A number by its value, as YamlElement.DeepEquals compares numbers: a JSON spelling by its exact decimal value
+        // (1.0 is 1), any other spelling (0x1F, 012 under YAML 1.1, .inf) by its integer value, or else its double.
+        private string CanonicalNumber(int index)
+        {
+            ReadOnlySpan<byte> text = GetRawValue(index, includeQuotes: false).Span;
+            if (YamlReaderHelper.IsJsonNumber(text))
+            {
+                try
+                {
+                    return YamlHelpers.GetNormalFormText(text);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    // An exponent past int's range: the duplicate check runs at parse, so the text stands for it.
+                    return YamlReaderHelper.TranscodeHelper(text);
+                }
+            }
+
+            string? value = null;
+            if (TryGetValue(index, out long l))
+            {
+                value = l.ToString(CultureInfo.InvariantCulture);
+            }
+            else if (TryGetValue(index, out ulong ul))
+            {
+                value = ul.ToString(CultureInfo.InvariantCulture);
+            }
+            else if (TryGetValue(index, out double d))
+            {
+                if (double.IsNaN(d) || double.IsInfinity(d))
+                {
+                    return d.ToString(CultureInfo.InvariantCulture);
+                }
+
+                value = d.ToString("R", CultureInfo.InvariantCulture);
+            }
+
+            // A number no getter reads (one past double's range) keeps its text.
+            return value is null ? YamlReaderHelper.TranscodeHelper(text) : YamlHelpers.GetNormalFormText(Encoding.UTF8.GetBytes(value));
         }
 
         private static void AppendPart(StringBuilder builder, char kind, string text) =>

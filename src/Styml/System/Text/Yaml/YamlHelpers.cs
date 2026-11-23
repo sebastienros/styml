@@ -399,170 +399,196 @@ namespace System.Text.Yaml
             return leftFirst.SequenceEqual(rightFirst) &&
                 leftMiddle.SequenceEqual(rightMiddle) &&
                 leftLast.SequenceEqual(rightLast);
+        }
 
-            static void ParseNumber(
-                ReadOnlySpan<byte> span,
-                out bool isNegative,
-                out ReadOnlySpan<byte> integral,
-                out ReadOnlySpan<byte> fractional,
-                out int exponent)
+        /// <summary>
+        /// The normal form of a valid JSON number as text (sign, significand digits, exponent): two numbers have the
+        /// same text exactly when <see cref="AreEqualYamlNumbers"/> finds them equal.
+        /// </summary>
+        internal static string GetNormalFormText(ReadOnlySpan<byte> number)
+        {
+            ParseNumber(number, out bool negative, out ReadOnlySpan<byte> integral, out ReadOnlySpan<byte> fractional, out int exponent);
+            var builder = new StringBuilder(integral.Length + fractional.Length + 12);
+            if (negative)
             {
-                // Parses a JSON number into its integral, fractional, and exponent parts.
-                // The returned components use a normal-form decimal representation:
-                //
-                //   Number := sign * <integral + fractional> * 10^exponent
-                //
-                // where integral and fractional are sequences of digits whose concatenation
-                // represents the significand of the number without leading or trailing zeros.
-                // Two such normal-form numbers are treated as equal if and only if they have
-                // equal signs, significands, and exponents.
+                builder.Append('-');
+            }
 
-                bool neg;
-                ReadOnlySpan<byte> intg;
-                ReadOnlySpan<byte> frac;
-                int exp;
+            foreach (byte b in integral)
+            {
+                builder.Append((char)b);
+            }
 
-                Debug.Assert(span.Length > 0);
+            foreach (byte b in fractional)
+            {
+                builder.Append((char)b);
+            }
 
-                if (span[0] == '-')
-                {
-                    neg = true;
-                    span = span.Slice(1);
-                }
-                else
-                {
-                    Debug.Assert(char.IsDigit((char)span[0]), "leading plus not allowed in valid JSON numbers.");
-                    neg = false;
-                }
+            return builder.Append('e').Append(exponent.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToString();
+        }
 
-                int i = span.IndexOfAny((byte)'.', (byte)'e', (byte)'E');
+        private static void ParseNumber(
+            ReadOnlySpan<byte> span,
+            out bool isNegative,
+            out ReadOnlySpan<byte> integral,
+            out ReadOnlySpan<byte> fractional,
+            out int exponent)
+        {
+            // Parses a JSON number into its integral, fractional, and exponent parts.
+            // The returned components use a normal-form decimal representation:
+            //
+            //   Number := sign * <integral + fractional> * 10^exponent
+            //
+            // where integral and fractional are sequences of digits whose concatenation
+            // represents the significand of the number without leading or trailing zeros.
+            // Two such normal-form numbers are treated as equal if and only if they have
+            // equal signs, significands, and exponents.
+
+            bool neg;
+            ReadOnlySpan<byte> intg;
+            ReadOnlySpan<byte> frac;
+            int exp;
+
+            Debug.Assert(span.Length > 0);
+
+            if (span[0] == '-')
+            {
+                neg = true;
+                span = span.Slice(1);
+            }
+            else
+            {
+                Debug.Assert(char.IsDigit((char)span[0]), "leading plus not allowed in valid JSON numbers.");
+                neg = false;
+            }
+
+            int i = span.IndexOfAny((byte)'.', (byte)'e', (byte)'E');
+            if (i < 0)
+            {
+                intg = span;
+                frac = default;
+                exp = 0;
+                goto Normalize;
+            }
+
+            intg = span.Slice(0, i);
+
+            if (span[i] == '.')
+            {
+                span = span.Slice(i + 1);
+                i = span.IndexOfAny((byte)'e', (byte)'E');
                 if (i < 0)
                 {
-                    intg = span;
-                    frac = default;
+                    frac = span;
                     exp = 0;
                     goto Normalize;
                 }
 
-                intg = span.Slice(0, i);
+                frac = span.Slice(0, i);
+            }
+            else
+            {
+                frac = default;
+            }
 
-                if (span[i] == '.')
+            Debug.Assert(span[i] is (byte)'e' or (byte)'E');
+            if (!Utf8Parser.TryParse(span.Slice(i + 1), out exp, out _))
+            {
+                Debug.Assert(span.Length >= 10);
+                ThrowHelper.ThrowArgumentOutOfRangeException_YamlNumberExponentTooLarge(nameof(exponent));
+            }
+
+        Normalize: // Calculates the normal form of the number.
+
+            if (IndexOfFirstTrailingZero(frac) is >= 0 and int iz)
+            {
+                // Trim trailing zeros from the fractional part.
+                // e.g. 3.1400 -> 3.14
+                frac = frac.Slice(0, iz);
+            }
+
+            if (intg[0] == '0')
+            {
+                Debug.Assert(intg.Length == 1, "Leading zeros not permitted in JSON numbers.");
+
+                if (IndexOfLastLeadingZero(frac) is >= 0 and int lz)
                 {
-                    span = span.Slice(i + 1);
-                    i = span.IndexOfAny((byte)'e', (byte)'E');
-                    if (i < 0)
-                    {
-                        frac = span;
-                        exp = 0;
-                        goto Normalize;
-                    }
-
-                    frac = span.Slice(0, i);
-                }
-                else
-                {
-                    frac = default;
-                }
-
-                Debug.Assert(span[i] is (byte)'e' or (byte)'E');
-                if (!Utf8Parser.TryParse(span.Slice(i + 1), out exp, out _))
-                {
-                    Debug.Assert(span.Length >= 10);
-                    ThrowHelper.ThrowArgumentOutOfRangeException_YamlNumberExponentTooLarge(nameof(exponent));
-                }
-
-            Normalize: // Calculates the normal form of the number.
-
-                if (IndexOfFirstTrailingZero(frac) is >= 0 and int iz)
-                {
-                    // Trim trailing zeros from the fractional part.
-                    // e.g. 3.1400 -> 3.14
-                    frac = frac.Slice(0, iz);
-                }
-
-                if (intg[0] == '0')
-                {
-                    Debug.Assert(intg.Length == 1, "Leading zeros not permitted in JSON numbers.");
-
-                    if (IndexOfLastLeadingZero(frac) is >= 0 and int lz)
-                    {
-                        // Trim leading zeros from the fractional part
-                        // and update the exponent accordingly.
-                        // e.g. 0.000123 -> 0.123e-3
-                        frac = frac.Slice(lz + 1);
-                        exp -= lz + 1;
-                    }
-
-                    // Normalize "0" to the empty span.
-                    intg = default;
+                    // Trim leading zeros from the fractional part
+                    // and update the exponent accordingly.
+                    // e.g. 0.000123 -> 0.123e-3
+                    frac = frac.Slice(lz + 1);
+                    exp -= lz + 1;
                 }
 
-                if (frac.IsEmpty && IndexOfFirstTrailingZero(intg) is >= 0 and int fz)
-                {
-                    // There is no fractional part, trim trailing zeros from
-                    // the integral part and increase the exponent accordingly.
-                    // e.g. 1000 -> 1e3
-                    exp += intg.Length - fz;
-                    intg = intg.Slice(0, fz);
-                }
+                // Normalize "0" to the empty span.
+                intg = default;
+            }
 
-                // Normalize the exponent by subtracting the length of the fractional part.
-                // e.g. 3.14 -> 314e-2
-                exp -= frac.Length;
+            if (frac.IsEmpty && IndexOfFirstTrailingZero(intg) is >= 0 and int fz)
+            {
+                // There is no fractional part, trim trailing zeros from
+                // the integral part and increase the exponent accordingly.
+                // e.g. 1000 -> 1e3
+                exp += intg.Length - fz;
+                intg = intg.Slice(0, fz);
+            }
 
-                if (intg.IsEmpty && frac.IsEmpty)
-                {
-                    // Normalize zero representations.
-                    neg = false;
-                    exp = 0;
-                }
+            // Normalize the exponent by subtracting the length of the fractional part.
+            // e.g. 3.14 -> 314e-2
+            exp -= frac.Length;
 
-                // Copy to out parameters.
-                isNegative = neg;
-                integral = intg;
-                fractional = frac;
-                exponent = exp;
+            if (intg.IsEmpty && frac.IsEmpty)
+            {
+                // Normalize zero representations.
+                neg = false;
+                exp = 0;
+            }
 
-                static int IndexOfLastLeadingZero(ReadOnlySpan<byte> span)
-                {
+            // Copy to out parameters.
+            isNegative = neg;
+            integral = intg;
+            fractional = frac;
+            exponent = exp;
+
+            static int IndexOfLastLeadingZero(ReadOnlySpan<byte> span)
+            {
 #if NET
-                    int firstNonZero = span.IndexOfAnyExcept((byte)'0');
-                    return firstNonZero < 0 ? span.Length - 1 : firstNonZero - 1;
+                int firstNonZero = span.IndexOfAnyExcept((byte)'0');
+                return firstNonZero < 0 ? span.Length - 1 : firstNonZero - 1;
 #else
-                    for (int i = 0; i < span.Length; i++)
-                    {
-                        if (span[i] != '0')
-                        {
-                            return i - 1;
-                        }
-                    }
-
-                    return span.Length - 1;
-#endif
-                }
-
-                static int IndexOfFirstTrailingZero(ReadOnlySpan<byte> span)
+                for (int i = 0; i < span.Length; i++)
                 {
-#if NET
-                    int lastNonZero = span.LastIndexOfAnyExcept((byte)'0');
-                    return lastNonZero == span.Length - 1 ? -1 : lastNonZero + 1;
-#else
-                    if (span.IsEmpty)
+                    if (span[i] != '0')
                     {
-                        return -1;
+                        return i - 1;
                     }
-
-                    for (int i = span.Length - 1; i >= 0; i--)
-                    {
-                        if (span[i] != '0')
-                        {
-                            return i == span.Length - 1 ? -1 : i + 1;
-                        }
-                    }
-
-                    return 0;
-#endif
                 }
+
+                return span.Length - 1;
+#endif
+            }
+
+            static int IndexOfFirstTrailingZero(ReadOnlySpan<byte> span)
+            {
+#if NET
+                int lastNonZero = span.LastIndexOfAnyExcept((byte)'0');
+                return lastNonZero == span.Length - 1 ? -1 : lastNonZero + 1;
+#else
+                if (span.IsEmpty)
+                {
+                    return -1;
+                }
+
+                for (int i = span.Length - 1; i >= 0; i--)
+                {
+                    if (span[i] != '0')
+                    {
+                        return i == span.Length - 1 ? -1 : i + 1;
+                    }
+                }
+
+                return 0;
+#endif
             }
         }
     }

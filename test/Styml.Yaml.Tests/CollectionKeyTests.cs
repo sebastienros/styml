@@ -311,6 +311,48 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(2, document.RootElement.GetPropertyCount());
         }
 
+        // A number in a collection key by its value, as YamlElement.DeepEquals compares numbers and a YamlNode compares
+        // keys: the DOM's duplicate check, deep equality and the serializer's object keys agree. A scalar key stays a
+        // name (C_NotDuplicates_InTheDom: 1 and 0x1 are two keys).
+        [Theory]
+        [InlineData("[012]", "[10]", "[12]", YamlSchemaKind.Yaml11)]
+        [InlineData("[-012]", "[-10]", "[-12]", YamlSchemaKind.Yaml11)]
+        [InlineData("[0b101, 1_000]", "[5, 1000]", "[5, 1_001]", YamlSchemaKind.Yaml11)]
+        [InlineData("[012]", "[12]", "[10]", YamlSchemaKind.Core)]
+        [InlineData("[0x1F]", "[31]", "[30]", YamlSchemaKind.Core)]
+        [InlineData("{n: 0o14}", "{n: 12}", "{n: 14}", YamlSchemaKind.Core)]
+        [InlineData("[1.0]", "[1]", "[1.5]", YamlSchemaKind.Core)]
+        [InlineData("[1e3]", "[1000]", "[1e4]", YamlSchemaKind.Core)]
+        [InlineData("[.inf]", "[.Inf]", "[-.inf]", YamlSchemaKind.Core)]
+        public void C_NumbersInKeys_CompareByValue(string key, string same, string other, YamlSchemaKind schema)
+        {
+            var documentOptions = new YamlDocumentOptions { Schema = schema };
+            string Map(string k) => k + ": v\n";
+            using YamlDocument a = YamlDocument.Parse(Map(key), documentOptions);
+            using YamlDocument b = YamlDocument.Parse(Map(same), documentOptions);
+            using YamlDocument c = YamlDocument.Parse(Map(other), documentOptions);
+            Assert.True(YamlElement.DeepEquals(a.RootElement, b.RootElement));
+            Assert.False(YamlElement.DeepEquals(a.RootElement, c.RootElement));
+            Assert.True(YamlNode.DeepEquals(YamlNode.Parse(Map(key), documentOptions: documentOptions), YamlNode.Parse(Map(same), documentOptions: documentOptions)));
+            Assert.False(YamlNode.DeepEquals(YamlNode.Parse(Map(key), documentOptions: documentOptions), YamlNode.Parse(Map(other), documentOptions: documentOptions)));
+
+            string twice = key + ": 1\n" + same + ": 2\n";
+            Assert.Contains("Duplicate", Assert.Throws<YamlException>(() => YamlDocument.Parse(twice, documentOptions)).Message);
+            Assert.Equal(2, YamlDocument.Parse(key + ": 1\n" + other + ": 2\n", documentOptions).RootElement.GetPropertyCount());
+            var options = new YamlSerializerOptions { Schema = schema };
+            Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Dictionary<object, object>>(twice, options));
+            Assert.Equal(2, YamlSerializer.Deserialize<Dictionary<object, object>>(key + ": 1\n" + other + ": 2\n", options)!.Count);
+        }
+
+        [Fact]
+        public void C_NumbersInKeys_AnExponentPastIntsRange()
+        {
+            // The duplicate check runs at parse: such a number stands for itself by its text.
+            Assert.Contains("Duplicate", Assert.Throws<YamlException>(() => YamlDocument.Parse("[1e99999999999]: 1\n[1e99999999999]: 2\n")).Message);
+            using YamlDocument document = YamlDocument.Parse("[1e99999999999]: 1\n[1e99999999998]: 2\n");
+            Assert.Equal(2, document.RootElement.GetPropertyCount());
+        }
+
         private static string Bomb(string keys)
         {
             var builder = new StringBuilder("a0: &a0 [x, x]\n");
