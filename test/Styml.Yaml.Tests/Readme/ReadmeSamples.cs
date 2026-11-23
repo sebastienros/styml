@@ -201,7 +201,7 @@ namespace System.Text.Yaml.Tests.Readme
         public void Schemas()
         {
             // readme: schemas text
-            string yaml = "a: 12\nb: yes\nc: 0x1F\nd: ~\ne: 1_000\nf: 0b101\n";
+            string yaml = "a: 12\nb: yes\nc: 0x1F\nd: ~\ne: 1_000\nf: 0b101\ng: 012\n";
             string Read(YamlSchemaKind schema) => Describe(() =>
                 YamlSerializer.Serialize(YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml, new YamlSerializerOptions { Schema = schema }),
                     new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible }));

@@ -408,12 +408,13 @@ Workers: 4
 ### Schemas and typed reads
 
 `Schema` decides what a plain scalar is when it is read into `object` (or a `YamlElement`, a `YamlNode`): the YAML 1.2
-core schema by default; `Yaml11` adds YAML 1.1's booleans (`yes`, `on`), binary, sexagesimal and `_` separated numbers;
-`Json` reads only JSON's values and refuses any other plain scalar; `Failsafe` reads every scalar as a string:
+core schema by default; `Yaml11` adds YAML 1.1's booleans (`yes`, `on`), octal with a leading zero (`012`), binary,
+sexagesimal and `_` separated numbers; `Json` reads only JSON's values and refuses any other plain scalar; `Failsafe`
+reads every scalar as a string:
 
 <!-- sample:schemas -->
 ```csharp
-string yaml = "a: 12\nb: yes\nc: 0x1F\nd: ~\ne: 1_000\nf: 0b101\n";
+string yaml = "a: 12\nb: yes\nc: 0x1F\nd: ~\ne: 1_000\nf: 0b101\ng: 012\n";
 string Read(YamlSchemaKind schema) => Describe(() =>
     YamlSerializer.Serialize(YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml, new YamlSerializerOptions { Schema = schema }),
         new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible }));
@@ -422,10 +423,10 @@ string output = string.Join("\n", new[] { YamlSchemaKind.Core, YamlSchemaKind.Ya
 ```
 
 ```text
-Core: {"a":12,"b":"yes","c":31,"d":null,"e":"1_000","f":"0b101"}
-Yaml11: {"a":12,"b":true,"c":31,"d":null,"e":1000,"f":5}
+Core: {"a":12,"b":"yes","c":31,"d":null,"e":"1_000","f":"0b101","g":12}
+Yaml11: {"a":12,"b":true,"c":31,"d":null,"e":1000,"f":5,"g":10}
 Json: YamlException: The plain scalar 'yes' is not null, a boolean or a number of the JSON schema (YamlSchemaKind.Json); quote it to read a string. Path: $.b | LineNumber: 1 | BytePositionInLine: 6.
-Failsafe: {"a":"12","b":"yes","c":"0x1F","d":"~","e":"1_000","f":"0b101"}
+Failsafe: {"a":"12","b":"yes","c":"0x1F","d":"~","e":"1_000","f":"0b101","g":"012"}
 ```
 <!-- /sample:schemas -->
 

@@ -469,7 +469,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out sbyte tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out sbyte tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -492,7 +492,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out byte tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out byte tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -515,7 +515,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out short tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out short tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -538,7 +538,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out ushort tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out ushort tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -561,7 +561,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out int tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out int tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -584,7 +584,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out uint tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out uint tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -607,7 +607,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out long tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out long tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -630,7 +630,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out ulong tmp, out int consumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out ulong tmp, out int consumed) &&
                 consumed == segment.Length)
             {
                 value = tmp;
@@ -653,7 +653,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out double tmp, out int bytesConsumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out double tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -676,7 +676,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out float tmp, out int bytesConsumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out float tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -699,7 +699,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> data = _utf8Yaml.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (Utf8Parser.TryParse(segment, out decimal tmp, out int bytesConsumed) &&
+            if (JsonNumberFastPath(segment) && Utf8Parser.TryParse(segment, out decimal tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -760,6 +760,11 @@ namespace System.Text.Yaml
 
         /// <summary><see cref="YamlDocumentOptions.MaxAliasExpansion"/> (0: the default rule).</summary>
         internal int MaxAliasExpansion => _yaml?.MaxAliasExpansion ?? 0;
+
+        // The JSON number parser reads a YAML 1.1 leading-zero octal (012) as decimal: under that schema such a number
+        // goes to the reader, as Utf8YamlReader's own getters do.
+        private bool JsonNumberFastPath(ReadOnlySpan<byte> segment) =>
+            _yaml is not { HasYamlNumbers: true } || ParsedSchema != YamlSchemaKind.Yaml11 || !YamlReaderHelper.IsYaml11LegacyOctal(segment);
 
         private bool TryGetYamlNumber<T>(ReadOnlySpan<byte> segment, YamlNumberGetter<T> get, out T value)
         {

@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Yaml.Nodes;
 using Xunit;
 using SY = SharpYaml;
 using YD = YamlDotNet.Serialization;
@@ -560,6 +561,36 @@ namespace System.Text.Yaml.Parity.Tests
             Assert.Equal(sharpYaml, Try(() => SY.YamlSerializer.Deserialize<LongHolder>(yaml, s_sharpYamlDefault)!.A));
             Assert.Equal(sharpYamlExtended, Try(() => SY.YamlSerializer.Deserialize<LongHolder>(yaml, s_sharpYamlExtended)!.A));
             Assert.Equal(styml, Try(() => StymlYaml11<LongHolder>(yaml).A));
+        }
+
+        [Theory]
+        // A leading zero: octal in YAML 1.1 (YamlDotNet, SharpYaml's Extended schema), decimal in the core schema
+        // (SharpYaml's default). 08 and 09 are not octal: YamlDotNet and SharpYaml Extended refuse them as integers,
+        // Styml reads them as decimal under both schemas. Styml's element, node and object reads give its typed value.
+        //           value    YamlDotNet  SharpYaml  SharpYaml Extended  Styml Core  Styml Yaml11
+        [InlineData("012", 10L, 12L, 10L, 12L, 10L)]
+        [InlineData("-012", -10L, -12L, -10L, -12L, -10L)]
+        [InlineData("+012", 10L, 12L, 10L, 12L, 10L)]
+        [InlineData("0_12", 10L, 12L, 10L, null, 10L)]
+        [InlineData("00", 0L, 0L, 0L, 0L, 0L)]
+        [InlineData("08", null, 8L, null, 8L, 8L)]
+        [InlineData("09", null, 9L, null, 9L, 9L)]
+        [InlineData("0o14", null, 12L, 12L, 12L, 12L)]
+        public void LeadingZeroIntegers(string value, long? yamlDotNet, long? sharpYaml, long? sharpYamlExtended, long? stymlCore, long? stymlYaml11)
+        {
+            string yaml = "A: " + value + "\n";
+            Assert.Equal(yamlDotNet, Try(() => s_yamlDotNet.Deserialize<LongHolder>(yaml).A));
+            Assert.Equal(sharpYaml, Try(() => SY.YamlSerializer.Deserialize<LongHolder>(yaml, s_sharpYamlDefault)!.A));
+            Assert.Equal(sharpYamlExtended, Try(() => SY.YamlSerializer.Deserialize<LongHolder>(yaml, s_sharpYamlExtended)!.A));
+            foreach ((YamlSchemaKind schema, long? expected) in new[] { (YamlSchemaKind.Core, stymlCore), (YamlSchemaKind.Yaml11, stymlYaml11) })
+            {
+                var options = new YamlSerializerOptions { Schema = schema };
+                Assert.Equal(expected, Try(() => YamlSerializer.Deserialize<LongHolder>(yaml, options)!.A));
+                using YamlDocument document = YamlDocument.Parse(yaml, new YamlDocumentOptions { Schema = schema });
+                Assert.Equal(expected, Try(() => document.RootElement.GetProperty("A").GetInt64()));
+                Assert.Equal(expected, Try(() => YamlNode.Parse(yaml, documentOptions: new YamlDocumentOptions { Schema = schema })!["A"]!.GetValue<long>()));
+                Assert.Equal(expected, Try(() => ((YamlElement)YamlSerializer.Deserialize<Dictionary<string, object>>(yaml, options)!["A"]).GetInt64()));
+            }
         }
 
         [Theory]

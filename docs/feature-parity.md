@@ -44,7 +44,8 @@ Earlier cuts (decision D6), same measurement:
 
 Measured 2026-11-18, one parity test per row (`Yaml11Forms_*` in `test/Styml.Parity.Tests`), reading into a typed
 member. "Ext" is SharpYaml with `Schema = Extended` and `UseSchema = true`; Styml is the reader with
-`YamlSchemaKind.Yaml11`. A form is in the option when at least one library accepts it.
+`YamlSchemaKind.Yaml11`. A form is in the option when at least one library accepts it. The leading-zero rows are
+`LeadingZeroIntegers`, which also reads Styml's `YamlElement`, `YamlNode` and `object` against the typed value.
 
 | Form | YamlDotNet | SharpYaml | SharpYaml Ext | Styml `Yaml11` | Styml default |
 |---|---|---|---|---|---|
@@ -53,6 +54,8 @@ member. "Ext" is SharpYaml with `Schema = Extended` and `UseSchema = true`; Stym
 | Mixed-case 1.1 boolean `yEs` | bool | refused | refused | bool in typed reads with `AcceptLenientScalars` (token: string) | refused, with the option too |
 | Leading-zero octal `0777`, `010` | 511, 8 | 777, 10 (decimal) | 511, 8 | 511, 8 | 777, 10 |
 | `0o17` (1.2 octal) | refused | 15 | 15 | 15 | 15 |
+| Signed leading-zero `-012`, `+012` | -10, 10 | -12, 12 (decimal) | -10, 10 | -10, 10 | -12, 12 |
+| `08`, `09` (not octal) | refused | 8, 9 | refused | 8, 9 | 8, 9 |
 | Binary `0b1010`, `-0b11`, `0b1_0` | 10, -3, 2 | same | same | same | string |
 | `_` separators `1_000`, `0x_1F`, `1_000.5` | yes | yes | yes | yes | string |
 | Sexagesimal integer `190:20:30`, `-1:30` | 685230, -90 | refused | refused | 685230, -90 | string |
