@@ -113,7 +113,8 @@ applies.
 **Refused departures.** Four library behaviours that look like accidents rather than features, refused by Styml in
 every setting:
 - **YamlDotNet's `'- 1'` read as -1:** its number parser takes a sign, a space and digits.
-- **YamlDotNet's `∞` into `Half`:** apparently `Half.Parse` accepting the symbol.
+- **YamlDotNet's `∞` into `Half`:** it parses `Half` with the current culture, whose infinity symbol is `∞` under en-US
+  and `Infinity` under the invariant culture; the matrix measures the other libraries under en-US.
 - **SharpYaml ignoring a mismatching tag:** `!!int true` into `bool`, `!!bool 1` into `int`.
 - **Both libraries parsing dates with the machine's culture:** `1.5` into `DateTime` gives January 5 of the current year.
 

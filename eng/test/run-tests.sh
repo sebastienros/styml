@@ -52,5 +52,9 @@ for p in "${projects[@]}"; do
     --logger "trx;LogFileName=$n.$tfm.trx" --results-directory "$results" \
     --blame-hang-timeout "${STYML_TEST_HANG_TIMEOUT:-5m}" --blame-hang-dump-type none ${STYML_TEST_ARGS:-} > "$results/$n.$tfm.console.log" 2>&1 || status=1
   grep -E '^(Passed|Failed)!|Total tests' "$results/$n.$tfm.console.log" | head -3
+  # When tests failed, each failed test's name and message (at most 60 lines), so that a CI log says what failed.
+  if grep -q -E '^Failed!' "$results/$n.$tfm.console.log"; then
+    grep -E -A6 '^\s+Failed ' "$results/$n.$tfm.console.log" | grep -v -E '^\s+(at |Stack Trace:)' | head -60
+  fi
 done
 exit $status

@@ -277,15 +277,44 @@ namespace System.Text.Yaml.Parity.Tests
                 _ => "A: " + scalar + "\n",
             };
 
-            Assert.Equal(yamlDotNet, Describe(() => s_yamlDotNet.Deserialize(new StringReader(yaml), type)));
-            Assert.Equal(sharpYaml, Describe(() => SY.YamlSerializer.Deserialize(yaml, type, s_sharpYaml)));
-            Assert.Equal(styml, Describe(() => YamlSerializer.Deserialize(yaml, type)));
-            Assert.Equal(stymlLenient, Describe(() => YamlSerializer.Deserialize(yaml, type, s_lenient)));
-            Assert.Equal(stymlLenientYaml11, Describe(() =>
+            // The other libraries' cells were measured under en-US, and they depend on the current culture: YamlDotNet
+            // parses Half by it, so its infinity symbol is "∞" under en-US and "Infinity" under the invariant culture
+            // (a runner with no locale set). Their cells run under en-US on every machine.
+            WithCulture("en-US", () =>
             {
-                var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(yaml), new YamlReaderOptions { Schema = YamlSchemaKind.Yaml11, AcceptLenientScalars = true });
-                return YamlSerializer.Deserialize(ref reader, type);
-            }));
+                Assert.Equal(yamlDotNet, Describe(() => s_yamlDotNet.Deserialize(new StringReader(yaml), type)));
+                Assert.Equal(sharpYaml, Describe(() => SY.YamlSerializer.Deserialize(yaml, type, s_sharpYaml)));
+            });
+
+            // Styml reads independently of the culture: its cells hold under en-US and under the invariant culture.
+            foreach (string culture in new[] { "en-US", "" })
+            {
+                WithCulture(culture, () =>
+                {
+                    Assert.Equal(styml, Describe(() => YamlSerializer.Deserialize(yaml, type)));
+                    Assert.Equal(stymlLenient, Describe(() => YamlSerializer.Deserialize(yaml, type, s_lenient)));
+                    Assert.Equal(stymlLenientYaml11, Describe(() =>
+                    {
+                        var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(yaml), new YamlReaderOptions { Schema = YamlSchemaKind.Yaml11, AcceptLenientScalars = true });
+                        return YamlSerializer.Deserialize(ref reader, type);
+                    }));
+                });
+            }
+        }
+
+        private static void WithCulture(string name, Action action)
+        {
+            CultureInfo culture = CultureInfo.CurrentCulture, uiCulture = CultureInfo.CurrentUICulture;
+            try
+            {
+                CultureInfo.CurrentCulture = CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(name);
+                action();
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = culture;
+                CultureInfo.CurrentUICulture = uiCulture;
+            }
         }
 
         /// <summary>
