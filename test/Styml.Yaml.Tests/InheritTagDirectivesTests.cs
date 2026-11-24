@@ -43,7 +43,8 @@ namespace System.Text.Yaml.Tests
         [Fact]
         public void Off_ALaterDocumentHasOnlyTheDefaultHandles()
         {
-            YamlException error = Assert.ThrowsAny<YamlException>(() => RootTags(Unity, s_off));
+            // Without %YAML 1.1 (a stream that declares it has YAML 1.1's scope: Yaml11ScopeTests).
+            YamlException error = Assert.ThrowsAny<YamlException>(() => RootTags(Unity.Replace("%YAML 1.1\n", ""), s_off));
             Assert.Contains("not declared", error.Message);
             Assert.Equal(new[] { "tag:unity3d.com,2011:1", "tag:yaml.org,2002:str" }, RootTags(Header + "--- !u!1 a\n--- !!str b\n", s_off));
         }
@@ -78,9 +79,9 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
-        public void YamlOneOne_DoesNotTurnItOn()
+        public void TheYaml11Schema_DoesNotTurnItOn()
         {
-            Assert.ThrowsAny<YamlException>(() => RootTags(Unity, new YamlReaderOptions { AllowMultipleValues = true, Schema = YamlSchemaKind.Yaml11 }));
+            Assert.ThrowsAny<YamlException>(() => RootTags(Unity.Replace("%YAML 1.1\n", ""), new YamlReaderOptions { AllowMultipleValues = true, Schema = YamlSchemaKind.Yaml11 }));
         }
 
         [Fact]
@@ -127,8 +128,8 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(2, nodes.Count);
             Assert.Equal(1000, (int)nodes[1]!["Transform"]!["m_GameObject"]!["fileID"]!);
 
-            // Off, the second document's tag is refused.
-            using var again = new MemoryStream(Encoding.UTF8.GetBytes(Unity));
+            // Off, in a stream without %YAML 1.1, the second document's tag is refused.
+            using var again = new MemoryStream(Encoding.UTF8.GetBytes(Unity.Replace("%YAML 1.1\n", "")));
             Assert.ThrowsAny<YamlException>(() => Drain(YamlSerializer.DeserializeAsyncEnumerable<YamlNode>(again, topLevelValues: true)));
         }
 

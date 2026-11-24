@@ -89,10 +89,14 @@ namespace System.Text.Yaml.Parity.Tests
             Assert.ThrowsAny<Exception>(() => SharpYamlTags(TwoObjects));
             Assert.Equal(new[] { "!u!1", "!u!4" }, VYamlTags(TwoObjects));
 
-            // Styml: as SharpYaml by default, as YamlDotNet under InheritTagDirectives.
-            Assert.ThrowsAny<YamlException>(() => StymlTags(TwoObjects, new YamlReaderOptions { AllowMultipleValues = true }));
+            // Styml: as YamlDotNet by default (the handles kept under %YAML 1.1, reset without it or under %YAML 1.2), and
+            // whatever the version under InheritTagDirectives.
+            var defaults = new YamlReaderOptions { AllowMultipleValues = true };
+            Assert.Equal(new[] { "tag:unity3d.com,2011:1", "tag:unity3d.com,2011:4" }, StymlTags(TwoObjects, defaults));
+            Assert.ThrowsAny<YamlException>(() => StymlTags(TwoObjects.Replace("%YAML 1.1\n", ""), defaults));
+            Assert.ThrowsAny<YamlException>(() => StymlTags(TwoObjects.Replace("%YAML 1.1", "%YAML 1.2"), defaults));
             Assert.Equal(new[] { "tag:unity3d.com,2011:1", "tag:unity3d.com,2011:4" },
-                StymlTags(TwoObjects, new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true }));
+                StymlTags(TwoObjects.Replace("%YAML 1.1\n", ""), new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true }));
         }
 
         [Fact]
@@ -108,6 +112,71 @@ namespace System.Text.Yaml.Parity.Tests
             string usesB = yaml.Replace("!a!y", "!b!y");
             Assert.ThrowsAny<Exception>(() => YamlDotNetTags(usesB));
             Assert.ThrowsAny<YamlException>(() => StymlTags(usesB, on));
+        }
+
+        [Theory]
+        // YamlDotNet's parser and Styml's reader, with default options. Where YamlDotNet refuses a second %YAML directive
+        // (it treats the version as the stream's: "Found duplicate %YAML directive"), Styml reads each document's, as the
+        // specification allows; a later %YAML 1.2 ends YAML 1.1's scope.
+        //           stream                                                                                       YamlDotNet                                  Styml
+        [InlineData("%YAML 1.1\n%TAG !a! tag:a,1:\n--- !a!x 1\n--- !a!y 2\n...\n--- !a!z 3\n", "tag:a,1:x tag:a,1:y tag:a,1:z", "tag:a,1:x tag:a,1:y tag:a,1:z")]
+        [InlineData("%YAML 1.1\n%TAG !a! tag:a,1:\n--- !a!x 1\n...\n%TAG !b! tag:b,1:\n--- !b!y 2\n--- !b!z 3\n", "tag:a,1:x tag:b,1:y tag:b,1:z", "tag:a,1:x tag:b,1:y tag:b,1:z")]
+        [InlineData("%YAML 1.1\n%TAG !a! tag:a,1:\n--- !a!x 1\n...\n%TAG !b! tag:b,1:\n--- !a!y 2\n", null, null)]
+        [InlineData("%TAG !a! tag:a,1:\n--- !a!x 1\n...\n%YAML 1.1\n%TAG !a! tag:a2,1:\n--- !a!y 2\n--- !a!z 3\n", "tag:a,1:x tag:a2,1:y tag:a2,1:z", "tag:a,1:x tag:a2,1:y tag:a2,1:z")]
+        [InlineData("%YAML 1.0\n%TAG !a! tag:a,1:\n--- !a!x 1\n--- !a!y 2\n", "tag:a,1:x tag:a,1:y", "tag:a,1:x tag:a,1:y")]
+        [InlineData("%YAML 1.3\n%TAG !a! tag:a,1:\n--- !a!x 1\n--- !a!y 2\n", null, null)]
+        [InlineData("%YAML 1.2\n%TAG !a! tag:a,1:\n--- !a!x 1\n--- !a!y 2\n", null, null)]
+        [InlineData("%TAG !a! tag:a,1:\n--- !a!x 1\n--- !a!y 2\n", null, null)]
+        // A later %YAML 1.1 alone is a directive: that document starts its own table (rule (a)), so !a! is undeclared there.
+        [InlineData("%YAML 1.1\n%TAG !a! tag:a,1:\n--- !a!x 1\n...\n%YAML 1.1\n--- !a!y 2\n", null, null)]
+        [InlineData("%YAML 1.1\n%TAG !a! tag:a,1:\n--- !a!x 1\n...\n%YAML 1.1\n%TAG !a! tag:a,1:\n--- !a!y 2\n--- !a!z 3\n", null, "tag:a,1:x tag:a,1:y tag:a,1:z")]
+        [InlineData("%YAML 1.1\n%TAG !a! tag:a,1:\n--- !a!x 1\n...\n%YAML 1.2\n--- !a!y 2\n", null, null)]
+        public void TheVersionsDirectiveScope(string yaml, string? yamlDotNet, string? styml)
+        {
+            Assert.Equal(yamlDotNet, Scalars(() => YamlDotNetScalarTags(yaml)));
+            Assert.Equal(styml, Scalars(() => StymlScalarTags(yaml)));
+        }
+
+        private static string? Scalars(Func<List<string?>> read)
+        {
+            try
+            {
+                return string.Join(" ", read());
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static List<string?> YamlDotNetScalarTags(string yaml)
+        {
+            var parser = new YamlDotNet.Core.Parser(new StringReader(yaml));
+            var tags = new List<string?>();
+            while (parser.MoveNext())
+            {
+                if (parser.Current is YamlDotNet.Core.Events.Scalar { Tag.IsEmpty: false } scalar)
+                {
+                    tags.Add(scalar.Tag.Value);
+                }
+            }
+
+            return tags;
+        }
+
+        private static List<string?> StymlScalarTags(string yaml)
+        {
+            var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(yaml), new YamlReaderOptions { AllowMultipleValues = true });
+            var tags = new List<string?>();
+            while (reader.Read())
+            {
+                if (!reader.Tag.IsEmpty)
+                {
+                    tags.Add(reader.GetExpandedTag());
+                }
+            }
+
+            return tags;
         }
 
         [Fact]

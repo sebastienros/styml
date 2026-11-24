@@ -132,6 +132,18 @@ namespace System.Text.Yaml
             return true;
         }
 
+        /// <summary>Whether a %YAML 1.x directive's minor version (the digits after the dot) is 0 or 1: YAML 1.1's stream rules.</summary>
+        internal static bool IsYaml11Version(ReadOnlySpan<byte> minor)
+        {
+            int i = 0;
+            while (i < minor.Length - 1 && minor[i] == (byte)'0')
+            {
+                i++;
+            }
+
+            return minor.Length - i == 1 && minor[i] is (byte)'0' or (byte)'1';
+        }
+
         /// <summary>RFC 8259 number syntax: <c>-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)?</c>.</summary>
         internal static bool IsJsonNumber(ReadOnlySpan<byte> value)
         {

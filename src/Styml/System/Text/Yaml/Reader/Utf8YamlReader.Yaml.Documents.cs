@@ -79,7 +79,7 @@ namespace System.Text.Yaml
                             YamlThrow(YamlGrammarError.MultipleDocuments, c);
                         }
 
-                        if (!_yaml.Has(YamlParseFlags.DirectivesSeen) && !_readerOptions.InheritTagDirectives)
+                        if (!_yaml.Has(YamlParseFlags.DirectivesSeen) && !InheritsTagDirectives)
                         {
                             // YAML 1.2: a document without directives has only the default handles. Under
                             // InheritTagDirectives (YAML 1.1) it keeps the previous document's.
@@ -143,7 +143,7 @@ namespace System.Text.Yaml
                         // A later bare document has no directives. The first one keeps the table it starts with:
                         // empty, or the parent's for a reader scoped to one value. Under InheritTagDirectives a later
                         // one keeps the previous document's.
-                        if (!_readerOptions.InheritTagDirectives)
+                        if (!InheritsTagDirectives)
                         {
                             _yaml.TagDirectives = null;
                         }
@@ -169,6 +169,10 @@ namespace System.Text.Yaml
                 return step;
             }
         }
+
+        // A later document without directives keeps the previous one's %TAG handles: under the option, or in a stream that
+        // declared %YAML 1.1.
+        private readonly bool InheritsTagDirectives => _readerOptions.InheritTagDirectives || _yaml.Has(YamlParseFlags.Yaml11Scope);
 
         /// <summary>Reads one directive line (<c>%YAML</c>, <c>%TAG</c> or a reserved directive).</summary>
         private bool YamlReadDirective(ref YamlCursor c)
@@ -227,6 +231,9 @@ namespace System.Text.Yaml
                     YamlThrow(YamlGrammarError.UnsupportedYamlVersion, c, YamlReaderHelper.TranscodeHelper(args));
                 }
                 _yaml.Set(YamlParseFlags.YamlDirectiveSeen, true);
+
+                // %YAML 1.0 or 1.1: YAML 1.1's directive scope from this document on; 1.2 or later ends it.
+                _yaml.Set(YamlParseFlags.Yaml11Scope, YamlReaderHelper.IsYaml11Version(args.Slice(dot + 1)));
             }
             else if (name.SequenceEqual("TAG"u8))
             {

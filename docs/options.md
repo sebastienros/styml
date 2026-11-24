@@ -25,7 +25,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `MaxAliasExpansion` | `0` | The most nodes aliases may copy in one deserialization; 0 allows 10,000 nodes, or as many as the bytes read when that is more. |
 | `ResolveMergeKeys` | `false` | Merges a `<<` key's mappings into the mapping that holds it. |
 | `DisallowImplicitCollectionKeys` | `false` | Refuses a flow collection as an implicit key, so a stream yields each element as soon as it is complete. |
-| `InheritTagDirectives` | `false` | A document with no directives keeps the previous document's `%TAG` handles, as YAML 1.1 reads a stream (section 7.4); for Unity's files. |
+| `InheritTagDirectives` | `false` | A document with no directives keeps the previous document's `%TAG` handles, as YAML 1.1 reads a stream (section 7.4), whatever the version; a stream that declares `%YAML 1.1` reads that way without it. |
 | `AcceptUnityStrippedMarker` | `false` | Accepts Unity's `stripped` after a document root's tag on its `---` line (`--- !u!4 &400000 stripped`); `IsUnityStripped` reports it. |
 | `TagMappings` | empty | The tags that select a type when reading, and that the type writes: an explicit allow-list. |
 
@@ -41,7 +41,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `DefaultScalarStyle` | `None` | As on `YamlSerializerOptions`, below a `WriteScalarStyle` hint. |
 | `QuoteForLenientReaders` | `false` | As on `YamlSerializerOptions`. |
 | `IgnoreSourceStyles` | `false` | As on `YamlSerializerOptions`. |
-| `InheritTagDirectives` | `false` | A document written with no directives keeps the previous document's `%TAG` handles, for a reader that inherits them: a DOM's tag is written in its source's shorthand where the writer's directives resolve it. |
+| `InheritTagDirectives` | `false` | A document written with no directives keeps the previous document's `%TAG` handles, for a reader that inherits them: a DOM's tag is written in its source's shorthand where the writer's directives resolve it. After `WriteDirective("%YAML 1.1")` the writer does so without it. |
 
 ### `YamlReaderOptions`
 

@@ -83,10 +83,11 @@ namespace System.Text.Yaml
 
         /// <summary>
         /// Gets or sets whether a document with no directives keeps the previous document's <c>%TAG</c> handles, as YAML 1.1
-        /// reads a stream (section 7.4): a document that declares any directive starts from its own. <see langword="false"/>
-        /// by default: YAML 1.2 makes each document independent (section 9.1), so a later document sees only the default
-        /// handles. Unity's files declare <c>%TAG !u! tag:unity3d.com,2011:</c> once, at the top. The <c>%YAML</c> directive
-        /// does not turn it on.
+        /// reads a stream (section 7.4): a document that declares any directive starts from its own. A stream that declares
+        /// <c>%YAML 1.1</c> (or 1.0) reads that way without it, as YamlDotNet's parser does, until a document declares
+        /// <c>%YAML 1.2</c>; this option applies the rule whatever the version, for a stream without the directive.
+        /// <see langword="false"/> by default: YAML 1.2 makes each document independent (section 9.1). The schema does not
+        /// change on <c>%YAML 1.1</c>.
         /// </summary>
         public bool InheritTagDirectives { get; set; }
 

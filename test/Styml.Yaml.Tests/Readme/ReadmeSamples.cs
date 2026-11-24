@@ -512,7 +512,7 @@ namespace System.Text.Yaml.Tests.Readme
         public void UnityRead()
         {
             // readme: unity-read text
-            var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true, AcceptUnityStrippedMarker = true };
+            var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, AcceptUnityStrippedMarker = true };
             var options = new YamlSerializerOptions();
             options.TagMappings.Add("tag:unity3d.com,2011:1", typeof(GameObjectDocument));
             options.TagMappings.Add("tag:unity3d.com,2011:4", typeof(TransformDocument));
@@ -544,9 +544,9 @@ namespace System.Text.Yaml.Tests.Readme
             }
 
             // readme: unity-write-back yaml
-            var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true, AcceptUnityStrippedMarker = true };
+            var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, AcceptUnityStrippedMarker = true };
             var buffer = new ArrayBufferWriter<byte>();
-            using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { InheritTagDirectives = true }))
+            using (var writer = new Utf8YamlWriter(buffer))
             {
                 // The reader does not return a stream's directives: the header is written as Unity writes it.
                 writer.WriteDirective("%YAML 1.1");

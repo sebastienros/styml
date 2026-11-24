@@ -67,6 +67,9 @@ namespace System.Text.Yaml
             // The %TAG handles WriteDirective declared for the current document (YAML 1.2's scope, or YAML 1.1's under
             // InheritTagDirectives), for the DOM's tag shorthand.
             public YamlTagDirectives? TagDirectives;
+
+            // The writer wrote %YAML 1.1 (or 1.0): later documents keep the table, as a reader reads such a stream.
+            public bool Yaml11Scope;
         }
 
         private enum BlockNode : byte
@@ -1135,7 +1138,7 @@ namespace System.Text.Yaml
         // A document that starts without directives of its own: under YAML 1.2's scope it has only the default handles.
         private void ScopeTagDirectivesToNewDocument()
         {
-            if (_block is not null && (_blockSpecial & SpecialDirectives) == 0 && !_options.InheritTagDirectives)
+            if (_block is not null && (_blockSpecial & SpecialDirectives) == 0 && !_options.InheritTagDirectives && !_block.Yaml11Scope)
             {
                 _block.TagDirectives = null;
             }
@@ -1261,6 +1264,15 @@ namespace System.Text.Yaml
             if (kind == YamlWriterHelper.DirectiveKind.Tag)
             {
                 RecordTagDirective(utf8Directive);
+            }
+            else if (kind == YamlWriterHelper.DirectiveKind.Yaml)
+            {
+                // %YAML 1.0 or 1.1: YAML 1.1's directive scope, as the reader applies it; 1.2 or later ends it.
+                ReadOnlySpan<byte> version = YamlReaderHelper.TrimBlanks(utf8Directive.Slice(5));
+                int comment = YamlReaderHelper.IndexOfComment(version);
+                version = YamlReaderHelper.TrimBlanks(comment >= 0 ? version.Slice(0, comment) : version);
+                int dot = version.IndexOf((byte)'.');
+                _block!.Yaml11Scope = dot > 0 && version.Slice(0, dot).SequenceEqual("1"u8) && YamlReaderHelper.IsYaml11Version(version.Slice(dot + 1));
             }
 
             utf8Directive.CopyTo(output.Slice(BytesPending));

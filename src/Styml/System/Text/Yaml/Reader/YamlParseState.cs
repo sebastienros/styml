@@ -281,5 +281,12 @@ namespace System.Text.Yaml
         /// read as a document line's (Unity's stripped marker after them), and cleared once it is read.
         /// </summary>
         ScopedDocumentLine = 1 << 10,
+
+        /// <summary>
+        /// A document declared %YAML 1.1 (or 1.0): a later document with no directives keeps the previous document's %TAG
+        /// handles, as YAML 1.1 reads a stream (section 7.4), until a document declares %YAML 1.2 or later. A document
+        /// with other directives only keeps the version, as YamlDotNet's parser does.
+        /// </summary>
+        Yaml11Scope = 1 << 11,
     }
 }

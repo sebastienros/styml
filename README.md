@@ -837,14 +837,15 @@ string jsonOut = YamlSerializer.Serialize(value, new YamlSerializerOptions { Wri
 
 Unity writes its scenes, prefabs and assets as a stream of documents: the `%YAML 1.1` and `%TAG !u!
 tag:unity3d.com,2011:` header once, then one object per document, `--- !u!<class ID> &<file ID>`, and `stripped` on the
-document line of a prefab's placeholder objects. Two reader options, off by default, read it:
+document line of a prefab's placeholder objects:
 
-- `InheritTagDirectives`: a document with no directives keeps the previous document's `%TAG` handles, as YAML 1.1 reads
-  a stream (section 7.4); YAML 1.2 makes each document independent, so without it the second object's `!u!` is an
-  undeclared handle. `%YAML 1.1` does not turn it on (YamlDotNet's parser keeps the handles under `%YAML 1.1` only,
-  SharpYaml never).
-- `AcceptUnityStrippedMarker`: `stripped` after a document's tag on its `---` line, reported by `IsUnityStripped` on the
-  reader, `YamlElement` and `YamlNode`.
+- **The header:** a stream that declares `%YAML 1.1` keeps a document's `%TAG` handles for the later documents that
+  declare none, as YAML 1.1 reads a stream (section 7.4) and YamlDotNet's parser does, so the second object's `!u!` is
+  declared; the schema does not change on `%YAML 1.1`, it stays the core schema unless `Schema` says otherwise. YAML 1.2
+  makes each document independent, so for a Unity-like stream without the `%YAML 1.1` line, `InheritTagDirectives`
+  applies the same rule.
+- **`AcceptUnityStrippedMarker`,** off by default: `stripped` after a document's tag on its `---` line, reported by
+  `IsUnityStripped` on the reader, `YamlElement` and `YamlNode`.
 
 Typed models read the objects by their tags, with `TagMappings` on the expanded tags, and each document's anchor is its
 file ID. Under the core schema, the default, Unity's `0` and `1` flags are numbers (`int` members) and its GUIDs, hashes
@@ -880,7 +881,7 @@ public sealed class FileReference { public long fileID { get; set; } }
 
 <!-- sample:unity-read -->
 ```csharp
-var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true, AcceptUnityStrippedMarker = true };
+var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, AcceptUnityStrippedMarker = true };
 var options = new YamlSerializerOptions();
 options.TagMappings.Add("tag:unity3d.com,2011:1", typeof(GameObjectDocument));
 options.TagMappings.Add("tag:unity3d.com,2011:4", typeof(TransformDocument));
@@ -915,9 +916,9 @@ reader does not return a stream's directives, so the tool writes the header:
 
 <!-- sample:unity-write-back -->
 ```csharp
-var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true, AcceptUnityStrippedMarker = true };
+var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, AcceptUnityStrippedMarker = true };
 var buffer = new ArrayBufferWriter<byte>();
-using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { InheritTagDirectives = true }))
+using (var writer = new Utf8YamlWriter(buffer))
 {
     // The reader does not return a stream's directives: the header is written as Unity writes it.
     writer.WriteDirective("%YAML 1.1");
