@@ -1,6 +1,7 @@
 // Copyright (c) Sébastien Ros. Licensed under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Yaml.Nodes;
 using System.Text.Yaml.Serialization;
 using Xunit;
 
@@ -190,6 +191,28 @@ namespace System.Text.Yaml.Tests
 
             Mixed m = YamlSerializer.Deserialize<Mixed>("%TAG !e! tag:e,1:\n---\nBefore: !e!b b\nFirst: !e!f f\n")!;
             Assert.Equal(("f", "b"), (m.First, m.Before));
+        }
+
+        [Theory]
+        [InlineData("!\n&\u001D")]
+        [InlineData("&\u0007 a")]
+        [InlineData("&\u0085 a")]
+        [InlineData("&\u2028 a")]
+        [InlineData("*\u001D")]
+        public void InvalidAnchorCharactersAreRejected(string yaml)
+        {
+            Assert.ThrowsAny<YamlException>(() => YamlNode.Parse(yaml));
+        }
+
+        [Theory]
+        [InlineData("--- !\u0085\na")]
+        [InlineData("--- !\u001D a")]
+        [InlineData("--- !<\u0085> a")]
+        [InlineData("--- !<\u001D> a")]
+        [InlineData("--- !! a")]
+        public void InvalidTagCharactersAreRejected(string yaml)
+        {
+            Assert.ThrowsAny<YamlException>(() => YamlNode.Parse(yaml));
         }
     }
 }
