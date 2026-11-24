@@ -26,7 +26,7 @@ namespace System.Text.Yaml.Tests
                 .Select(s => new object[] { YamlSchemaKind.Yaml11, s }));
 
         private static string Block(object? value, YamlSchemaKind schema, bool ignoreSourceStyles = false) =>
-            YamlSerializer.Serialize(value, new YamlSerializerOptions { Schema = schema, WriteStyle = YamlWriterStyle.Block, IgnoreSourceStyles = ignoreSourceStyles });
+            YamlSerializer.Serialize(value, new YamlSerializerOptions { Schema = schema, WriteStyle = YamlWriterStyle.Block, NewLine = "\n", IgnoreSourceStyles = ignoreSourceStyles });
 
         [Theory]
         [MemberData(nameof(Spellings))]
