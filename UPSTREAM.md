@@ -85,10 +85,16 @@ The rename to `System.Text.Yaml` / `Yaml*` is a separate, scripted step: see `en
   same identifier rule is applied to the generator baselines (`Baselines/**/*.txt`, C#) rather than regenerating
   them, so the baseline tests check emitter and baselines independently. Vendored files and `test/TestShims` are
   excluded. Result: 14,256 tokens in 454 files (2 found only in code inactive under every symbol set).
-  Hand-fixed afterwards (13 test string literals that name a renamed parameter or member): `"json"` /
+  The pass B commit also hand-fixed 13 test string literals that name a renamed parameter or member: `"json"` /
   `"jsonTypeInfo"` expected `ArgumentNullException.ParamName`s, `GetProperty("s_json…")` and
-  `GetField("_jsonElement")` reflection lookups. Not renamed: message text such as
-  `Debug.Assert(..., "jsonTypeInfo.Configure() ...")`, lowercase `json` in comments and payloads.
+  `GetField("_jsonElement")` reflection lookups, one `Assert.Contains("json", ex.Message)`. Those are now pass B's
+  rule 4: a regular string literal whose whole text is an identifier the identifier rule renames is renamed the same
+  way (exactly those 13 at the baseline; exceptions would go in `passb.json`'s `keep_literals`). Without it a replay on
+  newer upstream code turned them back into `json…` with no merge conflict. `passb.json` records the expected number
+  of emitter literals (19) and whole-literal names (13); a run that renames a different number fails, and
+  `--update-counts` records the new numbers (the sync uses it on the target tree and shows the change). Not renamed:
+  message text such as `Debug.Assert(..., "jsonTypeInfo.Configure() ...")`, lowercase `json` inside longer literals,
+  comments and payloads. Result with rule 4: 14,269 edits.
 
 ## File headers
 

@@ -1,0 +1,8 @@
+{
+  "comment": "Pass B settings (see passb.cs). expected_counts: literals renamed by rule 2 (the emitted jsonTypeInfo local in YamlSourceGenerator.Emitter.cs) and by rule 4 (string literals that are exactly a renamed identifier). keep_literals: rule-4 literals that keep their text, each an object with file (repo-relative path) and literal (the token text, quotes included).",
+  "expected_counts": {
+    "emitter_literals": 19,
+    "whole_literals": 13
+  },
+  "keep_literals": []
+}
