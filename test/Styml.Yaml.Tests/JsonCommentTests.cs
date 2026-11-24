@@ -39,8 +39,8 @@ namespace System.Text.Yaml.Tests
             new object[] { "[http://x, a//b, a/*b*/c]", "[ 'http://x' 'a//b' 'a/*b*/c' ]", "[ 'http://x' 'a//b' 'a/*b*/c' ]", false },
             new object[] { "[a // b\n]", "[ 'a' < b>@3 ]", "[ 'a // b' ]", false },
             new object[] { "[a /* b */ c]", "[ 'a' < b >@3 !YamlReaderException", "[ 'a /* b */ c' ]", false },
-            new object[] { "[1//c\n]", "[ '1//c' ]", "[ '1//c' ]", false },
-            new object[] { "[true// c\n]", "[ 'true// c' ]", "[ 'true// c' ]", false },
+            new object[] { "[1//c\n]", "[ 1 <c>@2 ]", "[ '1//c' ]", false },
+            new object[] { "[true// c\n]", "[ true < c>@5 ]", "[ 'true// c' ]", false },
             new object[] { "[//c\n1]", "[ <c>@1 1 ]", "[ '//c 1' ]", false },
             new object[] { "{\"a\"://c\n1}", "{ a: <c>@5 1 }", "{ a: '//c 1' }", false },
             new object[] { "[/usr/bin, /]", "[ '/usr/bin' '/' ]", "[ '/usr/bin' '/' ]", false },
@@ -104,6 +104,12 @@ namespace System.Text.Yaml.Tests
             new object[] { "[1,2,/* c */]", "[ 1 2 < c >@5 ]", "[ 1 2 '/* c */' ]", false },
             new object[] { "{a: http://x/y, b: c:/* d */}", "{ a: 'http://x/y' b: 'c:/* d */' }", "{ a: 'http://x/y' b: 'c:/* d */' }", false },
             new object[] { "[a /b, c / d, e /]", "[ 'a /b' 'c / d' 'e /' ]", "[ 'a /b' 'c / d' 'e /' ]", false },
+            new object[] { "[1//c\n, true/* c */, null// x\n, -1.5e3/**/, 01//c\n]", "[ 1 <c>@2 true < c >@12 ~ < x>@25 -1.5e3 <>@38 '01//c' ]", "[ '1//c' 'true/* c */' 'null// x' '-1.5e3/**/' '01//c' ]", false },
+            new object[] { "{\"a\": 30//c\n}", "{ a: 30 <c>@8 }", "{ a: '30//c' }", false },
+            new object[] { "0/**/", "0 <>@1", "'0/**/'", false },
+            new object[] { "[1/2, 1/, 1//, tru//e\n, 1.//c\n]", "[ '1/2' '1/' 1 <, tru//e>@11 '1.//c' ]", "[ '1/2' '1/' '1//' 'tru//e' '1.//c' ]", false },
+            new object[] { "[2020-01-01//c\n, 1 //c\n]", "[ '2020-01-01//c' 1 <c>@19 ]", "[ '2020-01-01//c' '1 //c' ]", false },
+            new object[] { "{\"a\":1// c\n,\"b\":false/*x*/}", "{ a: 1 < c>@6 b: false <x>@21 }", "{ a: '1// c' b: 'false/*x*/' }", false },
         };
 
         [Theory]
@@ -147,18 +153,17 @@ namespace System.Text.Yaml.Tests
 
         [Theory]
         [InlineData("// c", " c", 0, 4)]
-        [InlineData("// c\n", " c", 0, 4)]
-        [InlineData("// c\r\n1", " c", 0, 4)]
+        [InlineData("// c\n", " c", 0, 5)]
+        [InlineData("// c\r\n1", " c", 0, 6)]
         [InlineData("//", "", 0, 2)]
         [InlineData("/**/", "", 0, 4)]
         [InlineData("/* c */ 1", " c ", 0, 7)]
         [InlineData("[1, /* a\nb */ 2]", " a\nb ", 4, 13)]
-        [InlineData("[1, // é\n 2]", " é", 4, 9)]
+        [InlineData("[1, // é\n 2]", " é", 4, 10)]
         public void Allow_CommentToken_IsSystemTextJsons(string yaml, string text, int start, int consumed)
         {
-            // The value is the text without its delimiters and the token starts at the first '/', as in
-            // System.Text.Json. A '//' comment ends before its line break, which the next Read consumes (System.Text.Json
-            // consumes it with the comment).
+            // As System.Text.Json: the value is the text without its delimiters, the token starts at the first '/',
+            // and the token of a '//' comment consumes its line break.
             byte[] input = Encoding.UTF8.GetBytes(yaml);
             var reader = new Utf8YamlReader(input, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
             while (reader.Read() && reader.TokenType != YamlTokenType.Comment)
@@ -236,15 +241,12 @@ namespace System.Text.Yaml.Tests
                     tokens.Add(reader.TokenType);
                 }
 
-                // Nothing of an unfinished comment is consumed, and no token is made of it. A '//' comment is
-                // finished at its line break, also when the LF of a CRLF is still to come.
+                // Nothing of an unfinished comment is consumed, and no token is made of it. A '//' comment whose
+                // line ends in a CR is unfinished too: the LF of a CRLF may follow.
                 int consumed = (int)reader.BytesConsumed;
-                if (!first.EndsWith("\r"))
-                {
-                    Assert.DoesNotContain(YamlTokenType.Comment, tokens);
-                    int slash = first.IndexOf('/');
-                    Assert.True(slash < 0 || consumed <= slash);
-                }
+                Assert.DoesNotContain(YamlTokenType.Comment, tokens);
+                int slash = first.IndexOf('/');
+                Assert.True(slash < 0 || consumed <= slash);
 
                 byte[] remaining = Encoding.UTF8.GetBytes(first.Substring(consumed) + rest);
                 reader = new Utf8YamlReader(remaining, isFinalBlock: true, reader.CurrentState);

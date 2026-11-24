@@ -1,6 +1,7 @@
 // Copyright (c) Sébastien Ros. Licensed under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Yaml
 {
@@ -307,8 +308,100 @@ namespace System.Text.Yaml
 
         Done:
             length = last.Pos - start;
+            if (jsonComments && length > 2 && YamlCutJsonLiteralAtComment(ref c, start, ref length))
+            {
+                // 'c' was still the scalar's first byte: it is now after the literal.
+                multiLine = false;
+                end = YamlPlainEnd.Comment;
+                return true;
+            }
+
             c = last;
             return true;
+        }
+
+        /// <summary>
+        /// With JSON comments read: a plain scalar that starts with a JSON number, <c>true</c>, <c>false</c> or
+        /// <c>null</c> directly followed by '//' or '/*' ends there, as the literal does in JSON (<c>[1//c</c>,
+        /// <c>{"a": true/* c */}</c>). Any other text keeps its slashes (<c>a//b</c>, <c>http://x</c>): only white
+        /// space starts a comment inside it. Looked for once per scalar, after the scan, so the scan itself has no
+        /// check for it.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private readonly bool YamlCutJsonLiteralAtComment(ref YamlCursor c, int start, ref int length)
+        {
+            ReadOnlySpan<byte> text = _buffer.Slice(start, length);
+            int slash = text.IndexOf((byte)'/');
+            if (slash <= 0 || slash + 1 >= text.Length || text[slash + 1] is not ((byte)'/' or (byte)'*'))
+            {
+                return false;
+            }
+
+            ReadOnlySpan<byte> literal = text.Slice(0, slash);
+            if (!literal.SequenceEqual("true"u8) && !literal.SequenceEqual("false"u8) && !literal.SequenceEqual("null"u8)
+                && !YamlIsJsonNumber(literal))
+            {
+                return false;
+            }
+
+            Debug.Assert(c.Pos == start);
+            c.Pos += slash;
+            c.Column += slash;
+            length = slash;
+            return true;
+        }
+
+        /// <summary>The JSON number grammar: <c>-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?</c>.</summary>
+        private static bool YamlIsJsonNumber(ReadOnlySpan<byte> text)
+        {
+            int i = 0;
+            if (i < text.Length && text[i] == (byte)'-')
+            {
+                i++;
+            }
+
+            int digits = i;
+            while (i < text.Length && text[i] is >= (byte)'0' and <= (byte)'9')
+            {
+                i++;
+            }
+            if (i == digits || (text[digits] == (byte)'0' && i - digits > 1))
+            {
+                return false;
+            }
+
+            if (i < text.Length && text[i] == (byte)'.')
+            {
+                int fraction = ++i;
+                while (i < text.Length && text[i] is >= (byte)'0' and <= (byte)'9')
+                {
+                    i++;
+                }
+                if (i == fraction)
+                {
+                    return false;
+                }
+            }
+
+            if (i < text.Length && text[i] is (byte)'e' or (byte)'E')
+            {
+                i++;
+                if (i < text.Length && text[i] is (byte)'+' or (byte)'-')
+                {
+                    i++;
+                }
+                int exponent = i;
+                while (i < text.Length && text[i] is >= (byte)'0' and <= (byte)'9')
+                {
+                    i++;
+                }
+                if (i == exponent)
+                {
+                    return false;
+                }
+            }
+
+            return i == text.Length;
         }
 
         // ---------------------------------------------------------------------------------------------------------

@@ -655,7 +655,8 @@ namespace System.Text.Yaml
 
         /// <summary>
         /// A JSON comment as a token, as System.Text.Json returns it: the value is the text after '//' up to the line
-        /// break, or the text between '/*' and '*/', and the token starts at the first '/'.
+        /// break, or the text between '/*' and '*/'; the token starts at the first '/' and, for '//', consumes the
+        /// line break.
         /// </summary>
         private YamlStep YamlEmitJsonComment(ref YamlCursor c, bool lineStart)
         {
@@ -669,7 +670,15 @@ namespace System.Text.Yaml
             TokenStartIndex = start.Pos;
             YamlSetRawStart(start.Pos, start.Line, start.Column);
             int valueStart = start.Pos + 2;
-            ValueSpan = _buffer.Slice(valueStart, c.Pos - valueStart - (block ? 2 : 0));
+            int valueLength = c.Pos - valueStart - (block ? 2 : 0);
+            if (!block && c.Pos < _buffer.Length && !YamlAdvanceBreak(ref c))
+            {
+                // The token of a '//' comment takes its line break, as System.Text.Json's does: a CR at the end of
+                // the data so far may be the first half of a CRLF.
+                return YamlStep.NeedMoreData;
+            }
+
+            ValueSpan = _buffer.Slice(valueStart, valueLength);
             _yamlValueWindowStart = valueStart;
 
             // What follows a '/* */' on its line is where the comment started, for the indentation of a block node.
@@ -707,17 +716,10 @@ namespace System.Text.Yaml
             if (!block)
             {
                 int end = YamlReaderHelper.IndexOfLineBreak(rest);
-                if (end < 0)
-                {
-                    if (!IsLastSpan)
-                    {
-                        return false;
-                    }
-                    end = rest.Length;
-                }
 
-                // U+2028 and U+2029 end a line in JavaScript: System.Text.Json refuses them in a '//' comment.
-                ReadOnlySpan<byte> text = rest.Slice(0, end);
+                // U+2028 and U+2029 end a line in JavaScript: System.Text.Json refuses them in a '//' comment, and
+                // does so as soon as it sees one, before the line break is known.
+                ReadOnlySpan<byte> text = end < 0 ? rest : rest.Slice(0, end);
                 int separator = text.IndexOf((byte)0xE2);
                 while (separator >= 0)
                 {
@@ -729,6 +731,15 @@ namespace System.Text.Yaml
                     }
                     int more = text.Slice(separator + 1).IndexOf((byte)0xE2);
                     separator = more < 0 ? -1 : separator + 1 + more;
+                }
+
+                if (end < 0)
+                {
+                    if (!IsLastSpan)
+                    {
+                        return false;
+                    }
+                    end = rest.Length;
                 }
 
                 c.Pos += 2 + end;
