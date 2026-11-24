@@ -153,15 +153,16 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
-        public void TheWritersTable_IsBoundedAndFedByTheSerializer()
+        public void TheWritersTable_TakesEveryHandleAndIsFedByTheSerializer()
         {
-            Assert.Throws<InvalidOperationException>(() => Write(w =>
+            string written = Write(w =>
             {
-                for (int i = 0; i < 257; i++)
+                for (int i = 0; i < 1_000; i++)
                 {
                     w.WriteDirective("%TAG !h" + i + "! tag:h" + i + ",1:");
                 }
-            }));
+            });
+            Assert.Equal(1_000, written.Split('\n').Count(line => line.StartsWith("%TAG !h", StringComparison.Ordinal)));
 
             Assert.True(new YamlSerializerOptions { InheritTagDirectives = true }.GetWriterOptions().InheritTagDirectives);
             Assert.False(new YamlSerializerOptions().GetWriterOptions().InheritTagDirectives);
