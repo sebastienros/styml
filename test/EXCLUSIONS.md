@@ -62,7 +62,7 @@ whose members are copied from upstream. On macOS arm64, `[ActiveIssue(..., IsOSX
 is `Skip` or `Allow`: inside flow collections and at the document level, never inside a block collection, and never
 with `Disallow`, the default, which stays standard YAML. Of the 74 methods retired as "JSON comment syntax", 63 run
 again. They were taken from System.Text.Json's test sources at the import tag, renamed as the import is, and put back
-where upstream has them. 41 are unchanged. The others, each named in the Note column of the table "JSON comment syntax"
+where upstream has them. 40 are unchanged. The others, each named in the Note column of the table "JSON comment syntax"
 below:
 
 - 6 theories lost rows that hold for another retired category: `InvalidYamlWithComments` and its single-segment twin
@@ -73,8 +73,9 @@ below:
   `YamlWithSingleLineCommentEndingWithNonStandardLineEnding*` theories, whose loop over the three values leaves it out.
 - `ReadSimpleObjectWithTrailingTriviaAsync` (constructor tests) sets `DuplicateKeyHandling = LastWins`, as the
   duplicate-key methods retargeted in M7a.
-- The 11 `YamlElementWriteTests` methods (also run by `YamlDocumentWriteTests`) are in category `jsonoutput`, as their
-  siblings: they assert JSON output, and run in leg YJ.
+- The 11 `YamlElementWriteTests` methods (also run by `YamlDocumentWriteTests`) and the nodes'
+  `ReadSimpleObjectWithTrailingTrivia` are in category `jsonoutput`, as their siblings: they assert JSON output, and
+  run in leg YJ.
 
 The comment rows of three split theories are back in their original methods (`ReadSimpleClassIgnoresLeadingOrTrailingTrivia`
 and `ReadComplexClassIgnoresLeadingOrTrailingTrivia`, 6 rows each; `YamlMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue`,
@@ -343,7 +344,7 @@ The Note column says what became of each method when JSON comments came back und
 | `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleArrayAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
 | `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleObject` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
 | `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleObjectAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
-| `Styml.Tests/YamlNode/ParseTests.cs` | `ReadSimpleObjectWithTrailingTrivia` |  | Restored |
+| `Styml.Tests/YamlNode/ParseTests.cs` | `ReadSimpleObjectWithTrailingTrivia` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
 
 ### Trailing-comma option (19 methods)
 

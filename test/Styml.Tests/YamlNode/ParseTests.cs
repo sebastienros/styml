@@ -274,6 +274,7 @@ namespace System.Text.Yaml.Nodes.Tests
         }
 
         [Fact]
+        [Trait("category", "jsonoutput")]
         public static async Task ReadSimpleObjectWithTrailingTrivia()
         {
             byte[] data = Encoding.UTF8.GetBytes(SimpleTestClass.s_yaml + " /* Multi\r\nLine Comment */\t");
