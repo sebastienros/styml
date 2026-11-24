@@ -1,5 +1,6 @@
 // Copyright (c) Sébastien Ros. Licensed under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -479,6 +480,95 @@ namespace System.Text.Yaml.Tests.Readme
             string jsonOut = YamlSerializer.Serialize(value, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible });
             // readme: end
             Check("json", jsonOut, defaultStyle: false);
+        }
+
+        // readme: unity-types
+        private const string Scene = """
+            %YAML 1.1
+            %TAG !u! tag:unity3d.com,2011:
+            --- !u!1 &1000
+            GameObject:
+              m_Name: Player
+              m_IsActive: 1
+            --- !u!4 &1001
+            Transform:
+              m_GameObject: {fileID: 1000}
+              m_LocalPosition: {x: 0, y: 1, z: -10}
+            --- !u!4 &400000 stripped
+            Transform:
+              m_PrefabInstance: {fileID: 100100000}
+
+            """;
+
+        public abstract class UnityObject { }
+        public sealed class GameObjectDocument : UnityObject { public GameObjectData? GameObject { get; set; } }
+        public sealed class TransformDocument : UnityObject { public TransformData? Transform { get; set; } }
+        public sealed class GameObjectData { public string? m_Name { get; set; } public int m_IsActive { get; set; } }
+        public sealed class TransformData { public FileReference? m_GameObject { get; set; } public FileReference? m_PrefabInstance { get; set; } }
+        public sealed class FileReference { public long fileID { get; set; } }
+        // readme: end
+
+        [Fact]
+        public void UnityRead()
+        {
+            // readme: unity-read text
+            var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true, AcceptUnityStrippedMarker = true };
+            var options = new YamlSerializerOptions();
+            options.TagMappings.Add("tag:unity3d.com,2011:1", typeof(GameObjectDocument));
+            options.TagMappings.Add("tag:unity3d.com,2011:4", typeof(TransformDocument));
+
+            var objects = new List<string>();
+            var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(Scene), readerOptions);
+            while (reader.Read())
+            {
+                string fileID = Encoding.UTF8.GetString(reader.Anchor.ToArray());
+                bool stripped = reader.IsUnityStripped;
+                objects.Add(YamlSerializer.Deserialize<UnityObject>(ref reader, options) switch
+                {
+                    GameObjectDocument g => $"{fileID}: GameObject {g.GameObject!.m_Name}, active {g.GameObject.m_IsActive}",
+                    TransformDocument { Transform.m_PrefabInstance: { } p } when stripped => $"{fileID}: stripped Transform of prefab instance {p.fileID}",
+                    TransformDocument t => $"{fileID}: Transform of {t.Transform!.m_GameObject!.fileID}",
+                    _ => fileID,
+                });
+            }
+            // readme: end
+            Check("unity-read", string.Join("\n", objects), defaultStyle: false);
+        }
+
+        [Fact]
+        public void UnityWriteBack()
+        {
+            if (BlockDefaultOnly())
+            {
+                return;
+            }
+
+            // readme: unity-write-back yaml
+            var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, InheritTagDirectives = true, AcceptUnityStrippedMarker = true };
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { InheritTagDirectives = true }))
+            {
+                // The reader does not return a stream's directives: the header is written as Unity writes it.
+                writer.WriteDirective("%YAML 1.1");
+                writer.WriteDirective("%TAG !u! tag:unity3d.com,2011:");
+                var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(Scene), readerOptions);
+                while (reader.Read())
+                {
+                    YamlNode node = YamlNode.Parse(ref reader)!;
+                    if (node["GameObject"] is YamlNode gameObject)
+                    {
+                        gameObject["m_Name"] = "Hero";
+                    }
+
+                    writer.WriteDocumentStart();
+                    node.WriteTo(writer);
+                }
+            }
+
+            string written = Encoding.UTF8.GetString(buffer.WrittenSpan.ToArray());
+            // readme: end
+            Check("unity-write-back", written, defaultStyle: false);
+            Assert.Equal(Scene.Replace("\r\n", "\n").Replace("m_Name: Player", "m_Name: Hero"), written.Replace("\r\n", "\n"));
         }
 
         private static string Describe(Func<object?> read)
