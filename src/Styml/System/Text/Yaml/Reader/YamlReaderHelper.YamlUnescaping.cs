@@ -178,10 +178,7 @@ namespace System.Text.Yaml
                                         i += 6;
                                     }
                                 }
-                                if (codePoint is >= 0xD800 and <= 0xDFFF)
-                                {
-                                    ThrowHelper.ThrowInvalidOperationException_ReadInvalidUTF16(codePoint);
-                                }
+                                // WriteUtf8 rejects a lone surrogate.
                                 w += WriteUtf8(codePoint, dest.Slice(w));
                                 break;
                             }
@@ -314,7 +311,7 @@ namespace System.Text.Yaml
             return count;
         }
 
-        private static int ParseHex(ReadOnlySpan<byte> hex)
+        internal static int ParseHex(ReadOnlySpan<byte> hex)
         {
             int value = 0;
             foreach (byte b in hex)

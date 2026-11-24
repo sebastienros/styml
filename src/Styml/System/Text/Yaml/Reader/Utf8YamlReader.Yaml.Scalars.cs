@@ -429,19 +429,21 @@ namespace System.Text.Yaml
                         }
                         YamlThrow(YamlGrammarError.InvalidEscape, p);
                     }
-                    uint codePoint = 0;
                     for (int i = 0; i < hexDigits; i++)
                     {
-                        byte h = buffer[p.Pos + 2 + i];
-                        if (!YamlReaderHelper.IsHexDigit(h))
+                        if (!YamlReaderHelper.IsHexDigit(buffer[p.Pos + 2 + i]))
                         {
                             YamlThrow(YamlGrammarError.InvalidEscape, p);
                         }
-                        codePoint = (codePoint << 4) | (uint)(h <= '9' ? h - '0' : (h | 0x20) - 'a' + 10);
                     }
-                    if (hexDigits == 8 && (codePoint > 0x10FFFF || (codePoint >= 0xD800 && codePoint <= 0xDFFF)))
+                    if (hexDigits == 8)
                     {
-                        YamlThrow(YamlGrammarError.InvalidEscape, p);
+                        // \U must name a Unicode scalar value: at most U+10FFFF and not a surrogate.
+                        uint codePoint = (uint)YamlReaderHelper.ParseHex(buffer.Slice(p.Pos + 2, 8));
+                        if (codePoint > 0x10FFFF || codePoint is >= 0xD800 and <= 0xDFFF)
+                        {
+                            YamlThrow(YamlGrammarError.InvalidEscape, p);
+                        }
                     }
 
                     p.Pos += 2 + hexDigits;
