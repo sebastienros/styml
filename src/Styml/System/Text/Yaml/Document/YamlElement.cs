@@ -1255,6 +1255,9 @@ namespace System.Text.Yaml
         /// <summary>Whether this element is a document root whose properties were on its '---' line.</summary>
         internal bool PropertiesOnDocumentLine => _parent.PropertiesOnDocumentLine(_idx);
 
+        /// <summary>The source style of the scalar key of the property whose value this element is (Plain, quoted).</summary>
+        internal YamlScalarStyle PropertyKeyStyle => _parent.GetScalarStyle(_parent.NameRowOf(_rowIdx));
+
         /// <summary>Whether this element's source wrote its tag before its anchor.</summary>
         internal bool TagBeforeAnchor => _parent.TagBeforeAnchor(_idx);
 

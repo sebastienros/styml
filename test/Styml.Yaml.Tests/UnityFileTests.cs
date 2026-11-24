@@ -63,16 +63,17 @@ namespace System.Text.Yaml.Tests
         }
 
         [Theory]
-        [InlineData("scene.unity", "  m_Name: Player", "  m_Name: Hero")]
-        [InlineData("material.mat", "    - _Glossiness: 0.5", "    - _Glossiness: 0.75")]
-        [InlineData("prefab.prefab", "      value: 3", "      value: 4")]
-        public void OneEdit_ChangesOnlyItsLine(string name, string before, string after)
+        [InlineData("scene.unity", "name", "  m_Name: Player", "  m_Name: Hero")]
+        [InlineData("scene.unity", "y", "  m_LocalPosition: {x: 0, y: 1, z: -10}", "  m_LocalPosition: {x: 0, y: 2, z: -10}")]
+        [InlineData("material.mat", "glossiness", "    - _Glossiness: 0.5", "    - _Glossiness: 0.75")]
+        [InlineData("prefab.prefab", "value", "      value: 3", "      value: 4")]
+        public void OneEdit_ChangesOnlyItsLine(string name, string edit, string before, string after)
         {
             byte[] file = Load(name);
             string written = WriteBack(file, (writer, document) =>
             {
                 YamlNode node = ToNode(document);
-                Edit(node, name);
+                Edit(node, edit);
                 node.WriteTo(writer);
             });
 
@@ -85,17 +86,22 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(after, lines[changed[0]]);
         }
 
-        private static void Edit(YamlNode document, string name)
+        private static void Edit(YamlNode document, string edit)
         {
-            if (name == "scene.unity" && document["GameObject"] is YamlNode gameObject && gameObject["m_Name"]?.GetValue<string>() == "Player")
+            if (edit == "name" && document["GameObject"] is YamlNode gameObject && gameObject["m_Name"]?.GetValue<string>() == "Player")
             {
                 gameObject["m_Name"] = "Hero";
             }
-            else if (name == "material.mat" && document["Material"] is YamlNode material)
+            else if (edit == "y" && document["Transform"]?["m_LocalPosition"] is YamlNode position && position["z"]?.GetValue<int>() == -10)
+            {
+                // The commonest edit: a value in a flow vector, whose key y keeps its plain form.
+                position["y"] = 2;
+            }
+            else if (edit == "glossiness" && document["Material"] is YamlNode material)
             {
                 material["m_SavedProperties"]!["m_Floats"]![0]!["_Glossiness"] = 0.75;
             }
-            else if (name == "prefab.prefab" && document["PrefabInstance"] is YamlNode instance)
+            else if (edit == "value" && document["PrefabInstance"] is YamlNode instance)
             {
                 instance["m_Modification"]!["m_Modifications"]![0]!["value"] = 4;
             }

@@ -191,6 +191,50 @@ namespace System.Text.Yaml.Tests
         }
 
         // ------------------------------------------------------------------------------------------------------------
+        // An edited value keeps its key's form.
+
+        private const string Keys = "\"quoted\": 1\n0: a\ny: 2\n'single': 3\non: 4\nv: {x: 0, y: 1, \"q\": 2}\n";
+
+        [Fact]
+        public void AnEditedValue_KeepsItsKeysForm()
+        {
+            // The indexer, ReplaceWith, IDictionary's setter and SetAt replace the value only.
+            var edits = new (string Name, Action<YamlNode> Edit, string Expected)[]
+            {
+                ("indexer", n => n["y"] = 20, Keys.Replace("y: 2\n", "y: 20\n")),
+                ("ReplaceWith", n => n["quoted"]!.ReplaceWith(10), Keys.Replace("\"quoted\": 1", "\"quoted\": 10")),
+                ("IDictionary", n => ((IDictionary<string, YamlNode?>)n.AsObject())["0"] = "b", Keys.Replace("0: a", "0: b")),
+                ("SetAt", n => n.AsObject().SetAt(3, 30), Keys.Replace("'single': 3", "'single': 30")),
+                ("flow", n => n["v"]!["y"] = 10, Keys.Replace("y: 1,", "y: 10,")),
+                ("flow quoted", n => n["v"]!["q"] = 20, Keys.Replace("\"q\": 2", "\"q\": 20")),
+            };
+            foreach ((string name, Action<YamlNode> edit, string expected) in edits)
+            {
+                YamlNode node = YamlNode.Parse(Keys)!;
+                edit(node);
+                Assert.True(expected == Write(node), name + ": " + Write(node));
+                Assert.Equal(expected, Write(node.DeepClone()));
+                AssertFixedPoint(Write(node));
+            }
+        }
+
+        [Fact]
+        public void ARemovedKeyAddedAgain_IsANewKey()
+        {
+            // Remove then Add: a new key, written as the writer writes a created one; IgnoreSourceStyles: the same.
+            YamlNode node = YamlNode.Parse(Keys)!;
+            node.AsObject().Remove("y");
+            node.AsObject().Add("y", 2);
+            node["v"]!.AsObject().Remove("q");
+            node["v"]!.AsObject().Add("q", 2);
+            Assert.Equal("\"quoted\": 1\n0: a\n'single': 3\non: 4\nv: {x: 0, y: 1, q: 2}\n\"y\": 2\n", Write(node));
+
+            YamlNode edited = YamlNode.Parse(Keys)!;
+            edited["y"] = 20;
+            Assert.Equal("quoted: 1\n\"0\": a\n\"y\": 20\nsingle: 3\n\"on\": 4\nv:\n  x: 0\n  \"y\": 1\n  q: 2\n", Write(edited, s_canonical));
+        }
+
+        // ------------------------------------------------------------------------------------------------------------
         // 4. An empty value
 
         private const string Empties = "a: \nb:\nc:\n- \n-\n- x\nd: &x\ne: {f: , g: }\nh:\n  i: \n";

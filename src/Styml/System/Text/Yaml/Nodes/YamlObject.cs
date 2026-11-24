@@ -381,6 +381,11 @@ namespace System.Text.Yaml.Nodes
                 jObject.Add(item.Key, item.Value?.DeepCloneCore());
             }
 
+            if (_sourceKeys is not null)
+            {
+                jObject._sourceKeys = new Dictionary<string, (YamlScalarStyle, YamlSchemaKind)>(_sourceKeys, StringComparer.Ordinal);
+            }
+
             if (_sourceNulls is not null)
             {
                 foreach (KeyValuePair<string, YamlElement> sourceNull in _sourceNulls)
@@ -505,7 +510,7 @@ namespace System.Text.Yaml.Nodes
                 foreach (KeyValuePair<string, YamlNode?> entry in entries)
                 {
                     WriteComplexKeys(writer, options, complexKeys, position, ref next);
-                    writer.HintDefaultScalarStyleForNextKey(); // M7b (fix A): a YamlObject's keys are styled as a dictionary's
+                    HintKey(writer, entry.Key);
                     writer.WritePropertyName(entry.Key);
 
                     if (entry.Value is null)
@@ -676,6 +681,40 @@ namespace System.Text.Yaml.Nodes
         // they are set: a null member is a null reference, as in JsonNode, so its source element is kept beside it.
         private Dictionary<string, YamlElement>? _sourceNulls;
 
+        // The keys read from a document whose source form the writer would not choose for the same name (quoted, or plain
+        // text such as y, on or 0 that the writer quotes): kept for the key while it stays, whatever its value becomes.
+        private Dictionary<string, (YamlScalarStyle Style, YamlSchemaKind Schema)>? _sourceKeys;
+
+        private void RecordSourceKey(string propertyName, YamlElement value)
+        {
+            YamlScalarStyle style = value.PropertyKeyStyle;
+            if (style is YamlScalarStyle.SingleQuoted or YamlScalarStyle.DoubleQuoted
+                || (style == YamlScalarStyle.Plain && YamlWriterHelper.ResolvesToNonString(Encoding.UTF8.GetBytes(propertyName), lenient: true)))
+            {
+                (_sourceKeys ??= new Dictionary<string, (YamlScalarStyle, YamlSchemaKind)>(StringComparer.Ordinal))[propertyName] = (style, value.DocumentSchema);
+            }
+        }
+
+        // A key read from a document is written in its source form, as the document writes it; any other in the writer's.
+        private void HintKey(Utf8YamlWriter writer, string propertyName)
+        {
+            if (_sourceKeys is not null && writer.KeepsSourceStyles && _sourceKeys.TryGetValue(propertyName, out (YamlScalarStyle Style, YamlSchemaKind Schema) key))
+            {
+                if (key.Style != YamlScalarStyle.Plain)
+                {
+                    writer.HintSourceScalarStyle(key.Style);
+                }
+                else if (YamlDocument.ReadsAsAString(Encoding.UTF8.GetBytes(propertyName), key.Schema, writer.Options.ReadSchema))
+                {
+                    writer.HintPlainFromSource();
+                }
+
+                return;
+            }
+
+            writer.HintDefaultScalarStyleForNextKey(); // M7b (fix A): a YamlObject's keys are styled as a dictionary's
+        }
+
         private void RecordSourceNull(string propertyName, YamlElement element)
         {
             if (element.ValueKind == YamlValueKind.Null && (element.GetRawText().Length == 0 || element.GetAnchor() is not null || element.GetTag() is not null))
@@ -687,9 +726,9 @@ namespace System.Text.Yaml.Nodes
         internal void SetItem(string propertyName, YamlNode? value)
         {
             ArgumentNullException.ThrowIfNull(propertyName);
-            _sourceNulls?.Remove(propertyName);
 
             OrderedDictionary<string, YamlNode?> dict = Dictionary;
+            _sourceNulls?.Remove(propertyName);
 
             if (
 #if NET9_0

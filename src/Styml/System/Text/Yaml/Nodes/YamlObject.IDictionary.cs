@@ -26,9 +26,11 @@ namespace System.Text.Yaml.Nodes
         public void Add(string propertyName, YamlNode? value)
         {
             ArgumentNullException.ThrowIfNull(propertyName);
-            _sourceNulls?.Remove(propertyName);
 
-            Dictionary.Add(propertyName, value);
+            // Dictionary first: a parsed object's entries (and their source forms) are made there.
+            OrderedDictionary<string, YamlNode?> dictionary = Dictionary;
+            _sourceNulls?.Remove(propertyName);
+            dictionary.Add(propertyName, value);
             value?.AssignParent(this);
         }
 
@@ -92,6 +94,7 @@ namespace System.Text.Yaml.Nodes
         public void Clear()
         {
             _sourceNulls = null;
+            _sourceKeys = null;
             OrderedDictionary<string, YamlNode?>? dictionary = _dictionary;
 
             if (dictionary is null)
@@ -160,11 +163,12 @@ namespace System.Text.Yaml.Nodes
         public bool Remove(string propertyName)
         {
             ArgumentNullException.ThrowIfNull(propertyName);
-            _sourceNulls?.Remove(propertyName);
 
             // M7b: the collection-key entries after the removed entry move up with the string entries (the dictionary
-            // first, which reads a parsed object's collection keys).
+            // first, which reads a parsed object's collection keys, and the source forms of its entries).
             OrderedDictionary<string, YamlNode?> dictionary = Dictionary;
+            _sourceNulls?.Remove(propertyName);
+            _sourceKeys?.Remove(propertyName);
             int index = _complexKeys is { Count: > 0 } ? dictionary.IndexOf(propertyName) : -1;
             bool success = dictionary.Remove(propertyName, out YamlNode? removedNode);
             if (success)
@@ -326,6 +330,8 @@ namespace System.Text.Yaml.Nodes
                         {
                             RecordSourceNull(jElementProperty.Name, jElementProperty.Value);
                         }
+
+                        RecordSourceKey(jElementProperty.Name, jElementProperty.Value);
 
                         if (handling == YamlDuplicateKeyHandling.LastWins)
                         {

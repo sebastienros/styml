@@ -979,7 +979,7 @@ namespace System.Text.Yaml
             try
             {
                 ReadOnlySpan<byte> name = UnescapeString(row, out rented);
-                if (writer.KeepsSourceStyles && (row.ScalarFlags & DbRow.PlainFlag) != 0 && ReadsAsAString(name, writer.Options.ReadSchema))
+                if (writer.KeepsSourceStyles && (row.ScalarFlags & DbRow.PlainFlag) != 0 && ReadsAsAString(name, ParsedSchema, writer.Options.ReadSchema))
                 {
                     // A plain source key (y, on in a flow vector) stays plain where the output's schema reads it as a string.
                     writer.HintPlainFromSource();
@@ -1007,7 +1007,7 @@ namespace System.Text.Yaml
             try
             {
                 ReadOnlySpan<byte> text = UnescapeString(row, out rented);
-                if (row.ScalarStyle == YamlScalarStyle.Plain && ReadsAsAString(text, writer.Options.ReadSchema))
+                if (row.ScalarStyle == YamlScalarStyle.Plain && ReadsAsAString(text, ParsedSchema, writer.Options.ReadSchema))
                 {
                     // M5a: a plain source scalar, read as a string under the document's schema, is written back plain where
                     // the syntax allows it (the writer skips its resolution check for it), when the output's schema reads
@@ -1082,10 +1082,10 @@ namespace System.Text.Yaml
             return blanks;
         }
 
-        // Whether `text`, a plain scalar the document read as a string, reads as a string under `schema`, the output's.
-        private bool ReadsAsAString(ReadOnlySpan<byte> text, YamlSchemaKind schema)
+        // Whether `text`, a plain scalar read as a string under `source`, reads as a string under `schema`, the output's.
+        internal static bool ReadsAsAString(ReadOnlySpan<byte> text, YamlSchemaKind source, YamlSchemaKind schema)
         {
-            if (schema == ParsedSchema || schema == YamlSchemaKind.Failsafe || text.IsEmpty)
+            if (schema == source || schema == YamlSchemaKind.Failsafe || text.IsEmpty)
             {
                 return true;
             }
