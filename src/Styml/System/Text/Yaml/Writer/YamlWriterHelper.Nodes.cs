@@ -13,9 +13,9 @@ namespace System.Text.Yaml
             Tag,
         }
 
-        // The length of the UTF-8 sequence that starts at s[i] when it is a character that may appear in an anchor name,
-        // a comment or a single-quoted scalar (YAML's printable set, less the characters YAML 1.1 reads as line breaks
-        // and the byte order mark), or 0. The text is valid UTF-8 (the callers checked it or produced it).
+        // The length of the UTF-8 sequence that starts at s[i] when it is a character that may appear in a comment or a
+        // single-quoted scalar (YAML's printable set, less the characters YAML 1.1 reads as line breaks and the byte
+        // order mark), or 0. The text is valid UTF-8 (the callers checked it or produced it).
         private static int PrintableLength(ReadOnlySpan<byte> s, int i)
         {
             byte b = s[i];
@@ -44,6 +44,7 @@ namespace System.Text.Yaml
 
         /// <summary>
         /// One or more <c>ns-anchor-char</c>: printable, no white space, no flow indicator (YAML 1.2, section 6.9.2).
+        /// NEL, LS and PS are printable and not line breaks in YAML 1.2, so a name may hold them, as the reader's may.
         /// </summary>
         internal static bool IsValidAnchorName(ReadOnlySpan<byte> name)
         {
@@ -59,6 +60,18 @@ namespace System.Text.Yaml
                 if (b is (byte)' ' or (byte)',' or (byte)'[' or (byte)']' or (byte)'{' or (byte)'}')
                 {
                     return false;
+                }
+
+                if (b == 0xC2 && name[i + 1] == 0x85)
+                {
+                    i += 2; // NEL
+                    continue;
+                }
+
+                if (b == 0xE2 && name[i + 1] == 0x80 && name[i + 2] is 0xA8 or 0xA9)
+                {
+                    i += 3; // LS and PS
+                    continue;
                 }
 
                 int length = PrintableLength(name, i);

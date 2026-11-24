@@ -6,6 +6,7 @@ tree that is exactly the import commit (eng/import), then commit the result uned
 
     python3 -I eng/rename/rename.py            # rewrite in place
     python3 -I eng/rename/rename.py --check    # dry run: report what would change, write nothing
+    python3 -I eng/rename/rename.py --update-counts   # record new expected_counts in protect.json instead of failing
 
 Order (M1):
   1. 'System.Text.Json' -> 'System.Text.Yaml'
@@ -15,7 +16,8 @@ Order (M1):
   5. placeholders restored; the run fails if any protected-token count differs before/after
   6. targeted fix-ups (fixups in protect.json), e.g. generator identity in source-generator baselines
 File and directory names get steps 1 and 3. Everything is driven by protect.json so that the tool can be
-replayed on a newer upstream import.
+replayed on a newer upstream import. expected_counts are the counts at the upstream commit in
+eng/upstream/baseline.json; eng/upstream/sync replays the target commit with --update-counts and shows the changes.
 """
 import json
 import os
@@ -109,6 +111,7 @@ def rename_path_component(name):
 
 def main():
     check = '--check' in sys.argv
+    update_counts = '--update-counts' in sys.argv
     cfg = load_config()
     stats = {}
     changed = 0
@@ -126,10 +129,21 @@ def main():
                     f.write(new)
 
     # Expected-count assertions guard against silently losing a protection rule.
+    count_changes = []
     for pattern, expected in cfg['expected_counts'].items():
         got = stats.get(pattern, 0)
         if got != expected:
-            raise SystemExit(f'expected {expected} protected occurrences of /{pattern}/, found {got}')
+            if not update_counts:
+                raise SystemExit(f'expected {expected} protected occurrences of /{pattern}/, found {got}')
+            count_changes.append((pattern, expected, got))
+            cfg['expected_counts'][pattern] = got
+    if count_changes:
+        for pattern, expected, got in count_changes:
+            print(f'expected_counts /{pattern}/: {expected} -> {got}')
+        with open(CONFIG, 'w', encoding='utf-8', newline='\n') as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+            f.write('\n')
+        print(f'updated {CONFIG}')
 
     # Rename files and directories bottom-up (paths under path_exclude keep their upstream names).
     moves = 0

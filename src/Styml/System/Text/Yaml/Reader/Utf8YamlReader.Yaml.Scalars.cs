@@ -436,6 +436,15 @@ namespace System.Text.Yaml
                             YamlThrow(YamlGrammarError.InvalidEscape, p);
                         }
                     }
+                    if (hexDigits == 8)
+                    {
+                        // \U must name a Unicode scalar value: at most U+10FFFF and not a surrogate.
+                        uint codePoint = (uint)YamlReaderHelper.ParseHex(buffer.Slice(p.Pos + 2, 8));
+                        if (codePoint > 0x10FFFF || codePoint is >= 0xD800 and <= 0xDFFF)
+                        {
+                            YamlThrow(YamlGrammarError.InvalidEscape, p);
+                        }
+                    }
 
                     p.Pos += 2 + hexDigits;
                     p.Column += 2 + hexDigits;
@@ -753,7 +762,7 @@ namespace System.Text.Yaml
                     {
                         return false;
                     }
-                    if (nameEnd == nameStart)
+                    if (nameEnd == nameStart || !YamlWriterHelper.IsValidAnchorName(buffer.Slice(nameStart, nameEnd - nameStart)))
                     {
                         YamlThrow(YamlGrammarError.InvalidAnchor, c);
                     }
@@ -782,7 +791,7 @@ namespace System.Text.Yaml
                             YamlThrow(YamlGrammarError.InvalidTag, c);
                         }
                         tagEnd += close + 1;
-                        if (close == 1)
+                        if (!YamlWriterHelper.IsValidTag(buffer.Slice(c.Pos, tagEnd - c.Pos)))
                         {
                             YamlThrow(YamlGrammarError.InvalidTag, c);
                         }
@@ -799,11 +808,11 @@ namespace System.Text.Yaml
                         }
                         // '!handle!suffix': a named handle needs a suffix and a %TAG declaration.
                         ReadOnlySpan<byte> written = buffer.Slice(c.Pos, tagEnd - c.Pos);
-                        int second = written.Slice(1).IndexOf((byte)'!');
-                        if (second >= 0 && second + 2 == written.Length && second != 0)
+                        if (!YamlWriterHelper.IsValidTag(written))
                         {
                             YamlThrow(YamlGrammarError.InvalidTag, c);
                         }
+                        int second = written.Slice(1).IndexOf((byte)'!');
                         if (second > 0 && !YamlTagDirectives.TryGetPrefix(_yaml.TagDirectives, written.Slice(0, second + 2), out _))
                         {
                             YamlThrow(YamlGrammarError.UndefinedTagHandle, c);
@@ -883,7 +892,7 @@ namespace System.Text.Yaml
                 nameLength = 0;
                 return false;
             }
-            if (nameEnd == nameStart)
+            if (nameEnd == nameStart || !YamlWriterHelper.IsValidAnchorName(buffer.Slice(nameStart, nameEnd - nameStart)))
             {
                 YamlThrow(YamlGrammarError.InvalidAnchor, c);
             }

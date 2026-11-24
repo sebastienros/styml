@@ -864,7 +864,7 @@
     <value>A YAML node can have at most one anchor and one tag.</value>
   </data>
   <data name="YamlGrammar_InvalidAnchor" xml:space="preserve">
-    <value>A YAML anchor or alias name cannot be empty.</value>
+    <value>A YAML anchor or alias name is empty or has a character that is not allowed.</value>
   </data>
   <data name="YamlGrammar_InvalidTag" xml:space="preserve">
     <value>Invalid YAML tag.</value>
@@ -916,9 +916,6 @@
   </data>
   <data name="UnityStrippedMarkerPosition" xml:space="preserve">
     <value>Unity's stripped marker goes after a document root's tag on its '---' line: call WriteDocumentStart(rootPropertiesOnMarkerLine: true) and WriteTag first.</value>
-  </data>
-  <data name="YamlGrammar_TooManyTagDirectives" xml:space="preserve">
-    <value>The YAML document declares more than {0} %TAG directives.</value>
   </data>
   <data name="YamlGrammar_DirectiveWithoutDocument" xml:space="preserve">
     <value>YAML directives must be followed by a document start marker ('---').</value>

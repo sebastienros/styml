@@ -1,6 +1,7 @@
 // Copyright (c) Sébastien Ros. Licensed under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Yaml.Nodes;
 using System.Text.Yaml.Serialization;
 using Xunit;
 
@@ -41,6 +42,9 @@ namespace System.Text.Yaml.Tests
         [InlineData("%TAG ! tag:prim.org,1:\n--- !foo x\n", "!foo", "tag:prim.org,1:foo")]
         [InlineData("%TAG !e! tag:e,1:\n%TAG !e! tag:f,2:\n--- !e!x y\n", "!e!x", "tag:f,2:x")]
         [InlineData("--- !%C3%A9t%C3%A9 x\n", "!%C3%A9t%C3%A9", "!été")]
+        [InlineData("--- !<tag:yaml.org,2002:str> x\n", "!<tag:yaml.org,2002:str>", "tag:yaml.org,2002:str")]
+        [InlineData("--- !<tag:e,1:a%21> x\n", "!<tag:e,1:a%21>", "tag:e,1:a%21")]
+        [InlineData("--- !<!bar> x\n", "!<!bar>", "!bar")]
         public void TagsAreExpanded(string yaml, string written, string expanded)
         {
             Assert.Equal(new[] { (written, expanded) }, Tags(yaml));
@@ -190,6 +194,106 @@ namespace System.Text.Yaml.Tests
 
             Mixed m = YamlSerializer.Deserialize<Mixed>("%TAG !e! tag:e,1:\n---\nBefore: !e!b b\nFirst: !e!f f\n")!;
             Assert.Equal(("f", "b"), (m.First, m.Before));
+        }
+
+        [Theory]
+        [InlineData("!\n&\u001D")]
+        [InlineData("&\u0007 a")]
+        [InlineData("&\u0086 a")]
+        [InlineData("&a\ufeffb a")]
+        [InlineData("&a\ufffe a")]
+        [InlineData("*\u001D")]
+        public void InvalidAnchorCharactersAreRejected(string yaml)
+        {
+            // The reader rejects it, not a later stage (an alias to no anchor also throws a YamlException).
+            Assert.Throws<YamlReaderException>(() => YamlNode.Parse(yaml));
+        }
+
+        [Theory]
+        [InlineData("--- !\u0085\na")]
+        [InlineData("--- !\u001D a")]
+        [InlineData("--- !<\u0085> a")]
+        [InlineData("--- !<\u001D> a")]
+        [InlineData("--- !! a")]
+        public void InvalidTagCharactersAreRejected(string yaml)
+        {
+            Assert.Throws<YamlReaderException>(() => YamlNode.Parse(yaml));
+        }
+
+        [Theory]
+        [InlineData("a:b")]
+        [InlineData("a!b*c&d")]
+        [InlineData("\u00E9t\u00E9")]
+        [InlineData("\u65E5\u672C")]
+        [InlineData("\U0001F600")]
+        [InlineData("\u0085")]
+        [InlineData("a\u0085b")]
+        [InlineData("a\u2028b")]
+        [InlineData("a\u2029")]
+        public void ValidAnchorNamesAreAccepted(string name)
+        {
+            string yaml = $"- &{name} x\n- *{name}\n";
+            var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(yaml));
+            var names = new List<string>();
+            while (reader.Read())
+            {
+                if (!reader.Anchor.IsEmpty)
+                {
+                    names.Add(Encoding.UTF8.GetString(reader.Anchor.ToArray()));
+                }
+                else if (reader.TokenType == YamlTokenType.Alias)
+                {
+                    names.Add(Encoding.UTF8.GetString(reader.ValueSpan.ToArray()));
+                }
+            }
+            Assert.Equal(new[] { name, name }, names);
+
+            // The writer accepts what the reader read.
+            var block = new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block, NewLine = "\n" };
+            Assert.Equal(yaml, YamlNode.Parse(yaml)!.ToYamlString(block));
+        }
+
+        [Fact]
+        public void ManyTagDirectivesInOneHeader()
+        {
+            // 50,000 handles, the first redefined: a table copied on every directive made this header quadratic.
+            const int Count = 50_000;
+            var sb = new StringBuilder(Count * 28 + 128);
+            for (int i = 0; i < Count; i++)
+            {
+                sb.Append("%TAG !t").Append(i).Append("! tag:x,").Append(i).Append(":\n");
+            }
+            sb.Append("%TAG !t0! tag:redefined,0:\n");
+            sb.Append("--- [!t0!first a");
+            var expected = new List<string> { "tag:redefined,0:first" };
+            for (int i = 1; i < Count; i += 101)
+            {
+                sb.Append(", !t").Append(i).Append("!v v");
+                expected.Add($"tag:x,{i}:v");
+            }
+            sb.Append(", !t").Append(Count - 1).Append("!last b]\n");
+            expected.Add($"tag:x,{Count - 1}:last");
+
+            using YamlDocument doc = YamlDocument.Parse(sb.ToString());
+            var actual = new List<string>();
+            foreach (YamlElement item in doc.RootElement.EnumerateArray())
+            {
+                actual.Add(item.GetExpandedTag()!);
+            }
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void RedefinedHandleAcrossCommentsAtEverySplit()
+        {
+            // Comment tokens end a read inside the header, so a state saved there shares the table that later
+            // directives add to in place; the last definition still wins and the next document starts empty.
+            const string Yaml = "%TAG !e! tag:a,1:\n# one\n%TAG !f! tag:f,1:\n# two\n%TAG !e! tag:b,2:\n"
+                + "--- [!e!x a, !f!y b]\n...\n%TAG !f! tag:g,3:\n--- !f!z c\n";
+            var options = new YamlReaderOptions { AllowMultipleValues = true, CommentHandling = YamlCommentHandling.Allow };
+            ChunkingTests.AssertEverySplit(Encoding.UTF8.GetBytes(Yaml), options);
+
+            Assert.Equal(new[] { "tag:b,2:x", "tag:f,1:y", "tag:g,3:z" }, Tags(Yaml).ConvertAll(t => t.Expanded));
         }
     }
 }

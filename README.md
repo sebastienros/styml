@@ -53,7 +53,7 @@ Styml is a clone of System.Text.Json from [dotnet/runtime](https://github.com/do
 - **What YAML adds:**
   - anchors and aliases, read everywhere and written by `ReferenceHandler.Preserve` (in place of `$id` and `$ref`),
     with bounds on alias expansion;
-  - tags, including tag-based polymorphism (`[YamlTagMapping]`) and `%TAG` directives (at most 256 per document);
+  - tags, including tag-based polymorphism (`[YamlTagMapping]`) and `%TAG` directives;
   - block and flow styles, scalar styles (plain, single-quoted, double-quoted, literal, folded) per member or by
     default, and comments written from `[YamlComment]`;
   - schemas: the YAML 1.2 core schema by default, the JSON and failsafe schemas, and an opt-in YAML 1.1 schema;

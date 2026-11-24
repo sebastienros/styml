@@ -1,0 +1,99 @@
+name: Upstream
+
+# Weekly report of what System.Text.Json changed in dotnet/runtime since the commit Styml is in step with
+# (eng/upstream/baseline.json), in one issue per baseline. It changes no code; bringing changes in is
+# eng/upstream/sync, run by a person (docs/upstream-sync.md).
+
+permissions:
+  contents: read
+  issues: write
+
+on:
+  schedule:
+  - cron: '17 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'dotnet/runtime tag or branch to compare with instead of the followed line (report in the run summary only; the issue is left alone)'
+        required: false
+        default: ''
+
+concurrency:
+  group: upstream
+  cancel-in-progress: false
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      with:
+        persist-credentials: false
+
+    - name: Check the record
+      run: python3 -I eng/upstream/upstream.py check
+
+    - name: Fetch dotnet/runtime (shallow, without blobs)
+      id: fetch
+      env:
+        INPUT_REF: ${{ inputs.ref }}
+      run: |
+        target="$(eng/upstream/fetch-runtime.sh "$RUNNER_TEMP/runtime.git" "$INPUT_REF")"
+        echo "target=$target" >> "$GITHUB_OUTPUT"
+
+    - name: Report
+      env:
+        TARGET: ${{ steps.fetch.outputs.target }}
+      run: |
+        eng/upstream/status "$RUNNER_TEMP/runtime.git" "$TARGET" \
+          --output "$RUNNER_TEMP/report.md" --summary-json "$RUNNER_TEMP/summary.json"
+        cat "$RUNNER_TEMP/report.md" >> "$GITHUB_STEP_SUMMARY"
+        cat "$RUNNER_TEMP/summary.json"
+
+    - name: Open or update the issue
+      if: inputs.ref == ''
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        # One open issue per baseline. Its title names the baseline, so a committed sync starts a new one; older open
+        # issues of this workflow are closed as superseded. The body is the report, passed by file (commit subjects
+        # are upstream text and stay in code spans there).
+        python3 -I - "$RUNNER_TEMP/summary.json" "$RUNNER_TEMP/report.md" "$RUNNER_TEMP/body.md" "$RUNNER_TEMP/title.txt" <<'EOF'
+        import json, sys
+        s = json.load(open(sys.argv[1]))
+        title = f"Upstream System.Text.Json changes since {s['baseline_ref']} ({s['baseline_commit'][:12]})"
+        body = open(sys.argv[2], encoding='utf-8').read()
+        limit = 60000
+        if len(body) > limit:
+            body = body[:limit] + '\n\n…truncated; the full report is in the run summary of the Upstream workflow.\n'
+        open(sys.argv[3], 'w', encoding='utf-8').write(body)
+        open(sys.argv[4], 'w', encoding='utf-8').write(title)
+        EOF
+        title="$(cat "$RUNNER_TEMP/title.txt")"
+        changes="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["files"])' "$RUNNER_TEMP/summary.json")"
+        gh issue list --state open --limit 200 --json number,title > "$RUNNER_TEMP/issues.json"
+        existing="$(python3 -I -c '
+        import json, sys
+        title = sys.argv[2]
+        print(" ".join(str(i["number"]) for i in json.load(open(sys.argv[1])) if i["title"] == title))
+        ' "$RUNNER_TEMP/issues.json" "$title")"
+        older="$(python3 -I -c '
+        import json, sys
+        title = sys.argv[2]
+        prefix = "Upstream System.Text.Json changes since "
+        print(" ".join(str(i["number"]) for i in json.load(open(sys.argv[1]))
+                       if i["title"].startswith(prefix) and i["title"] != title))
+        ' "$RUNNER_TEMP/issues.json" "$title")"
+        for n in $older; do
+          gh issue close "$n" --comment "Superseded: Styml's baseline is now the one in \"$title\"."
+        done
+        read -r first _ <<< "$existing" || true
+        if [ -n "${first:-}" ]; then
+          gh issue edit "$first" --body-file "$RUNNER_TEMP/body.md"
+          echo "updated issue #$first"
+        elif [ "$changes" != "0" ]; then
+          gh issue create --title "$title" --body-file "$RUNNER_TEMP/body.md"
+        else
+          echo "no upstream change since the baseline and no open issue: nothing to do"
+        fi

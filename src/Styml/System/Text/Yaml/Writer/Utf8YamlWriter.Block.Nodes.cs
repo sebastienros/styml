@@ -1114,7 +1114,7 @@ namespace System.Text.Yaml
             _blockSpecial |= SpecialAfterDocumentEnd;
         }
 
-        // "%TAG !h! prefix": the handle and the prefix, in the writer's table (at most YamlTagDirectives.MaxEntries).
+        // "%TAG !h! prefix": the handle and the prefix, in the writer's table.
         private void RecordTagDirective(ReadOnlySpan<byte> directive)
         {
             ReadOnlySpan<byte> args = YamlReaderHelper.TrimBlanks(directive.Slice(4));
@@ -1127,12 +1127,7 @@ namespace System.Text.Yaml
             ReadOnlySpan<byte> prefix = YamlReaderHelper.TrimBlanks(args.Slice(split));
             int end = YamlReaderHelper.IndexOfBlank(prefix);
             prefix = end < 0 ? prefix : prefix.Slice(0, end);
-            if (!YamlTagDirectives.TryAdd(_block!.TagDirectives, args.Slice(0, split), prefix, out YamlTagDirectives? table))
-            {
-                ThrowHelper.ThrowInvalidOperationException_TooManyTagDirectives();
-            }
-
-            _block.TagDirectives = table;
+            _block!.TagDirectives = YamlTagDirectives.With(_block.TagDirectives, args.Slice(0, split), prefix);
         }
 
         // A document that starts without directives of its own: under YAML 1.2's scope it has only the default handles.

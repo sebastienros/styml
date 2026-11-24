@@ -5,9 +5,18 @@ Styml is derived from `System.Text.Json` in [dotnet/runtime](https://github.com/
 | | |
 |---|---|
 | Repository | https://github.com/dotnet/runtime |
-| Tag | `v11.0.0` |
+| Ref | `v11.0.0` |
 | Commit | `deae2e32bf0e018e09d64597b7c59b62b73bb3ce` |
+| Synced | 2026-11-17 |
+| Record | `eng/upstream/baseline.json` (machine-readable: ref, commit, sync date, followed line, imported paths); `eng/upstream/check` fails if this table or the Syncs section disagrees with it |
 | License | MIT, © .NET Foundation and Contributors; Styml's own code MIT, © Sébastien Ros (see `LICENSE`, `THIRD-PARTY-NOTICES.txt`) |
+
+## Syncs
+
+One line per sync with dotnet/runtime, oldest first, written by `eng/upstream/sync --continue` with the commit that
+brings the changes in. The procedure is in [docs/upstream-sync.md](docs/upstream-sync.md).
+
+- 2026-11-17 · `v11.0.0` · `deae2e32bf0e018e09d64597b7c59b62b73bb3ce` · import (eng/import, then eng/rename passes A and B)
 
 ## How the import is produced
 
@@ -15,8 +24,10 @@ The import is scripted and replayable. It reads only the runtime repo's object d
 its working tree, and never writes to it.
 
 ```bash
-eng/import/import.sh <runtime-clone> deae2e32bf0e018e09d64597b7c59b62b73bb3ce   # copy per eng/import/manifest.txt
-eng/import/verify.sh <runtime-clone> deae2e32bf0e018e09d64597b7c59b62b73bb3ce   # blob-SHA comparison, expect 0 problems
+eng/import/import.sh <runtime-clone> [commit]   # copy per eng/import/manifest.txt; default: the recorded commit
+eng/import/verify.sh <runtime-clone> [commit]   # blob-SHA comparison, expect 0 problems
+eng/upstream/verify-replay <runtime-clone>      # import + rename in a scratch directory, compared file by file
+                                                # with eng/upstream/baseline-tree.txt; expect 0 differences
 ```
 
 - `eng/import/manifest.txt`: every upstream directory/file and where it lands here. The vendored file list
@@ -28,6 +39,11 @@ eng/import/verify.sh <runtime-clone> deae2e32bf0e018e09d64597b7c59b62b73bb3ce   
 At the import commit `eng/import/verify.sh` reports `verified 1040 files, 0 problems`.
 
 The rename to `System.Text.Yaml` / `Yaml*` is a separate, scripted step: see `eng/rename/`.
+
+`eng/upstream/baseline-tree.txt` lists the blob SHA-1 of every file of the renamed import (1,040 files): the tree
+Styml was built from, taken from the original import, rename and pass B commits. Replaying `eng/import`,
+`eng/rename/rename.py` and `eng/rename/passb/passb.cs` on the recorded commit reproduces it byte for byte
+(`eng/upstream/verify-replay`). Nothing in the rename is done by hand any more.
 
 ## Layout mapping
 
@@ -85,10 +101,16 @@ The rename to `System.Text.Yaml` / `Yaml*` is a separate, scripted step: see `en
   same identifier rule is applied to the generator baselines (`Baselines/**/*.txt`, C#) rather than regenerating
   them, so the baseline tests check emitter and baselines independently. Vendored files and `test/TestShims` are
   excluded. Result: 14,256 tokens in 454 files (2 found only in code inactive under every symbol set).
-  Hand-fixed afterwards (13 test string literals that name a renamed parameter or member): `"json"` /
+  The pass B commit also hand-fixed 13 test string literals that name a renamed parameter or member: `"json"` /
   `"jsonTypeInfo"` expected `ArgumentNullException.ParamName`s, `GetProperty("s_json…")` and
-  `GetField("_jsonElement")` reflection lookups. Not renamed: message text such as
-  `Debug.Assert(..., "jsonTypeInfo.Configure() ...")`, lowercase `json` in comments and payloads.
+  `GetField("_jsonElement")` reflection lookups, one `Assert.Contains("json", ex.Message)`. Those are now pass B's
+  rule 4: a regular string literal whose whole text is an identifier the identifier rule renames is renamed the same
+  way (exactly those 13 at the baseline; exceptions would go in `passb.json`'s `keep_literals`). Without it a replay on
+  newer upstream code turned them back into `json…` with no merge conflict. `passb.json` records the expected number
+  of emitter literals (19) and whole-literal names (13); a run that renames a different number fails, and
+  `--update-counts` records the new numbers (the sync uses it on the target tree and shows the change). Not renamed:
+  message text such as `Debug.Assert(..., "jsonTypeInfo.Configure() ...")`, lowercase `json` inside longer literals,
+  comments and payloads. Result with rule 4: 14,269 edits.
 
 ## File headers
 

@@ -1,0 +1,16 @@
+{
+  "comment": "The dotnet/runtime state Styml contains. Written by eng/upstream/sync when a sync is committed; eng/upstream/check fails if UPSTREAM.md disagrees. See docs/upstream-sync.md.",
+  "repository": "https://github.com/dotnet/runtime",
+  "follow": {
+    "line": "servicing",
+    "tags": "^v11\\.0\\.[0-9]+$",
+    "comment": "The upstream line the sync follows. 'servicing' (the default) and 'major' take 'tags', a regular expression on tag names whose highest matching version is the target; 'main' takes 'ref', a branch. docs/upstream-sync.md describes the choice."
+  },
+  "ref": "v11.0.0",
+  "commit": "deae2e32bf0e018e09d64597b7c59b62b73bb3ce",
+  "synced": "2026-11-17",
+  "manifest": "eng/import/manifest.txt",
+  "exclude": "eng/import/exclude.txt",
+  "tree": "eng/upstream/baseline-tree.txt",
+  "counterparts": "eng/upstream/counterparts.json"
+}

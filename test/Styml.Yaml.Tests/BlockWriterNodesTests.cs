@@ -190,8 +190,10 @@ namespace System.Text.Yaml.Tests
         [InlineData("a[")]
         [InlineData("a}")]
         [InlineData("a\tb")]
-        [InlineData("a\u0085")]
+        [InlineData("a\u0086")]
+        [InlineData("a\u009F")]
         [InlineData("\ufeffa")]
+        [InlineData("a\uffff")]
         public void AnchorNames_Invalid_Throw(string name)
         {
             Assert.Throws<ArgumentException>(() => Write(w => w.WriteAnchor(name)));
