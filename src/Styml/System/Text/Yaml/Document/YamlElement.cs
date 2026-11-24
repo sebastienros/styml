@@ -1238,6 +1238,24 @@ namespace System.Text.Yaml
         }
 
         /// <summary>
+        /// Gets whether this element is a document's root whose <c>---</c> line carries Unity's <c>stripped</c> marker
+        /// (<c>--- !u!4 &amp;400000 stripped</c>), read with <see cref="YamlDocumentOptions.AcceptUnityStrippedMarker"/> or
+        /// <see cref="YamlReaderOptions.AcceptUnityStrippedMarker"/>. Written back after the root's tag on a
+        /// <c>---</c> line (<see cref="Utf8YamlWriter.WriteDocumentStart(bool)"/>).
+        /// </summary>
+        public bool IsUnityStripped
+        {
+            get
+            {
+                CheckValidInstance();
+                return _parent.IsUnityStripped(_idx);
+            }
+        }
+
+        /// <summary>Whether this element is a document root whose properties were on its '---' line.</summary>
+        internal bool PropertiesOnDocumentLine => _parent.PropertiesOnDocumentLine(_idx);
+
+        /// <summary>
         ///   Gets the anchor of this node (<c>&amp;name</c>), without the <c>&amp;</c>, or <see langword="null"/> when it has none.
         /// </summary>
         /// <remarks>

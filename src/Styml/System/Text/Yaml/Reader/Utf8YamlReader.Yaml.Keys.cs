@@ -119,6 +119,7 @@ namespace System.Text.Yaml
                 _yamlAnchorLength = copy._yamlAnchorLength;
                 _yamlTagStart = copy._yamlTagStart;
                 _yamlTagLength = copy._yamlTagLength;
+                _yamlDocumentLine = copy._yamlDocumentLine;
                 _yamlIsAlias = copy._tokenType == YamlTokenType.Alias;
                 _yamlRawStart = copy._yamlRawStart;
                 _yamlRawLine = copy._yamlRawLine;
@@ -169,6 +170,7 @@ namespace System.Text.Yaml
             _yamlStyle = YamlScalarStyle.None;
             _yamlAnchorLength = 0;
             _yamlTagLength = 0;
+            _yamlDocumentLine = 0;
             _yamlIsAlias = false;
             _yamlIsComplexKey = true;
             _yamlParentIndentPlusOne = node.ParentIndentPlusOne;

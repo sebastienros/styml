@@ -80,6 +80,7 @@ namespace System.Text.Yaml
         private YamlCommentHandling _readCommentHandling;
         private bool _disallowImplicitCollectionKeys;
         private bool _inheritTagDirectives;
+        private bool _acceptUnityStrippedMarker;
         private bool _acceptLenientScalars;
         private int _maxAliasExpansion;
         private bool _resolveMergeKeys;
@@ -151,6 +152,7 @@ namespace System.Text.Yaml
             _readCommentHandling = options._readCommentHandling;
             _disallowImplicitCollectionKeys = options._disallowImplicitCollectionKeys;
             _inheritTagDirectives = options._inheritTagDirectives;
+            _acceptUnityStrippedMarker = options._acceptUnityStrippedMarker;
             _acceptLenientScalars = options._acceptLenientScalars;
             _maxAliasExpansion = options._maxAliasExpansion;
             _resolveMergeKeys = options._resolveMergeKeys;
@@ -1253,6 +1255,23 @@ namespace System.Text.Yaml
         }
 
         /// <summary>
+        /// Gets or sets whether Unity's <c>stripped</c> marker is accepted after a document root's properties on its
+        /// <c>---</c> line (<see cref="YamlReaderOptions.AcceptUnityStrippedMarker"/>). <see langword="false"/> by default.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool AcceptUnityStrippedMarker
+        {
+            get => _acceptUnityStrippedMarker;
+            set
+            {
+                VerifyMutable();
+                _acceptUnityStrippedMarker = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets whether typed reads accept scalars that YamlDotNet or SharpYaml resolve although no YAML standard
         /// does (<see cref="YamlReaderOptions.AcceptLenientScalars"/>, which lists them): booleans and numbers in other
         /// cases, other float names, quoted, block and tagged booleans, numbers and enum numbers (<c>'12'</c>), padded
@@ -1515,6 +1534,7 @@ namespace System.Text.Yaml
                 MaxDepth = EffectiveMaxDepth,
                 DisallowImplicitCollectionKeys = DisallowImplicitCollectionKeys,
                 InheritTagDirectives = _inheritTagDirectives,
+                AcceptUnityStrippedMarker = _acceptUnityStrippedMarker,
                 AcceptLenientScalars = _acceptLenientScalars,
                 Schema = _schema,
                 RecordAnchors = true,

@@ -138,6 +138,12 @@ namespace System.Text.Yaml
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnityStrippedMarkerPosition()
+        {
+            throw GetInvalidOperationException(SR.UnityStrippedMarkerPosition);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_NotSupportedInJsonCompatibleStyle(string member)
         {
             throw GetInvalidOperationException(SR.Format(SR.NotSupportedInJsonCompatibleStyle, member));

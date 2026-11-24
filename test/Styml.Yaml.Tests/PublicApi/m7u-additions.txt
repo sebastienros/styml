@@ -1,6 +1,16 @@
-# Unity's YAML: InheritTagDirectives (YAML 1.1's directive scope) on the reader, document, serializer options and the
-# source-generation attribute.
+# Unity's YAML: InheritTagDirectives (YAML 1.1's directive scope) and AcceptUnityStrippedMarker on the reader, document,
+# serializer options and the source-generation attribute; IsUnityStripped on the reader, the element and the node; the
+# writer's document-line properties and stripped marker.
 System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.InheritTagDirectives property System.Boolean { get; set; }
 System.Text.Yaml.YamlDocumentOptions.InheritTagDirectives property System.Boolean { get; set; }
 System.Text.Yaml.YamlReaderOptions.InheritTagDirectives property System.Boolean { get; set; }
 System.Text.Yaml.YamlSerializerOptions.InheritTagDirectives property System.Boolean { get; set; }
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.AcceptUnityStrippedMarker property System.Boolean { get; set; }
+System.Text.Yaml.YamlDocumentOptions.AcceptUnityStrippedMarker property System.Boolean { get; set; }
+System.Text.Yaml.YamlReaderOptions.AcceptUnityStrippedMarker property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.AcceptUnityStrippedMarker property System.Boolean { get; set; }
+System.Text.Yaml.Utf8YamlReader.IsUnityStripped property System.Boolean { get; }
+System.Text.Yaml.YamlElement.IsUnityStripped property System.Boolean { get; }
+System.Text.Yaml.Nodes.YamlNode.IsUnityStripped property System.Boolean { get; set; }
+System.Text.Yaml.Utf8YamlWriter.WriteDocumentStart(System.Boolean) System.Void
+System.Text.Yaml.Utf8YamlWriter.WriteUnityStrippedMarker() System.Void

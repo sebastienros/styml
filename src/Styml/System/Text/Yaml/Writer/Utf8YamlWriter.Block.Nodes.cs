@@ -58,6 +58,11 @@ namespace System.Text.Yaml
             // document.
             public bool AfterDocumentStartMarker;
             public bool YamlDirectivePending;
+
+            // WriteDocumentStart(rootPropertiesOnMarkerLine: true): the root's first property goes on the "---" line
+            // (PropertiesOnMarkerLine), and once it did (OnMarkerLine), Unity's stripped marker may follow.
+            public bool PropertiesOnMarkerLine;
+            public bool OnMarkerLine;
         }
 
         private enum BlockNode : byte
@@ -367,7 +372,14 @@ namespace System.Text.Yaml
             Span<byte> output = _memory.Span;
             if (!PropertiesPending)
             {
-                WriteNodePrefix(output);
+                if (_block is { PropertiesOnMarkerLine: true } && TryReopenMarkerLine(output))
+                {
+                    output[BytesPending++] = YamlConstants.Space;
+                }
+                else
+                {
+                    WriteNodePrefix(output);
+                }
             }
             else
             {
@@ -382,6 +394,74 @@ namespace System.Text.Yaml
             text.CopyTo(output.Slice(BytesPending));
             BytesPending += text.Length;
             _blockSpecial |= bit;
+        }
+
+        // The root's first property on the "---" line: the marker's line break is taken back while it is the last thing
+        // in the buffer (not yet flushed, nothing written after it); otherwise the property goes on the next line.
+        private bool TryReopenMarkerLine(Span<byte> output)
+        {
+            _block!.PropertiesOnMarkerLine = false;
+            int markerEnd = BytesPending - _newLineLength;
+            if (_tokenType != YamlTokenType.None || _currentDepth != 0 || markerEnd < 3
+                || output[markerEnd - 1] != (byte)'-' || output[markerEnd - 2] != (byte)'-' || output[markerEnd - 3] != (byte)'-'
+                || (markerEnd > 3 && output[markerEnd - 4] != (byte)'\n') || output[BytesPending - 1] != (byte)'\n')
+            {
+                return false;
+            }
+
+            BytesPending = markerEnd;
+            _block.OnMarkerLine = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Writes Unity's <c>stripped</c> marker after the document root's properties on its <c>---</c> line
+        /// (<c>--- !u!4 &amp;400000 stripped</c>), for a placeholder of a source prefab's object. Call it after
+        /// <see cref="WriteDocumentStart(bool)"/> with <c>rootPropertiesOnMarkerLine</c> and the root's
+        /// <see cref="WriteTag(string)"/> (and <see cref="WriteAnchor(string)"/>), before the root node.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The writer is in JSON-compatible style; or, while validation is enabled, no root tag is pending on a document's
+        /// <c>---</c> line.
+        /// </exception>
+        public void WriteUnityStrippedMarker()
+        {
+            ThrowIfJsonCompatible(nameof(WriteUnityStrippedMarker));
+            if (!_options.SkipValidation
+                && (_block is not { OnMarkerLine: true } || (_blockSpecial & SpecialTag) == 0 || _tokenType != YamlTokenType.None || _currentDepth != 0))
+            {
+                ThrowHelper.ThrowInvalidOperationException_UnityStrippedMarkerPosition();
+            }
+
+            int required = 9;
+            if (_memory.Length - BytesPending < required)
+            {
+                Grow(required);
+            }
+
+            Span<byte> output = _memory.Span;
+            output[BytesPending++] = YamlConstants.Space;
+            "stripped"u8.CopyTo(output.Slice(BytesPending));
+            BytesPending += 8;
+            _block!.OnMarkerLine = false;
+        }
+
+        // The DOM: a root read with its properties on its '---' line writes them there when the marker was just written.
+        internal void KeepRootPropertiesOnMarkerLine()
+        {
+            if (_block is { AfterDocumentStartMarker: true } && _tokenType == YamlTokenType.None && _currentDepth == 0 && !PropertiesPending)
+            {
+                _block.PropertiesOnMarkerLine = true;
+            }
+        }
+
+        // The DOM: the stripped marker where it can go (after the root's tag on its '---' line); nothing elsewhere.
+        internal void TryWriteUnityStrippedMarker()
+        {
+            if (_block is { OnMarkerLine: true } && (_blockSpecial & SpecialTag) != 0 && _tokenType == YamlTokenType.None && _currentDepth == 0)
+            {
+                WriteUnityStrippedMarker();
+            }
         }
 
         private void ValidateNodePropertyPosition()
@@ -993,7 +1073,7 @@ namespace System.Text.Yaml
         /// <summary>Writes <c>...</c>, the end of a document.</summary>
         /// <remarks>
         /// A new document may follow, and so may directives. A root node written without
-        /// <see cref="WriteDocumentStart"/> first gets its <c>---</c> anyway, which YAML 1.1 readers need there.
+        /// <see cref="WriteDocumentStart()"/> first gets its <c>---</c> anyway, which YAML 1.1 readers need there.
         /// Supported in block style only.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
@@ -1067,7 +1147,7 @@ namespace System.Text.Yaml
         /// <param name="directive">The directive's line, with its <c>%</c>.</param>
         /// <remarks>
         /// Directives come at the start of the output, after the end of a document (<c>...</c> is written first when the
-        /// previous document is complete and not ended), or after another directive; <see cref="WriteDocumentStart"/>
+        /// previous document is complete and not ended), or after another directive; <see cref="WriteDocumentStart()"/>
         /// must follow them. Supported in block style only.
         /// </remarks>
         /// <exception cref="ArgumentException">The text is not a <c>%YAML</c> or <c>%TAG</c> directive.</exception>

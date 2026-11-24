@@ -91,6 +91,15 @@ namespace System.Text.Yaml
         public bool InheritTagDirectives { get; set; }
 
         /// <summary>
+        /// Gets or sets whether Unity's <c>stripped</c> marker is accepted after a document root's properties on its
+        /// <c>---</c> line (<c>--- !u!4 &amp;400000 stripped</c>), where YAML would read <c>stripped</c> as the root's
+        /// content. <see langword="false"/> by default. Only the word <c>stripped</c>, after properties that include a tag,
+        /// before the end of the line; the root then starts on the next line, and
+        /// <see cref="Utf8YamlReader.IsUnityStripped"/> is <see langword="true"/> on its token.
+        /// </summary>
+        public bool AcceptUnityStrippedMarker { get; set; }
+
+        /// <summary>
         /// Gets or sets whether a flow collection may <em>not</em> be an implicit mapping key (<c>[a, b]: v</c>,
         /// <c>{a: b}: v</c>, <c>[[a]: b]</c>, <c>{[a]: b}</c>). <see langword="false"/> by default: YAML allows such keys, and
         /// deciding whether a <c>[</c> or <c>{</c> at the root or in a flow sequence starts one needs the rest of its line

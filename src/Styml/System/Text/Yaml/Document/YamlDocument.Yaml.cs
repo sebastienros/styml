@@ -37,6 +37,12 @@ namespace System.Text.Yaml
 
             /// <summary>M5e: on an alias key to a scalar (a copy of the scalar's row), the anchored row plus one; 0 otherwise.</summary>
             internal int AliasKeyTarget;
+
+            /// <summary>
+            /// A document root's <see cref="Utf8YamlReader.OnDocumentLine"/> (its properties on the '---' line) and
+            /// <see cref="Utf8YamlReader.UnityStripped"/>; 0 otherwise.
+            /// </summary>
+            internal byte DocumentLine;
         }
 
         internal sealed class YamlTables
@@ -421,6 +427,7 @@ namespace System.Text.Yaml
             int numberOfRowsForMembers = state.NumberOfRowsForMembers;
             int numberOfRowsForValues = state.NumberOfRowsForValues;
             int lastEnd = state.LastEnd;
+            byte rootDocumentLine = 0;
 
             do
             {
@@ -437,6 +444,10 @@ namespace System.Text.Yaml
                 string? tag = reader.Tag.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Tag);
                 string? expandedTag = tag is null ? null : reader.GetExpandedTag();
                 bool hasProperties = anchor is not null || tag is not null;
+                if (rowIndex == 0 && baseOffset == 0)
+                {
+                    rootDocumentLine = reader.YamlDocumentLineFlags;
+                }
 
                 if (tokenType == YamlTokenType.StartObject)
                 {
@@ -588,6 +599,13 @@ namespace System.Text.Yaml
                 inArray = reader.IsInArray;
             }
             while (reader.Read());
+
+            if (rootDocumentLine != 0)
+            {
+                // Only a root with properties has these, so its node info exists.
+                Debug.Assert(tables is not null && tables.InfoCount > 0 && tables.Infos[0].Row == 0);
+                tables!.Infos[0].DocumentLine = rootDocumentLine;
+            }
         }
 
         private static int ResolveAnchor(Dictionary<string, int>? anchors, string name)
@@ -605,6 +623,27 @@ namespace System.Text.Yaml
         /// M5d: the tag of a value copied from a reader, which the copy (from
         /// the node's first byte) does not hold.
         /// </summary>
+        /// <summary>The outer reader's document-line flags for a value copied out of a stream (TryParseValue).</summary>
+        internal void AttachRootDocumentLine(byte documentLine)
+        {
+            if (documentLine == 0 || _yaml is null || _yaml.InfoCount == 0 || _yaml.Infos[0].Row != 0)
+            {
+                // Only a root with properties has them, and its node info exists.
+                return;
+            }
+
+            _yaml.Infos[0].DocumentLine = documentLine;
+        }
+
+        /// <summary>Whether the node at <paramref name="index"/> is a document root marked with Unity's stripped marker.</summary>
+        internal bool PropertiesOnDocumentLine(int index) =>
+            _yaml is not null && _parsedData.Get(index).HasNodeInfo && _yaml.TryGet(index, out NodeInfo info)
+            && (info.DocumentLine & Utf8YamlReader.OnDocumentLine) != 0;
+
+        internal bool IsUnityStripped(int index) =>
+            _yaml is not null && _parsedData.Get(index).HasNodeInfo && _yaml.TryGet(index, out NodeInfo info)
+            && (info.DocumentLine & Utf8YamlReader.UnityStripped) != 0;
+
         internal void AttachRootTag(string tag, string? expandedTag)
         {
             _yaml ??= new YamlTables();

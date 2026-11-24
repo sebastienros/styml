@@ -460,6 +460,7 @@ namespace System.Text.Yaml
             ReadOnlySequence<byte> valueSequence = default;
             int padPrefix = 0;
             string? rootTag = null;
+            byte rootDocumentLine = reader.YamlDocumentLineFlags;
             string? rootExpandedTag = null;
 
             // M5b: a reader scoped to one value (a replay, a nested Deserialize) starts at the value's first byte, so the
@@ -515,6 +516,7 @@ namespace System.Text.Yaml
                         break;
                     case YamlTokenType.String when reader.ScalarStyle != YamlScalarStyle.DoubleQuoted || reader.YamlNeedsProcessing:
                         document = CreateForYamlString(ref reader);
+                        document.AttachRootDocumentLine(rootDocumentLine);
                         return true;
                     case YamlTokenType.Null when reader.ValueSpan.IsEmpty && !reader.HasValueSequence:
                         document = CreateForLiteral(YamlTokenType.Null);
@@ -589,12 +591,13 @@ namespace System.Text.Yaml
                             break;
                         }
 
-                        document = CreateForLiteral(reader.TokenType, cached: rootTag is null);
+                        document = CreateForLiteral(reader.TokenType, cached: rootTag is null && rootDocumentLine == 0);
                         if (rootTag is not null)
                         {
                             document.AttachRootTag(rootTag, rootExpandedTag);
                         }
 
+                        document.AttachRootDocumentLine(rootDocumentLine);
                         return true;
 
                     case YamlTokenType.Number:
@@ -715,6 +718,7 @@ namespace System.Text.Yaml
                     }
 
                     rentedSpan.Slice(0, padPrefix).Fill((byte)' ');
+                    BlankUnityStrippedMarker(rentedSpan, rootDocumentLine);
 
                     document = Parse(rented.AsMemory(0, length), copyOptions, duplicateKeyHandling, rented, tagDirectives: reader.YamlTagDirectives);
                 }
@@ -741,6 +745,7 @@ namespace System.Text.Yaml
                 }
 
                 owned.AsSpan(0, padPrefix).Fill((byte)' ');
+                BlankUnityStrippedMarker(owned, rootDocumentLine);
 
                 document = ParseUnrented(owned, copyOptions, duplicateKeyHandling, reader.TokenType, tagDirectives: reader.YamlTagDirectives);
             }
@@ -750,7 +755,30 @@ namespace System.Text.Yaml
                 document.AttachRootTag(rootTag, rootExpandedTag);
             }
 
+            document.AttachRootDocumentLine(rootDocumentLine);
             return true;
+        }
+
+        // The copy of a root read with Unity's stripped marker starts on its properties' line, which holds the marker; the
+        // copy is not on a '---' line, where the marker is read, so it is turned into spaces (the flag is attached).
+        private static void BlankUnityStrippedMarker(Span<byte> copy, byte rootDocumentLine)
+        {
+            if ((rootDocumentLine & Utf8YamlReader.UnityStripped) == 0)
+            {
+                return;
+            }
+
+            int lineEnd = copy.IndexOfAny((byte)'\n', (byte)'\r');
+            Span<byte> line = lineEnd < 0 ? copy : copy.Slice(0, lineEnd);
+            for (int i = line.Length - 8; i > 0; i--)
+            {
+                if (line[i - 1] is (byte)' ' or (byte)'\t' && line.Slice(i, 8).SequenceEqual("stripped"u8)
+                    && (i + 8 == line.Length || line[i + 8] is (byte)' ' or (byte)'\t' or (byte)'#'))
+                {
+                    line.Slice(i, 8).Fill((byte)' ');
+                    return;
+                }
+            }
         }
 
         /// <summary>

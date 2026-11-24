@@ -195,7 +195,18 @@ namespace System.Text.Yaml
         /// <exception cref="InvalidOperationException">
         /// The writer is inside a collection or a string, or after a property name, while validation is enabled.
         /// </exception>
-        public void WriteDocumentStart()
+        public void WriteDocumentStart() => WriteDocumentStart(rootPropertiesOnMarkerLine: false);
+
+        /// <summary>
+        /// Writes <c>---</c>, the start of a new document; with <paramref name="rootPropertiesOnMarkerLine"/>, the root
+        /// node's properties (<see cref="WriteTag(string)"/>, <see cref="WriteAnchor(string)"/>) go on that line
+        /// (<c>--- !u!1 &amp;1000</c>, as Unity writes its objects) and the root starts on the next line.
+        /// </summary>
+        /// <param name="rootPropertiesOnMarkerLine">Whether the root's properties go on the <c>---</c> line.</param>
+        /// <exception cref="InvalidOperationException">
+        /// The writer is inside a collection or a string, or after a property name, while validation is enabled.
+        /// </exception>
+        public void WriteDocumentStart(bool rootPropertiesOnMarkerLine)
         {
             if (!_options.SkipValidation && (CurrentDepth != 0 || IsWritingPartialString || _tokenType == YamlTokenType.PropertyName))
             {
@@ -242,6 +253,8 @@ namespace System.Text.Yaml
             {
                 _block.AfterDocumentStartMarker = true;
                 _block.YamlDirectivePending = false;
+                _block.PropertiesOnMarkerLine = rootPropertiesOnMarkerLine;
+                _block.OnMarkerLine = false;
             }
         }
 

@@ -23,6 +23,8 @@ namespace System.Text.Yaml.Nodes
         private YamlNodeOptions? _options;
         private string? _anchor;
         private string? _tag;
+        private bool _isUnityStripped;
+        private bool _propertiesOnDocumentLine;
         private bool _ownProperties;
 
         /// <summary>
@@ -75,6 +77,25 @@ namespace System.Text.Yaml.Nodes
             }
         }
 
+        /// <summary>
+        ///   Gets or sets whether the node is a document root marked with Unity's <c>stripped</c> marker
+        ///   (<c>--- !u!4 &amp;400000 stripped</c>): a placeholder for an object of a source prefab.
+        /// </summary>
+        /// <remarks>
+        ///   A node made from a <see cref="YamlDocument"/> read with <see cref="YamlDocumentOptions.AcceptUnityStrippedMarker"/>
+        ///   keeps it. A block-style writer writes it after the node's tag on the document's <c>---</c> line, right after
+        ///   <see cref="Utf8YamlWriter.WriteDocumentStart()"/>; anywhere else it is not written.
+        /// </remarks>
+        public bool IsUnityStripped
+        {
+            get => _isUnityStripped;
+            set
+            {
+                _isUnityStripped = value;
+                _ownProperties = true;
+            }
+        }
+
         /// <summary>The anchor or tag was set after the node was made from an element, so the element is not written as it is.</summary>
         internal bool HasOwnProperties => _ownProperties;
 
@@ -92,6 +113,8 @@ namespace System.Text.Yaml.Nodes
             }
 
             _tag = element.GetTag();
+            _isUnityStripped = element.IsUnityStripped;
+            _propertiesOnDocumentLine = element.PropertiesOnDocumentLine;
         }
 
         /// <summary>M7c: a deep clone keeps this node's anchor and tag, set or read, and has no anchor if this node has none.</summary>
@@ -99,6 +122,8 @@ namespace System.Text.Yaml.Nodes
         {
             _anchor = source._anchor;
             _tag = source._tag;
+            _isUnityStripped = source._isUnityStripped;
+            _propertiesOnDocumentLine = source._propertiesOnDocumentLine;
             _ownProperties = source._ownProperties;
             return (T)this;
         }
@@ -110,6 +135,12 @@ namespace System.Text.Yaml.Nodes
                 return;
             }
 
+            if ((_propertiesOnDocumentLine || _isUnityStripped) && !writer.Options.IgnoreSourceStyles)
+            {
+                // A document root whose properties were on its '---' line, or one marked stripped: on that line again.
+                writer.KeepRootPropertiesOnMarkerLine();
+            }
+
             if (_anchor is not null)
             {
                 writer.WriteAnchor(_anchor);
@@ -118,6 +149,11 @@ namespace System.Text.Yaml.Nodes
             if (_tag is not null)
             {
                 writer.WriteTag(_tag);
+            }
+
+            if (_isUnityStripped)
+            {
+                writer.TryWriteUnityStrippedMarker();
             }
         }
 

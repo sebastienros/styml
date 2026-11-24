@@ -158,7 +158,8 @@ namespace System.Text.Yaml
                     s,
                     parentIndent: _yaml.BaseIndent,
                     allowBlockCollection: !onMarkerLine,
-                    allowIndentlessSequence: false);
+                    allowIndentlessSequence: false,
+                    documentLine: onMarkerLine);
             }
         }
 

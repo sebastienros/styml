@@ -129,6 +129,13 @@ namespace System.Text.Yaml
         public bool InheritTagDirectives { get; set; }
 
         /// <summary>
+        /// Gets or sets whether Unity's <c>stripped</c> marker is accepted on a document's <c>---</c> line
+        /// (<see cref="YamlReaderOptions.AcceptUnityStrippedMarker"/>); the root element's
+        /// <see cref="YamlElement.IsUnityStripped"/> reports it. <see langword="false"/> by default.
+        /// </summary>
+        public bool AcceptUnityStrippedMarker { get; set; }
+
+        /// <summary>
         /// Gets or sets the most nodes that expanding aliases may add when a document's nodes are copied: a
         /// <see cref="Nodes.YamlNode"/> made from the document, an element written or cloned apart from the anchor it
         /// refers to, or an element deserialized. Reading, enumerating and comparing the document copy nothing, so the
@@ -185,6 +192,7 @@ namespace System.Text.Yaml
                 Schema = Schema,
                 AcceptLenientScalars = AcceptLenientScalars,
                 InheritTagDirectives = InheritTagDirectives,
+                AcceptUnityStrippedMarker = AcceptUnityStrippedMarker,
             };
         }
     }

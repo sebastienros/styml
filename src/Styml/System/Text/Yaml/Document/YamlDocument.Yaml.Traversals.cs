@@ -164,6 +164,12 @@ namespace System.Text.Yaml
 
             if (block && row.HasNodeInfo && _yaml!.TryGet(index, out NodeInfo info))
             {
+                if ((info.DocumentLine & Utf8YamlReader.OnDocumentLine) != 0 && !writer.Options.IgnoreSourceStyles)
+                {
+                    // A document root whose properties were on its '---' line: there again, right after WriteDocumentStart.
+                    writer.KeepRootPropertiesOnMarkerLine();
+                }
+
                 if (info.Anchor is not null && !state.SuppressAnchors)
                 {
                     writer.WriteAnchor(info.Anchor);
@@ -174,6 +180,12 @@ namespace System.Text.Yaml
                     // M5d: the form that reads back without the source's %TAG directives (the same text for a local, a
                     // verbatim or a !! tag).
                     writer.WriteTag(StandAloneTag(info));
+                }
+
+                if ((info.DocumentLine & Utf8YamlReader.UnityStripped) != 0)
+                {
+                    // Unity's stripped marker goes only on a document's '---' line, after the root's tag.
+                    writer.TryWriteUnityStrippedMarker();
                 }
             }
 
