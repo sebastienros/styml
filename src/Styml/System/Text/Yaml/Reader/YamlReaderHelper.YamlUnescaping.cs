@@ -327,6 +327,10 @@ namespace System.Text.Yaml
 
         private static int WriteUtf8(int codePoint, Span<byte> dest)
         {
+            if ((uint)codePoint > 0x10FFFF || (codePoint is >= 0xD800 and <= 0xDFFF))
+            {
+                ThrowHelper.ThrowInvalidOperationException_ReadInvalidUTF16(codePoint);
+            }
             if (codePoint < 0x80)
             {
                 dest[0] = (byte)codePoint;
@@ -344,10 +348,6 @@ namespace System.Text.Yaml
                 dest[1] = (byte)(0x80 | ((codePoint >> 6) & 0x3F));
                 dest[2] = (byte)(0x80 | (codePoint & 0x3F));
                 return 3;
-            }
-            if (codePoint > 0x10FFFF)
-            {
-                ThrowHelper.ThrowInvalidOperationException_ReadInvalidUTF16(codePoint);
             }
             dest[0] = (byte)(0xF0 | (codePoint >> 18));
             dest[1] = (byte)(0x80 | ((codePoint >> 12) & 0x3F));

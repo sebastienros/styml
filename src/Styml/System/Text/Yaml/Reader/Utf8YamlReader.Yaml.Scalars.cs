@@ -429,12 +429,19 @@ namespace System.Text.Yaml
                         }
                         YamlThrow(YamlGrammarError.InvalidEscape, p);
                     }
+                    uint codePoint = 0;
                     for (int i = 0; i < hexDigits; i++)
                     {
-                        if (!YamlReaderHelper.IsHexDigit(buffer[p.Pos + 2 + i]))
+                        byte h = buffer[p.Pos + 2 + i];
+                        if (!YamlReaderHelper.IsHexDigit(h))
                         {
                             YamlThrow(YamlGrammarError.InvalidEscape, p);
                         }
+                        codePoint = (codePoint << 4) | (uint)(h <= '9' ? h - '0' : (h | 0x20) - 'a' + 10);
+                    }
+                    if (hexDigits == 8 && (codePoint > 0x10FFFF || (codePoint >= 0xD800 && codePoint <= 0xDFFF)))
+                    {
+                        YamlThrow(YamlGrammarError.InvalidEscape, p);
                     }
 
                     p.Pos += 2 + hexDigits;
