@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# See eng/upstream/upstream.py and docs/upstream-sync.md.
+exec python3 -I "$(dirname "${BASH_SOURCE[0]}")/upstream.py" sync "$@"
