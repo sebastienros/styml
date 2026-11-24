@@ -27,6 +27,8 @@ namespace System.Text.Yaml.Nodes
 
             OrderedDictionary<string, YamlNode?> dictionary = Dictionary;
             KeyValuePair<string, YamlNode?> existing = dictionary.GetAt(index);
+            _sourceNulls?.Remove(existing.Key);
+            _sourceNulls?.Remove(propertyName);
             dictionary.SetAt(index, propertyName, value);
             DetachParent(existing.Value);
             value?.AssignParent(this);
@@ -41,6 +43,7 @@ namespace System.Text.Yaml.Nodes
         {
             OrderedDictionary<string, YamlNode?> dictionary = Dictionary;
             KeyValuePair<string, YamlNode?> existing = dictionary.GetAt(index);
+            _sourceNulls?.Remove(existing.Key);
             dictionary.SetAt(index, value);
             DetachParent(existing.Value);
             value?.AssignParent(this);
@@ -67,6 +70,7 @@ namespace System.Text.Yaml.Nodes
         public void Insert(int index, string propertyName, YamlNode? value)
         {
             ArgumentNullException.ThrowIfNull(propertyName);
+            _sourceNulls?.Remove(propertyName);
 
             Dictionary.Insert(index, propertyName, value);
             value?.AssignParent(this);
@@ -79,6 +83,7 @@ namespace System.Text.Yaml.Nodes
         public void RemoveAt(int index)
         {
             KeyValuePair<string, YamlNode?> existing = Dictionary.GetAt(index);
+            _sourceNulls?.Remove(existing.Key);
             Dictionary.RemoveAt(index);
             DetachParent(existing.Value);
             ShiftCollectionKeys(index, -1);

@@ -26,6 +26,7 @@ namespace System.Text.Yaml.Nodes
         public void Add(string propertyName, YamlNode? value)
         {
             ArgumentNullException.ThrowIfNull(propertyName);
+            _sourceNulls?.Remove(propertyName);
 
             Dictionary.Add(propertyName, value);
             value?.AssignParent(this);
@@ -90,6 +91,7 @@ namespace System.Text.Yaml.Nodes
         /// </summary>
         public void Clear()
         {
+            _sourceNulls = null;
             OrderedDictionary<string, YamlNode?>? dictionary = _dictionary;
 
             if (dictionary is null)
@@ -158,6 +160,7 @@ namespace System.Text.Yaml.Nodes
         public bool Remove(string propertyName)
         {
             ArgumentNullException.ThrowIfNull(propertyName);
+            _sourceNulls?.Remove(propertyName);
 
             // M7b: the collection-key entries after the removed entry move up with the string entries (the dictionary
             // first, which reads a parsed object's collection keys).
@@ -319,6 +322,10 @@ namespace System.Text.Yaml.Nodes
 
                         YamlNode? node = YamlNodeConverter.CreateChild(jElementProperty.Value, Options, this);
                         node?.Parent = this;
+                        if (node is null)
+                        {
+                            RecordSourceNull(jElementProperty.Name, jElementProperty.Value);
+                        }
 
                         if (handling == YamlDuplicateKeyHandling.LastWins)
                         {

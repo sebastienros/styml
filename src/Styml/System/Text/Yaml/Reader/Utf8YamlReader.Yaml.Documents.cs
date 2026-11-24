@@ -153,13 +153,20 @@ namespace System.Text.Yaml
                     _yaml.Set(YamlParseFlags.AnyDocument, true);
                 }
 
-                return YamlParseBlockNode(
+                bool documentLine = onMarkerLine || _yaml.Has(YamlParseFlags.ScopedDocumentLine);
+                YamlStep step = YamlParseBlockNode(
                     ref c,
                     s,
                     parentIndent: _yaml.BaseIndent,
                     allowBlockCollection: !onMarkerLine,
                     allowIndentlessSequence: false,
-                    documentLine: onMarkerLine);
+                    documentLine: documentLine);
+                if (step == YamlStep.Token)
+                {
+                    _yaml.Set(YamlParseFlags.ScopedDocumentLine, false);
+                }
+
+                return step;
             }
         }
 

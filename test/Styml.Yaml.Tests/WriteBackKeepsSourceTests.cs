@@ -212,11 +212,17 @@ namespace System.Text.Yaml.Tests
             // An empty root is written null: written empty, there would be no document to read.
             Assert.Equal("null\n", Write(YamlDocument.Parse("--- \n").RootElement));
 
-            // An edited sibling: the members that stay elements keep their empty values. A null member of an edited
-            // YamlObject is a null reference, as in JsonNode, so it is written null and its anchor is not kept (as before).
+            // An edited sibling keeps the others as they were. A null member of an edited YamlObject is a null reference, as
+            // in JsonNode; its source form (empty, or with its anchor) is kept until it is set.
             YamlNode node = YamlNode.Parse(Empties)!;
             node["a"] = "set";
-            Assert.Equal("a: set\nb: null\nc:\n- \n-\n- x\nd: null\ne: {f: , g: }\nh:\n  i: \n", Write(node));
+            Assert.Null(node["b"]);
+            Assert.Equal(Empties.Replace("a: \n", "a: set\n"), Write(node));
+            Assert.Equal(Empties.Replace("a: \n", "a: set\n"), Write(node.DeepClone()));
+            node["b"] = null;
+            node.AsObject().Remove("d");
+            node.AsObject().Add("d", null);
+            Assert.Equal("a: set\nb: null\nc:\n- \n-\n- x\ne: {f: , g: }\nh:\n  i: \nd: null\n", Write(node));
         }
 
         [Fact]

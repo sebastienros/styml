@@ -23,5 +23,7 @@
     <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="SharpYaml" />
+    <!-- Unity's dialect (UnityParityTests): VYaml targets Unity; test-only, at the version the benchmarks pin. -->
+    <PackageReference Include="VYaml" />
   </ItemGroup>
 </Project>

@@ -381,6 +381,14 @@ namespace System.Text.Yaml.Nodes
                 jObject.Add(item.Key, item.Value?.DeepCloneCore());
             }
 
+            if (_sourceNulls is not null)
+            {
+                foreach (KeyValuePair<string, YamlElement> sourceNull in _sourceNulls)
+                {
+                    (jObject._sourceNulls ??= new Dictionary<string, YamlElement>(StringComparer.Ordinal))[sourceNull.Key] = sourceNull.Value.Clone();
+                }
+            }
+
             if (_complexKeys is { } complexKeys)
             {
                 foreach (ComplexKeyEntry entry in complexKeys)
@@ -502,7 +510,15 @@ namespace System.Text.Yaml.Nodes
 
                     if (entry.Value is null)
                     {
-                        writer.WriteNullValue();
+                        if (_sourceNulls is not null && _sourceNulls.TryGetValue(entry.Key, out YamlElement source))
+                        {
+                            // A null read from the source and not set since: as it was (empty, or with its properties).
+                            source.WriteTo(writer);
+                        }
+                        else
+                        {
+                            writer.WriteNullValue();
+                        }
                     }
                     else
                     {
@@ -656,9 +672,22 @@ namespace System.Text.Yaml.Nodes
             }
         }
 
+        // The null members read from a document whose source form is not "null" (empty, or with an anchor or a tag), until
+        // they are set: a null member is a null reference, as in JsonNode, so its source element is kept beside it.
+        private Dictionary<string, YamlElement>? _sourceNulls;
+
+        private void RecordSourceNull(string propertyName, YamlElement element)
+        {
+            if (element.ValueKind == YamlValueKind.Null && (element.GetRawText().Length == 0 || element.GetAnchor() is not null || element.GetTag() is not null))
+            {
+                (_sourceNulls ??= new Dictionary<string, YamlElement>(StringComparer.Ordinal))[propertyName] = element;
+            }
+        }
+
         internal void SetItem(string propertyName, YamlNode? value)
         {
             ArgumentNullException.ThrowIfNull(propertyName);
+            _sourceNulls?.Remove(propertyName);
 
             OrderedDictionary<string, YamlNode?> dict = Dictionary;
 

@@ -53,11 +53,11 @@ namespace System.Text.Yaml
         /// The state of a reader over one value sliced out of a larger document: it starts inside the parent's
         /// indentation, and its first content may start a block collection even though it is not at column 0.
         /// </summary>
-        internal static YamlParseState ForScopedValue(int parentIndent, YamlTagDirectives? tagDirectives, YamlAnchorContext? anchorContext = null) => new()
+        internal static YamlParseState ForScopedValue(int parentIndent, YamlTagDirectives? tagDirectives, YamlAnchorContext? anchorContext = null, bool documentLine = false) => new()
         {
             BaseIndentPlusOne = parentIndent + 1,
             BlockIndentPlusOne = parentIndent + 1,
-            Flags = YamlParseFlags.ContentAtLineStart,
+            Flags = YamlParseFlags.ContentAtLineStart | (documentLine ? YamlParseFlags.ScopedDocumentLine : YamlParseFlags.None),
             TagDirectives = tagDirectives,
             AnchorContext = anchorContext,
         };
@@ -275,5 +275,11 @@ namespace System.Text.Yaml
         /// next content is that ':', which the value's Read consumes.
         /// </summary>
         FlowColonPending = 1 << 9,
+
+        /// <summary>
+        /// A reader scoped to a document's root whose properties were on its '---' line: its first node's properties are
+        /// read as a document line's (Unity's stripped marker after them), and cleared once it is read.
+        /// </summary>
+        ScopedDocumentLine = 1 << 10,
     }
 }
