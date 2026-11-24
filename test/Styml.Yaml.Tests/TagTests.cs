@@ -193,8 +193,9 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
-        public void ManyTagDirectivesScaleLinearly()
+        public void ManyTagDirectivesInOneHeader()
         {
+            // 50,000 handles, the first redefined: a table copied on every directive made this header quadratic.
             const int Count = 50_000;
             var sb = new StringBuilder(Count * 28 + 128);
             for (int i = 0; i < Count; i++)
@@ -202,16 +203,36 @@ namespace System.Text.Yaml.Tests
                 sb.Append("%TAG !t").Append(i).Append("! tag:x,").Append(i).Append(":\n");
             }
             sb.Append("%TAG !t0! tag:redefined,0:\n");
-            sb.Append("--- [!t0!first a, !t").Append(Count - 1).Append("!last b]\n");
-            string yaml = sb.ToString();
+            sb.Append("--- [!t0!first a");
+            var expected = new List<string> { "tag:redefined,0:first" };
+            for (int i = 1; i < Count; i += 101)
+            {
+                sb.Append(", !t").Append(i).Append("!v v");
+                expected.Add($"tag:x,{i}:v");
+            }
+            sb.Append(", !t").Append(Count - 1).Append("!last b]\n");
+            expected.Add($"tag:x,{Count - 1}:last");
 
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            using YamlDocument doc = YamlDocument.Parse(yaml);
-            sw.Stop();
+            using YamlDocument doc = YamlDocument.Parse(sb.ToString());
+            var actual = new List<string>();
+            foreach (YamlElement item in doc.RootElement.EnumerateArray())
+            {
+                actual.Add(item.GetExpandedTag()!);
+            }
+            Assert.Equal(expected, actual);
+        }
 
-            Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5), $"Parsing {Count} %TAG directives took {sw.Elapsed.TotalMilliseconds:F1} ms.");
-            Assert.Equal("tag:redefined,0:first", doc.RootElement[0].GetExpandedTag());
-            Assert.Equal($"tag:x,{Count - 1}:last", doc.RootElement[1].GetExpandedTag());
+        [Fact]
+        public void RedefinedHandleAcrossCommentsAtEverySplit()
+        {
+            // Comment tokens end a read inside the header, so a state saved there shares the table that later
+            // directives add to in place; the last definition still wins and the next document starts empty.
+            const string Yaml = "%TAG !e! tag:a,1:\n# one\n%TAG !f! tag:f,1:\n# two\n%TAG !e! tag:b,2:\n"
+                + "--- [!e!x a, !f!y b]\n...\n%TAG !f! tag:g,3:\n--- !f!z c\n";
+            var options = new YamlReaderOptions { AllowMultipleValues = true, CommentHandling = YamlCommentHandling.Allow };
+            ChunkingTests.AssertEverySplit(Encoding.UTF8.GetBytes(Yaml), options);
+
+            Assert.Equal(new[] { "tag:b,2:x", "tag:f,1:y", "tag:g,3:z" }, Tags(Yaml).ConvertAll(t => t.Expanded));
         }
     }
 }

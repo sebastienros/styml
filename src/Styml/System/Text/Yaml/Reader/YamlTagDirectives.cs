@@ -5,10 +5,13 @@ using System.Diagnostics;
 namespace System.Text.Yaml
 {
     /// <summary>
-    /// The <c>%TAG</c> handles of one YAML document and their prefixes.
-    /// Populated only while reading the document's directive header and read-only for the rest of the document, so copies
-    /// of the reader state (resumed readers, readers scoped to one value, the constructor replay path) can share one
-    /// safely. Allocated only for documents that declare handles.
+    /// The <c>%TAG</c> handles of one YAML document and their prefixes, in a hash table so that a header with many
+    /// directives reads in linear time. Mutable: each directive header starts from no table (the reader drops the
+    /// previous document's before its first directive) and adds to it in place, and the table is read-only once the
+    /// document starts. Copies of the reader state (resumed readers, readers scoped to one value, the constructor
+    /// replay path) can share one: a state copied or restored inside the header can see handles from directive lines it
+    /// has not consumed yet, but it reads those same lines again and adds the same handles in the same order.
+    /// Allocated only for documents that declare handles.
     /// </summary>
     internal sealed class YamlTagDirectives
     {
@@ -32,7 +35,10 @@ namespace System.Text.Yaml
             _entries = new Entry[4];
         }
 
-        /// <summary>A table with <paramref name="handle"/> added, or redefined when it is already there.</summary>
+        /// <summary>
+        /// Adds <paramref name="handle"/> to <paramref name="table"/> in place, or redefines it when it is already there;
+        /// a new table when <paramref name="table"/> is null. Called only while reading a directive header.
+        /// </summary>
         internal static YamlTagDirectives With(YamlTagDirectives? table, ReadOnlySpan<byte> handle, ReadOnlySpan<byte> prefix)
         {
             table ??= new YamlTagDirectives();
@@ -43,23 +49,19 @@ namespace System.Text.Yaml
         private void AddOrUpdate(ReadOnlySpan<byte> handle, ReadOnlySpan<byte> prefix)
         {
             int hashCode = Marvin.ComputeHash32(handle, Marvin.DefaultSeed);
-            int bucketIndex = hashCode & (_buckets.Length - 1);
-
-            for (int i = _buckets[bucketIndex] - 1; i >= 0; i = _entries[i].Next)
+            int existing = FindEntry(handle, hashCode);
+            if (existing >= 0)
             {
-                if (_entries[i].HashCode == hashCode && handle.SequenceEqual(_entries[i].Handle))
-                {
-                    _entries[i].Prefix = prefix.ToArray();
-                    return;
-                }
+                _entries[existing].Prefix = prefix.ToArray();
+                return;
             }
 
             if (_count == _entries.Length)
             {
                 Resize();
-                bucketIndex = hashCode & (_buckets.Length - 1);
             }
 
+            int bucketIndex = hashCode & (_buckets.Length - 1);
             int index = _count++;
             ref Entry entry = ref _entries[index];
             entry.HashCode = hashCode;
@@ -67,6 +69,19 @@ namespace System.Text.Yaml
             entry.Handle = handle.ToArray();
             entry.Prefix = prefix.ToArray();
             _buckets[bucketIndex] = index + 1;
+        }
+
+        /// <summary>The index of the entry for <paramref name="handle"/>, or -1.</summary>
+        private int FindEntry(ReadOnlySpan<byte> handle, int hashCode)
+        {
+            for (int i = _buckets[hashCode & (_buckets.Length - 1)] - 1; i >= 0; i = _entries[i].Next)
+            {
+                if (_entries[i].HashCode == hashCode && handle.SequenceEqual(_entries[i].Handle))
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         private void Resize()
@@ -90,20 +105,9 @@ namespace System.Text.Yaml
 
         internal bool TryGetPrefix(ReadOnlySpan<byte> handle, out ReadOnlySpan<byte> prefix)
         {
-            int hashCode = Marvin.ComputeHash32(handle, Marvin.DefaultSeed);
-            int bucketIndex = hashCode & (_buckets.Length - 1);
-
-            for (int i = _buckets[bucketIndex] - 1; i >= 0; i = _entries[i].Next)
-            {
-                if (_entries[i].HashCode == hashCode && handle.SequenceEqual(_entries[i].Handle))
-                {
-                    prefix = _entries[i].Prefix;
-                    return true;
-                }
-            }
-
-            prefix = default;
-            return false;
+            int index = FindEntry(handle, Marvin.ComputeHash32(handle, Marvin.DefaultSeed));
+            prefix = index >= 0 ? _entries[index].Prefix : default;
+            return index >= 0;
         }
 
         /// <summary>The prefix of a handle: declared, or the default of '!' and '!!'; false for an undeclared named handle.</summary>
