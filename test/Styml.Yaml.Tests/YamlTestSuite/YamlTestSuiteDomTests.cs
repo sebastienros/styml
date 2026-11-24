@@ -328,10 +328,18 @@ namespace System.Text.Yaml.Tests
             (element.GetAnchor() is string anchor ? " &" + anchor : "")
             + (element.GetExpandedTag() is string tag ? " <" + tag + ">" : "");
 
+        // The write-back's shape also has what the DOM keeps of a node's text: the order of its properties (tag first),
+        // a number's spelling, and a null that was empty in the source.
+        // (A document's root that is empty is written null: written empty, the document would not be read again.)
+        private static string KeptText(YamlElement element, bool root = false) =>
+            (element.TagBeforeAnchor ? " tag-first" : "")
+            + (element.ValueKind == YamlValueKind.Number ? " " + element.GetRawText() : "")
+            + (!root && element.ValueKind == YamlValueKind.Null && element.GetRawText().Length == 0 ? " empty" : "");
+
         // ------------------------------------------------------------------------------------------------------------
         // M5f: the DOM keeps each scalar's style on
         // write-back. For every document the walk above compares, Parse, WriteTo in block style and a parse give the same
-        // shape (structure, anchors, tags, kinds, string values), each string keeps its source style or falls in one of
+        // shape (structure, anchors, tags and their order, kinds, string values, numbers' spellings, empty nulls), each string keeps its source style or falls in one of
         // the named classes (each counted), and writing the result again gives the same bytes (a fixed point).
 
         private static readonly YamlWriterOptions s_writeBack = new() { Style = YamlWriterStyle.Block, NewLine = "\n", MaxDepth = 256 };
@@ -356,10 +364,10 @@ namespace System.Text.Yaml.Tests
 
                     var sourceShape = new List<string>();
                     var sourceStrings = new List<(YamlScalarStyle Style, string Text)>();
-                    Shape(source.RootElement, sourceShape, sourceStrings);
+                    Shape(source.RootElement, sourceShape, sourceStrings, root: true);
                     var backShape = new List<string>();
                     var backStrings = new List<(YamlScalarStyle Style, string Text)>();
-                    Shape(back.RootElement, backShape, backStrings);
+                    Shape(back.RootElement, backShape, backStrings, root: true);
                     if (!sourceShape.SequenceEqual(backShape))
                     {
                         failures.Add($"{id}: shape\n  {string.Join(" | ", sourceShape)}\n  {string.Join(" | ", backShape)}\n{Encoding.UTF8.GetString(written)}");
@@ -449,7 +457,7 @@ namespace System.Text.Yaml.Tests
         private static string Flow(YamlElement element) => element.CollectionStyle == YamlCollectionStyle.Flow ? " flow" : "";
 
         // The shape: structure, anchors, tags, kinds and string values; strings' styles apart.
-        private static void Shape(YamlElement element, List<string> shape, List<(YamlScalarStyle Style, string Text)> strings)
+        private static void Shape(YamlElement element, List<string> shape, List<(YamlScalarStyle Style, string Text)> strings, bool root = false)
         {
             if (element.IsAlias)
             {
@@ -460,7 +468,7 @@ namespace System.Text.Yaml.Tests
             switch (element.ValueKind)
             {
                 case YamlValueKind.Object:
-                    shape.Add("+MAP" + DomProperties(element) + Flow(element));
+                    shape.Add("+MAP" + DomProperties(element) + KeptText(element) + Flow(element));
                     foreach (YamlProperty property in element.EnumerateObject())
                     {
                         if (property.KeyKind == YamlKeyKind.Complex)
@@ -485,7 +493,7 @@ namespace System.Text.Yaml.Tests
                     shape.Add("-MAP");
                     break;
                 case YamlValueKind.Array:
-                    shape.Add("+SEQ" + DomProperties(element) + Flow(element));
+                    shape.Add("+SEQ" + DomProperties(element) + KeptText(element) + Flow(element));
                     foreach (YamlElement item in element.EnumerateArray())
                     {
                         Shape(item, shape, strings);
@@ -494,11 +502,11 @@ namespace System.Text.Yaml.Tests
                     shape.Add("-SEQ");
                     break;
                 case YamlValueKind.String:
-                    shape.Add("STR" + DomProperties(element) + " " + element.GetString());
+                    shape.Add("STR" + DomProperties(element) + KeptText(element) + " " + element.GetString());
                     strings.Add((element.ScalarStyle, element.GetString()!));
                     break;
                 default:
-                    shape.Add(element.ValueKind + DomProperties(element));
+                    shape.Add(element.ValueKind + DomProperties(element) + KeptText(element, root));
                     break;
             }
         }

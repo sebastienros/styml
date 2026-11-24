@@ -43,6 +43,9 @@ namespace System.Text.Yaml
             /// <see cref="Utf8YamlReader.UnityStripped"/>; 0 otherwise.
             /// </summary>
             internal byte DocumentLine;
+
+            /// <summary>The source wrote the tag before the anchor (<c>!t &amp;a</c>), which write-back keeps.</summary>
+            internal bool TagFirst;
         }
 
         internal sealed class YamlTables
@@ -464,11 +467,11 @@ namespace System.Text.Yaml
                     numberOfRowsForMembers = 0;
                     if (flowPair)
                     {
-                        (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag, FlowPair = true });
+                        (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag, FlowPair = true, TagFirst = reader.YamlTagBeforeAnchor });
                     }
                     else
                     {
-                        AddProperties(ref tables, rowIndex, anchor, tag, expandedTag);
+                        AddProperties(ref tables, rowIndex, anchor, tag, expandedTag, reader.YamlTagBeforeAnchor);
                     }
                     lastEnd = tokenStart + reader.ValueSpan.Length;
                 }
@@ -501,7 +504,7 @@ namespace System.Text.Yaml
                     stack.Push(new StackRow(arrayItemsOrPropertyCount, numberOfRowsForValues + 1));
                     arrayItemsOrPropertyCount = 0;
                     numberOfRowsForValues = 0;
-                    AddProperties(ref tables, rowIndex, anchor, tag, expandedTag);
+                    AddProperties(ref tables, rowIndex, anchor, tag, expandedTag, reader.YamlTagBeforeAnchor);
                     lastEnd = tokenStart + reader.ValueSpan.Length;
                 }
                 else if (tokenType == YamlTokenType.EndArray)
@@ -636,6 +639,9 @@ namespace System.Text.Yaml
         }
 
         /// <summary>Whether the node at <paramref name="index"/> is a document root marked with Unity's stripped marker.</summary>
+        internal bool TagBeforeAnchor(int index) =>
+            _yaml is not null && _parsedData.Get(index).HasNodeInfo && _yaml.TryGet(index, out NodeInfo info) && info.TagFirst;
+
         internal bool PropertiesOnDocumentLine(int index) =>
             _yaml is not null && _parsedData.Get(index).HasNodeInfo && _yaml.TryGet(index, out NodeInfo info)
             && (info.DocumentLine & Utf8YamlReader.OnDocumentLine) != 0;
@@ -678,12 +684,30 @@ namespace System.Text.Yaml
         /// The tag text that reads back alone, without the source's %TAG directives: a local tag as is, a core tag as
         /// <c>!!x</c>, any other global tag verbatim.
         /// </summary>
-        internal static string StandAloneTag(in NodeInfo info)
+        internal static string StandAloneTag(in NodeInfo info) => StandAloneTag(info.Tag!, info.ExpandedTag);
+
+        /// <summary>
+        /// The tag to write back for a node read with <paramref name="tag"/>: the source's shorthand (<c>!u!1</c>) where the
+        /// writer's own %TAG directives expand it to the same tag, otherwise <see cref="StandAloneTag(in NodeInfo)"/>'s
+        /// form; that form under IgnoreSourceStyles.
+        /// </summary>
+        internal static string WritableTag(Utf8YamlWriter writer, string tag, string? expandedTag)
         {
-            string? expanded = info.ExpandedTag;
+            string standAlone = StandAloneTag(tag, expandedTag);
+            if (expandedTag is null || standAlone == tag || writer.Options.IgnoreSourceStyles
+                || writer.TagDirectives is not YamlTagDirectives table || !YamlTagDirectives.ExpandsTo(table, tag, expandedTag))
+            {
+                return standAlone;
+            }
+
+            return tag;
+        }
+
+        internal static string StandAloneTag(string tag, string? expanded)
+        {
             if (expanded is null || expanded.Length == 0)
             {
-                return info.Tag!;
+                return tag;
             }
 
             if (expanded[0] == '!')
@@ -696,11 +720,11 @@ namespace System.Text.Yaml
                 : "!<" + expanded + ">";
         }
 
-        private static void AddProperties(ref YamlTables? tables, int rowIndex, string? anchor, string? tag, string? expandedTag)
+        private static void AddProperties(ref YamlTables? tables, int rowIndex, string? anchor, string? tag, string? expandedTag, bool tagFirst = false)
         {
             if (anchor is not null || tag is not null)
             {
-                (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag });
+                (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag, TagFirst = tagFirst });
             }
         }
 
@@ -826,6 +850,7 @@ namespace System.Text.Yaml
                     Tag = tag,
                     ExpandedTag = expandedTag,
                     BlockIndent = decoded && style is YamlScalarStyle.Literal or YamlScalarStyle.Folded ? reader.YamlBlockScalarIndent : 0,
+                    TagFirst = reader.YamlTagBeforeAnchor,
                 });
             }
 

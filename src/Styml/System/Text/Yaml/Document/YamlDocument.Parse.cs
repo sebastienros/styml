@@ -797,7 +797,7 @@ namespace System.Text.Yaml
             string? anchor = reader.Anchor.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Anchor);
             string? tag = reader.Tag.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Tag);
             YamlTables? tables = null;
-            AddProperties(ref tables, 0, anchor, tag, tag is null ? null : reader.GetExpandedTag());
+            AddProperties(ref tables, 0, anchor, tag, tag is null ? null : reader.GetExpandedTag(), reader.YamlTagBeforeAnchor);
 
             // M5f: the row keeps the source's style (single-quoted, literal or folded; the payload's own form does
             // not depend on it), so that the element is written back in it. A plain source keeps no style: the writer's

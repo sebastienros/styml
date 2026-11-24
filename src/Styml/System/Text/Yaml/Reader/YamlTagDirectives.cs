@@ -63,6 +63,24 @@ namespace System.Text.Yaml
             return false;
         }
 
+        /// <summary>
+        /// Whether <paramref name="written"/>, a tag with a named handle (<c>!u!1</c>), expands through
+        /// <paramref name="table"/> to <paramref name="expanded"/>: the writer can write it in that shorthand.
+        /// </summary>
+        internal static bool ExpandsTo(YamlTagDirectives table, string written, string expanded)
+        {
+            byte[] tag = Encoding.UTF8.GetBytes(written);
+            if (!TrySplitShorthand(tag, out ReadOnlySpan<byte> handle, out _) || handle.Length <= 2 || !table.TryGetPrefix(handle, out _))
+            {
+                return false;
+            }
+
+            byte[] target = Encoding.UTF8.GetBytes(expanded);
+            Span<byte> buffer = target.Length + 1 <= 256 ? stackalloc byte[256] : new byte[target.Length + 1];
+            int length = Expand(table, tag, buffer);
+            return length == target.Length && buffer.Slice(0, length).SequenceEqual(target);
+        }
+
         /// <summary>The prefix of a handle: declared, or the default of '!' and '!!'; false for an undeclared named handle.</summary>
         internal static bool TryGetPrefix(YamlTagDirectives? table, ReadOnlySpan<byte> handle, out ReadOnlySpan<byte> prefix)
         {

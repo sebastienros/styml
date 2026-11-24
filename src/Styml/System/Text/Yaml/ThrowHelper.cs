@@ -138,6 +138,12 @@ namespace System.Text.Yaml
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TooManyTagDirectives()
+        {
+            throw GetInvalidOperationException(SR.Format(SR.YamlGrammar_TooManyTagDirectives, YamlTagDirectives.MaxEntries));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_UnityStrippedMarkerPosition()
         {
             throw GetInvalidOperationException(SR.UnityStrippedMarkerPosition);

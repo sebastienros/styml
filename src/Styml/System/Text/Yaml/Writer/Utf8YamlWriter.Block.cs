@@ -227,6 +227,8 @@ namespace System.Text.Yaml
                 }
             }
 
+            ScopeTagDirectivesToNewDocument();
+
             // In block style a completed root value has written its line break; in JSON-compatible style, the
             // marker goes on a line of its own.
             bool lineBreakFirst = _style != WriterStyleBlock && _tokenType != YamlTokenType.None;
@@ -482,8 +484,9 @@ namespace System.Text.Yaml
         }
 
         /// <summary>
-        /// The next string value was a plain scalar of a <see cref="YamlDocument"/>: plain where the syntactic check
-        /// allows it (see <see cref="_plainFromSource"/>). Ignored in JSON-compatible style.
+        /// The next string value or key was a plain scalar of a <see cref="YamlDocument"/> that the output's reading schema
+        /// reads as the same string: plain where the syntactic check allows it (see <see cref="_plainFromSource"/>). Ignored
+        /// in JSON-compatible style.
         /// </summary>
         internal void HintPlainFromSource()
         {
@@ -1159,14 +1162,19 @@ namespace System.Text.Yaml
             key = UnescapeForBlock(key, ref unescaped, stackalloc byte[YamlConstants.StackallocByteThreshold]);
 
             YamlScalarStyle hint = YamlScalarStyle.None;
+            bool fromSource = false;
             if (consumeHint)
             {
                 hint = _scalarStyleHint;
+                fromSource = _plainFromSource && hint == YamlScalarStyle.Plain;
                 _scalarStyleHint = YamlScalarStyle.None;
                 _plainFromSource = false;
             }
 
-            bool plain = hint is not (YamlScalarStyle.DoubleQuoted or YamlScalarStyle.SingleQuoted) && YamlWriterHelper.IsBlockPlainKey(key, _lenient);
+            // A plain source key (the DOM's hint) needs only the syntactic check, as a plain source value does.
+            bool plain = hint is not (YamlScalarStyle.DoubleQuoted or YamlScalarStyle.SingleQuoted)
+                && (fromSource ? YamlWriterHelper.IsBlockPlainSyntax(key) && !(_lenient && YamlWriterHelper.HasSpaceBeforeAsterisk(key))
+                    : YamlWriterHelper.IsBlockPlainKey(key, _lenient));
 
             // The written form is known before anything follows the entry's start, so "? " can still go first.
             byte[] escaped = ArrayPool<byte>.Shared.Rent(YamlWriterHelper.GetMaxBlockEscapedLength(key.Length) + 2);
@@ -1212,9 +1220,11 @@ namespace System.Text.Yaml
         private void WriteBlockKeyText(ReadOnlySpan<byte> key, bool consumeHint)
         {
             YamlScalarStyle hint = YamlScalarStyle.None;
+            bool fromSource = false;
             if (consumeHint)
             {
                 hint = _scalarStyleHint;
+                fromSource = _plainFromSource && hint == YamlScalarStyle.Plain;
                 _scalarStyleHint = YamlScalarStyle.None;
                 _plainFromSource = false;
             }
@@ -1239,7 +1249,9 @@ namespace System.Text.Yaml
             }
 
             bool plain = hint is not (YamlScalarStyle.DoubleQuoted or YamlScalarStyle.SingleQuoted)
-                && (_plainNumberKey || YamlWriterHelper.IsBlockPlainKey(key, _lenient))
+                && (_plainNumberKey || (fromSource
+                    ? YamlWriterHelper.IsBlockPlainSyntax(key) && !(_lenient && YamlWriterHelper.HasSpaceBeforeAsterisk(key))
+                    : YamlWriterHelper.IsBlockPlainKey(key, _lenient)))
                 && (!flow || YamlWriterHelper.IsFlowPlain(key, _lenient))
                 && !EncoderEscapes(key);
 

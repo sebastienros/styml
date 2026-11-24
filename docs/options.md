@@ -18,7 +18,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `DefaultScalarStyle` | `None` | The style of every other string value: `Plain`, `SingleQuoted`, `DoubleQuoted`, `Literal` or `Folded`, where it can hold the text. |
 | `QuoteForLenientReaders` | `false` | Also quotes strings that some readers misread although no YAML standard resolves them. |
 | `MappingOrder` | `Declaration` | `Sorted` writes members by `[YamlPropertyOrder]`, then by name, ordinal. |
-| `IgnoreSourceStyles` | `false` | Writes a `YamlDocument`, a `YamlElement` or a `YamlNode` in the options' styles rather than its source's, and its numbers by value (`0x1F` as `31`) rather than with their source text. |
+| `IgnoreSourceStyles` | `false` | Writes a `YamlDocument`, a `YamlElement` or a `YamlNode` in the options' styles rather than its source's: numbers by value (`0x1F` as `31`), anchors before tags, tags in their stand-alone form, YAML 1.1 boolean text quoted, empty values as `null`, and a root's properties on the line after `---`. |
 | `Schema` | `Core` | How plain scalars resolve when read: `Core` (YAML 1.2), `Yaml11`, `Json` or `Failsafe`. |
 | `AcceptLenientScalars` | `false` | Typed reads also accept the scalars YamlDotNet or SharpYaml resolve although no standard does (quoted numbers, booleans in any case, padded dates). |
 | `DuplicateKeyHandling` | `Error` | What a repeated mapping key does: `Error`, `LastWins` or `FirstWins`. |
@@ -41,6 +41,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `DefaultScalarStyle` | `None` | As on `YamlSerializerOptions`, below a `WriteScalarStyle` hint. |
 | `QuoteForLenientReaders` | `false` | As on `YamlSerializerOptions`. |
 | `IgnoreSourceStyles` | `false` | As on `YamlSerializerOptions`. |
+| `InheritTagDirectives` | `false` | A document written with no directives keeps the previous document's `%TAG` handles, for a reader that inherits them: a DOM's tag is written in its source's shorthand where the writer's directives resolve it. |
 
 ### `YamlReaderOptions`
 

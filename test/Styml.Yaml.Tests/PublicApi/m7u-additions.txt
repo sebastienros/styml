@@ -14,3 +14,4 @@ System.Text.Yaml.YamlElement.IsUnityStripped property System.Boolean { get; }
 System.Text.Yaml.Nodes.YamlNode.IsUnityStripped property System.Boolean { get; set; }
 System.Text.Yaml.Utf8YamlWriter.WriteDocumentStart(System.Boolean) System.Void
 System.Text.Yaml.Utf8YamlWriter.WriteUnityStrippedMarker() System.Void
+System.Text.Yaml.YamlWriterOptions.InheritTagDirectives property System.Boolean { get; set; }

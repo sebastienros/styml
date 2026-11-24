@@ -170,17 +170,10 @@ namespace System.Text.Yaml
                     writer.KeepRootPropertiesOnMarkerLine();
                 }
 
-                if (info.Anchor is not null && !state.SuppressAnchors)
-                {
-                    writer.WriteAnchor(info.Anchor);
-                }
-
-                if (info.Tag is not null)
-                {
-                    // M5d: the form that reads back without the source's %TAG directives (the same text for a local, a
-                    // verbatim or a !! tag).
-                    writer.WriteTag(StandAloneTag(info));
-                }
+                // M5d: the tag in the form that reads back without the source's %TAG directives (the same text for a local, a
+                // verbatim or a !! tag). The source's order of the two properties is kept.
+                WriteNodeProperties(writer, info.Anchor is not null && !state.SuppressAnchors ? info.Anchor : null,
+                    info.Tag is null ? null : WritableTag(writer, info.Tag, info.ExpandedTag), info.TagFirst);
 
                 if ((info.DocumentLine & Utf8YamlReader.UnityStripped) != 0)
                 {
@@ -236,15 +229,8 @@ namespace System.Text.Yaml
                             {
                                 if (block && child.HasNodeInfo && _yaml!.TryGet(i, out NodeInfo keyInfo))
                                 {
-                                    if (keyInfo.Anchor is not null && !state.SuppressAnchors)
-                                    {
-                                        writer.WriteAnchor(keyInfo.Anchor);
-                                    }
-
-                                    if (keyInfo.Tag is not null)
-                                    {
-                                        writer.WriteTag(keyInfo.Tag);
-                                    }
+                                    WriteNodeProperties(writer, keyInfo.Anchor is not null && !state.SuppressAnchors ? keyInfo.Anchor : null,
+                                        keyInfo.Tag is null ? null : WritableTag(writer, keyInfo.Tag, keyInfo.ExpandedTag), keyInfo.TagFirst);
                                 }
 
                                 WritePropertyName(child, writer);
@@ -293,11 +279,36 @@ namespace System.Text.Yaml
                     break;
                 default:
                     Debug.Assert(row.TokenType == YamlTokenType.Null);
-                    writer.WriteNullValue();
+                    WriteNull(index, row, writer);
                     break;
             }
 
             return index + DbRow.Size;
+        }
+
+        // A node's anchor and tag, in the source's order (tag first when it was so written), unless IgnoreSourceStyles.
+        private static void WriteNodeProperties(Utf8YamlWriter writer, string? anchor, string? tag, bool tagFirst)
+        {
+            if (tagFirst && tag is not null && !writer.Options.IgnoreSourceStyles)
+            {
+                writer.WriteTag(tag);
+                if (anchor is not null)
+                {
+                    writer.WriteAnchor(anchor);
+                }
+
+                return;
+            }
+
+            if (anchor is not null)
+            {
+                writer.WriteAnchor(anchor);
+            }
+
+            if (tag is not null)
+            {
+                writer.WriteTag(tag);
+            }
         }
 
         // A YAML number spelling (0x1F, .inf, +1) is plain YAML for a block writer; a JSON-compatible writer gets its value.

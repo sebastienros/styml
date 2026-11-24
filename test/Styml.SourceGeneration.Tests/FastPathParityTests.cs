@@ -111,6 +111,8 @@ namespace System.Text.Yaml.SourceGeneration.Tests
             // Read only: nothing written depends on them.
             ["AcceptLenientScalars"] = (o => o.AcceptLenientScalars = true, true),
             ["DisallowImplicitCollectionKeys"] = (o => o.DisallowImplicitCollectionKeys = true, true),
+            // Also honoured through the writer (YamlWriterOptions.InheritTagDirectives), which uses it for a DOM's tag shorthand only;
+            // a typed graph writes no %TAG directive, so the sample is unchanged.
             ["InheritTagDirectives"] = (o => o.InheritTagDirectives = true, true),
             ["AcceptUnityStrippedMarker"] = (o => o.AcceptUnityStrippedMarker = true, true),
             ["DuplicateKeyHandling"] = (o => o.DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins, true),

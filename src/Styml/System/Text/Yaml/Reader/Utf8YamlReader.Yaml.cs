@@ -53,6 +53,9 @@ namespace System.Text.Yaml
 
         internal readonly byte YamlDocumentLineFlags => _yamlDocumentLine;
 
+        /// <summary>Whether the current node's tag is written before its anchor (<c>!t &amp;a</c>), for the DOM's write-back.</summary>
+        internal readonly bool YamlTagBeforeAnchor => _yamlTagLength > 0 && _yamlAnchorLength > 0 && _yamlTagStart < _yamlAnchorStart;
+
         /// <summary>Gets the anchor name (without '&amp;') of the current node, or an empty span.</summary>
         public readonly ReadOnlySpan<byte> Anchor => _yamlAnchorLength == 0 ? default
             : _yamlWindowIsCopy ? YamlWindowSliceAsInput(_yamlAnchorStart, _yamlAnchorLength) : _buffer.Slice(_yamlAnchorStart, _yamlAnchorLength);

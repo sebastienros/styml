@@ -63,6 +63,10 @@ namespace System.Text.Yaml
             // (PropertiesOnMarkerLine), and once it did (OnMarkerLine), Unity's stripped marker may follow.
             public bool PropertiesOnMarkerLine;
             public bool OnMarkerLine;
+
+            // The %TAG handles WriteDirective declared for the current document (YAML 1.2's scope, or YAML 1.1's under
+            // InheritTagDirectives), for the DOM's tag shorthand.
+            public YamlTagDirectives? TagDirectives;
         }
 
         private enum BlockNode : byte
@@ -1107,9 +1111,43 @@ namespace System.Text.Yaml
             _blockSpecial |= SpecialAfterDocumentEnd;
         }
 
+        // "%TAG !h! prefix": the handle and the prefix, in the writer's table (at most YamlTagDirectives.MaxEntries).
+        private void RecordTagDirective(ReadOnlySpan<byte> directive)
+        {
+            ReadOnlySpan<byte> args = YamlReaderHelper.TrimBlanks(directive.Slice(4));
+            int split = YamlReaderHelper.IndexOfBlank(args);
+            if (split <= 0)
+            {
+                return;
+            }
+
+            ReadOnlySpan<byte> prefix = YamlReaderHelper.TrimBlanks(args.Slice(split));
+            int end = YamlReaderHelper.IndexOfBlank(prefix);
+            prefix = end < 0 ? prefix : prefix.Slice(0, end);
+            if (!YamlTagDirectives.TryAdd(_block!.TagDirectives, args.Slice(0, split), prefix, out YamlTagDirectives? table))
+            {
+                ThrowHelper.ThrowInvalidOperationException_TooManyTagDirectives();
+            }
+
+            _block.TagDirectives = table;
+        }
+
+        // A document that starts without directives of its own: under YAML 1.2's scope it has only the default handles.
+        private void ScopeTagDirectivesToNewDocument()
+        {
+            if (_block is not null && (_blockSpecial & SpecialDirectives) == 0 && !_options.InheritTagDirectives)
+            {
+                _block.TagDirectives = null;
+            }
+        }
+
+        /// <summary>The writer's %TAG handles for the current document, or null.</summary>
+        internal YamlTagDirectives? TagDirectives => _block?.TagDirectives;
+
         // A root node after "...": "---" first.
         private void WriteDocumentStartAfterEnd()
         {
+            ScopeTagDirectivesToNewDocument();
             _blockSpecial &= ~SpecialAfterDocumentEnd;
             int required = 3 + _newLineLength;
             if (_memory.Length - BytesPending < required)
@@ -1212,6 +1250,17 @@ namespace System.Text.Yaml
                 output[BytesPending++] = (byte)'.';
                 WriteNewLine(output);
                 ResetRootForNewDocument();
+            }
+
+            if ((_blockSpecial & SpecialDirectives) == 0)
+            {
+                // A document's first directive starts its own table (YAML 1.1 section 7.4; YAML 1.2 has no other).
+                _block!.TagDirectives = null;
+            }
+
+            if (kind == YamlWriterHelper.DirectiveKind.Tag)
+            {
+                RecordTagDirective(utf8Directive);
             }
 
             utf8Directive.CopyTo(output.Slice(BytesPending));

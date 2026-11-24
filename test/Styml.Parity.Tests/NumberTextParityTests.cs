@@ -45,5 +45,29 @@ namespace System.Text.Yaml.Parity.Tests
             Assert.Equal(yaml, YamlSerializer.Serialize(document, options));
             Assert.Equal(yaml, YamlNode.Parse(yaml, documentOptions: new YamlDocumentOptions { Schema = schema })!.ToYamlString(options));
         }
+
+        // What each model writes back of a node's text beyond numbers: the order of its properties, an empty value, and
+        // plain text that YAML 1.1 reads as a boolean. Both libraries write the anchor first and an empty value with its
+        // blank; Styml keeps the source's order and blank.
+        [Theory]
+        [InlineData("a: !t &x 1\n", "a: &x !t 1\n", "a: &x !t 1\n", "a: !t &x 1\n")]
+        [InlineData("a: &x !t 1\n", "a: &x !t 1\n", "a: &x !t 1\n", "a: &x !t 1\n")]
+        [InlineData("a: \nb:\n", "a: \nb: \n", "a: \nb: \n", "a: \nb:\n")]
+        [InlineData("y: on\nv: {x: 0, y: 1}\n", "y: on\nv: {x: 0, y: 1}\n", "y: on\nv: {x: 0, y: 1}\n", "y: on\nv: {x: 0, y: 1}\n")]
+        public void ModelsWriteBackNodeText(string yaml, string yamlDotNet, string sharpYaml, string styml)
+        {
+            var ydn = new YamlDotNet.RepresentationModel.YamlStream();
+            ydn.Load(new StringReader(yaml));
+            var ydnText = new StringWriter();
+            ydn.Save(ydnText, assignAnchors: false);
+            Assert.StartsWith(yamlDotNet, ydnText.ToString().Replace("\r\n", "\n"));
+
+            var syText = new StringWriter();
+            SharpYaml.Model.YamlStream.Load(new StringReader(yaml)).WriteTo(syText);
+            Assert.EndsWith(sharpYaml, syText.ToString().Replace("\r\n", "\n"));
+
+            using YamlDocument document = YamlDocument.Parse(yaml);
+            Assert.Equal(styml, YamlSerializer.Serialize(document, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block, NewLine = "\n" }));
+        }
     }
 }

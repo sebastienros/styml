@@ -217,7 +217,7 @@ namespace System.Text.Yaml.Tests
             const string source = "%TAG !u! tag:unity3d.com,2011:\n--- !u!4 &400000 stripped\nTransform:\n  m: 1\n";
             using YamlDocument document = YamlDocument.Parse(source, new YamlDocumentOptions { AcceptUnityStrippedMarker = true });
             YamlNode node = YamlNode.Parse(source, documentOptions: new YamlDocumentOptions { AcceptUnityStrippedMarker = true })!;
-            const string expected = "--- &400000 !<tag:unity3d.com,2011:4> stripped\nTransform:\n  m: 1\n";
+            const string expected = "--- !<tag:unity3d.com,2011:4> &400000 stripped\nTransform:\n  m: 1\n";
             Assert.Equal(expected, Write(w => { w.WriteDocumentStart(); document.RootElement.WriteTo(w); }));
             Assert.Equal(expected, Write(w => { w.WriteDocumentStart(); node.WriteTo(w); }));
 
@@ -227,9 +227,9 @@ namespace System.Text.Yaml.Tests
             Assert.Equal("--- &400000 !u!4 stripped\nTransform:\n  m: 2\n", Write(w => { w.WriteDocumentStart(); node.WriteTo(w); }));
 
             // Without a document start, the marker has no line to go on.
-            Assert.Equal("&400000 !<tag:unity3d.com,2011:4>\nTransform:\n  m: 1\n", Write(w => document.RootElement.WriteTo(w)));
+            Assert.Equal("!<tag:unity3d.com,2011:4> &400000\nTransform:\n  m: 1\n", Write(w => document.RootElement.WriteTo(w)));
 
-            // IgnoreSourceStyles writes the properties on the next line.
+            // IgnoreSourceStyles writes the properties on the next line, anchor first.
             Assert.Equal("---\n&400000 !<tag:unity3d.com,2011:4>\nTransform:\n  m: 1\n",
                 Write(w => { w.WriteDocumentStart(); document.RootElement.WriteTo(w); }, new YamlWriterOptions { Style = YamlWriterStyle.Block, NewLine = "\n", IgnoreSourceStyles = true }));
 
@@ -245,10 +245,9 @@ namespace System.Text.Yaml.Tests
         {
             const string source = "--- !t &1\nA: 1\n";
             using YamlDocument document = YamlDocument.Parse(source);
-            // The element writes its anchor before its tag.
-            Assert.Equal("--- &1 !t\nA: 1\n", Write(w => { w.WriteDocumentStart(); document.RootElement.WriteTo(w); }));
+            Assert.Equal(source, Write(w => { w.WriteDocumentStart(); document.RootElement.WriteTo(w); }));
             using YamlDocument ownLine = YamlDocument.Parse("---\n!t &1\nA: 1\n");
-            Assert.Equal("---\n&1 !t\nA: 1\n", Write(w => { w.WriteDocumentStart(); ownLine.RootElement.WriteTo(w); }));
+            Assert.Equal("---\n!t &1\nA: 1\n", Write(w => { w.WriteDocumentStart(); ownLine.RootElement.WriteTo(w); }));
         }
     }
 }

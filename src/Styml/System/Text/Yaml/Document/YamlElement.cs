@@ -1255,6 +1255,9 @@ namespace System.Text.Yaml
         /// <summary>Whether this element is a document root whose properties were on its '---' line.</summary>
         internal bool PropertiesOnDocumentLine => _parent.PropertiesOnDocumentLine(_idx);
 
+        /// <summary>Whether this element's source wrote its tag before its anchor.</summary>
+        internal bool TagBeforeAnchor => _parent.TagBeforeAnchor(_idx);
+
         /// <summary>
         ///   Gets the anchor of this node (<c>&amp;name</c>), without the <c>&amp;</c>, or <see langword="null"/> when it has none.
         /// </summary>
