@@ -142,7 +142,11 @@ namespace System.Text.Yaml
 
             // For performance, share the same buffer across serialization and deserialization.
             using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using (var writer = new Utf8YamlWriter(output, options.GetWriterOptions()))
+            // The text is read back under the core schema, so the writer writes a number's source text only where the core
+            // schema reads it to the same number.
+            YamlWriterOptions writerOptions = options.GetWriterOptions();
+            writerOptions.ReadSchema = YamlSchemaKind.Core;
+            using (var writer = new Utf8YamlWriter(output, writerOptions))
             {
                 if (node is null)
                 {
@@ -163,7 +167,11 @@ namespace System.Text.Yaml
 
             // For performance, share the same buffer across serialization and deserialization.
             using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using (var writer = new Utf8YamlWriter(output, options.GetWriterOptions()))
+            // The text is read back under the core schema, so the writer writes a number's source text only where the core
+            // schema reads it to the same number.
+            YamlWriterOptions writerOptions = options.GetWriterOptions();
+            writerOptions.ReadSchema = YamlSchemaKind.Core;
+            using (var writer = new Utf8YamlWriter(output, writerOptions))
             {
                 if (node is null)
                 {

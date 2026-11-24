@@ -2255,6 +2255,25 @@ namespace System.Text.Yaml
 
         // A formatted number (the raw-number path, and the names of 5.7's non-finite floats): copied as it is.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        /// <summary>
+        /// A document's number written with its source text (<c>0x1F</c>, <c>012</c>, <c>1_000</c>), in block style: the
+        /// document has checked that the text reads to its number under <see cref="YamlWriterOptions.ReadSchema"/>.
+        /// </summary>
+        internal void WriteYamlNumberText(ReadOnlySpan<byte> text)
+        {
+            Debug.Assert(_style == WriterStyleBlock && text.Length > 0);
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
+            WriteNumberValueBlock(text);
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = YamlTokenType.Number;
+        }
+
+        internal bool WritesYamlText => _style == WriterStyleBlock;
+
         private void WriteNumberValueBlock(ReadOnlySpan<byte> utf8FormattedNumber)
         {
             CheckNoScalarStyleHint();

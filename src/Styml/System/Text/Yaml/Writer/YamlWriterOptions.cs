@@ -264,8 +264,9 @@ namespace System.Text.Yaml
         /// style set explicitly still applies: <see cref="Utf8YamlWriter.WriteScalarStyle"/>,
         /// <see cref="Utf8YamlWriter.WriteCollectionStyle"/>, a member's style, and a node's
         /// <see cref="Nodes.YamlObject.CollectionStyle"/> or <see cref="Nodes.YamlArray.CollectionStyle"/> set by the
-        /// caller. Anchors and tags are content and are written as before. Off by default: written back, a document keeps
-        /// its source's styles, as YamlDotNet's and SharpYaml's models do. Ignored in JSON-compatible style.
+        /// caller, and a number is written by its value (<c>0x1F</c> as <c>31</c>). Anchors and tags are content and are
+        /// written as before. Off by default: written back, a document keeps its source's styles and a number its source
+        /// text, as YamlDotNet's and SharpYaml's models do. Ignored in JSON-compatible style.
         /// </summary>
         public bool IgnoreSourceStyles
         {
@@ -365,6 +366,17 @@ namespace System.Text.Yaml
             }
         }
 
+        /// <summary>
+        /// The schema the output will be read with: the serializer's <see cref="YamlSerializerOptions.Schema"/>, the core
+        /// schema for a writer made by the caller. A document's number is written with its source text only when this
+        /// schema reads that text to the number the document read.
+        /// </summary>
+        internal YamlSchemaKind ReadSchema
+        {
+            readonly get => (YamlSchemaKind)((_optionsMask >> ReadSchemaShift) & 3);
+            set => _optionsMask = (_optionsMask & ~(3 << ReadSchemaShift)) | (((int)value & 3) << ReadSchemaShift);
+        }
+
         // From M4c, a style that is not set means block, unless the
         // JSON-compatible switch is on (YamlWriterStyleDefault).
         internal readonly bool IsBlockStyle => (_optionsMask & StyleMask) switch
@@ -396,5 +408,6 @@ namespace System.Text.Yaml
         private const int DefaultScalarStyleMask = 7 << DefaultScalarStyleShift;
         private const int IgnoreSourceStylesBit = 1 << 27;
         private const int JsonSchemaBit = 1 << 28;
+        private const int ReadSchemaShift = 29; // two bits: 29 and 30
     }
 }

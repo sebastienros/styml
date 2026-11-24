@@ -18,7 +18,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `DefaultScalarStyle` | `None` | The style of every other string value: `Plain`, `SingleQuoted`, `DoubleQuoted`, `Literal` or `Folded`, where it can hold the text. |
 | `QuoteForLenientReaders` | `false` | Also quotes strings that some readers misread although no YAML standard resolves them. |
 | `MappingOrder` | `Declaration` | `Sorted` writes members by `[YamlPropertyOrder]`, then by name, ordinal. |
-| `IgnoreSourceStyles` | `false` | Writes a `YamlDocument`, a `YamlElement` or a `YamlNode` in the options' styles rather than its source's. |
+| `IgnoreSourceStyles` | `false` | Writes a `YamlDocument`, a `YamlElement` or a `YamlNode` in the options' styles rather than its source's, and its numbers by value (`0x1F` as `31`) rather than with their source text. |
 | `Schema` | `Core` | How plain scalars resolve when read: `Core` (YAML 1.2), `Yaml11`, `Json` or `Failsafe`. |
 | `AcceptLenientScalars` | `false` | Typed reads also accept the scalars YamlDotNet or SharpYaml resolve although no standard does (quoted numbers, booleans in any case, padded dates). |
 | `DuplicateKeyHandling` | `Error` | What a repeated mapping key does: `Error`, `LastWins` or `FirstWins`. |

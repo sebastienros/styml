@@ -297,6 +297,12 @@ namespace System.Text.Yaml
             {
                 writer.WriteNumberValue(text);
             }
+            else if (writer.WritesYamlText && !writer.Options.IgnoreSourceStyles && ReadsAsTheSameNumber(index, text, writer.Options.ReadSchema))
+            {
+                // Written as it was read (0x1F, 012, 1_000), as JsonElement.WriteTo keeps a number's text: the output reads
+                // to the same number, and a hash or a blob keeps its digits.
+                writer.WriteYamlNumberText(text);
+            }
             else if (TryGetValue(index, out long l))
             {
                 writer.WriteNumberValue(l);
@@ -313,6 +319,41 @@ namespace System.Text.Yaml
             {
                 // Not a number in any spelling (bytes changed after the parse): the writer's own check reports it.
                 writer.WriteNumberValue(text);
+            }
+        }
+
+        // Whether `text`, the number at `index`, reads to the same number under `schema` as under the document's own.
+        private bool ReadsAsTheSameNumber(int index, ReadOnlySpan<byte> text, YamlSchemaKind schema)
+        {
+            if (schema == ParsedSchema)
+            {
+                return true;
+            }
+
+            try
+            {
+                var reader = new Utf8YamlReader(text, new YamlReaderOptions { Schema = schema });
+                if (!reader.Read() || reader.TokenType != YamlTokenType.Number)
+                {
+                    return false;
+                }
+
+                if (TryGetValue(index, out long l))
+                {
+                    return reader.TryGetInt64(out long other) && other == l;
+                }
+
+                if (TryGetValue(index, out ulong ul))
+                {
+                    return reader.TryGetUInt64(out ulong other) && other == ul;
+                }
+
+                return TryGetValue(index, out double d) && reader.TryGetDouble(out double otherDouble) && otherDouble.Equals(d);
+            }
+            catch (YamlException)
+            {
+                // The JSON schema refuses the text.
+                return false;
             }
         }
 
@@ -431,7 +472,7 @@ namespace System.Text.Yaml
         internal byte[] WriteYamlNodeToBytes(int index)
         {
             var buffer = new ArrayBufferWriterOfByte();
-            using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { Style = YamlWriterStyle.Block, NewLine = "\n", MaxDepth = Math.Max(TraversalMaxDepth * 2, 64), SkipValidation = true }))
+            using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { Style = YamlWriterStyle.Block, NewLine = "\n", MaxDepth = Math.Max(TraversalMaxDepth * 2, 64), SkipValidation = true, ReadSchema = Schema }))
             {
                 WriteYamlElementTo(index, writer);
             }
