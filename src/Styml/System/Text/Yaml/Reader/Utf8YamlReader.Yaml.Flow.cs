@@ -219,6 +219,9 @@ namespace System.Text.Yaml
         private readonly bool YamlScanToFlowContent(ref YamlCursor c, out YamlScan s, bool stopAtComment)
         {
             int startLine = (int)c.Line;
+
+            // The token of a '//' comment consumed its line break, so the scan after it starts on the new line.
+            bool startsLine = c.Column == 0;
             if (!YamlScanToContent(ref c, out s, stopAtComment, jsonComments: YamlJsonComments))
             {
                 return false;
@@ -226,7 +229,7 @@ namespace System.Text.Yaml
 
             // A comment token is not content: what follows it is checked by the next read. After a '/* */' that
             // crossed lines the content is not at the start of its line, and is not checked.
-            if (!s.AtEnd && !s.IsComment && s.LineStart && c.Line != startLine)
+            if (!s.AtEnd && !s.IsComment && s.LineStart && (c.Line != startLine || startsLine))
             {
                 int marker = YamlDocumentMarker(c, s.LineStart);
                 if (marker < 0)

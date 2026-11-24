@@ -43,6 +43,16 @@ namespace System.Text.Yaml
             set => _parsedWith = (byte)((_parsedWith & ~0b11000) | ((int)value << 3));
         }
 
+        /// <summary>The document was read with JSON comments (bit 5): a re-read of its source reads them too.</summary>
+        internal bool ParsedJsonComments
+        {
+            get => (_parsedWith & 0b100000) != 0;
+            set => _parsedWith = (byte)(value ? _parsedWith | 0b100000 : _parsedWith & ~0b100000);
+        }
+
+        internal static bool ReadsJsonComments(YamlReaderOptions readerOptions) =>
+            readerOptions.CommentHandling != YamlCommentHandling.Disallow && !readerOptions.YamlCommentsOnly;
+
         // The rented array or the pooled writer that holds the document's bytes (never both): one field, so that a
         // JSON-shaped document's object is the size it was before M5a's YAML tables reference was added.
         private object? _extraRented;
@@ -810,6 +820,7 @@ namespace System.Text.Yaml
                     isDisposable: false);
             newDocument.ParsedDuplicateKeyHandling = ParsedDuplicateKeyHandling;
             newDocument.ParsedSchema = ParsedSchema;
+            newDocument.ParsedJsonComments = ParsedJsonComments;
 
             return newDocument.RootElement;
         }

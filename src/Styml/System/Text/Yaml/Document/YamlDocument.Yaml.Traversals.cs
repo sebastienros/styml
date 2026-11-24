@@ -399,6 +399,7 @@ namespace System.Text.Yaml
             var copy = new YamlDocument(payload, new MetadataDb(rows), isDisposable: false, yaml: tables);
             copy.ParsedDuplicateKeyHandling = ParsedDuplicateKeyHandling;
             copy.ParsedSchema = ParsedSchema;
+            copy.ParsedJsonComments = ParsedJsonComments;
 
             return copy.RootElement;
         }
@@ -481,11 +482,13 @@ namespace System.Text.Yaml
         internal static int s_deserializedByWriting;
 #endif
 
-        internal ReadOnlyMemory<byte> GetDeserializationValue(int index)
+        internal ReadOnlyMemory<byte> GetDeserializationValue(int index, out YamlRereadComments comments)
         {
             CheckNotDisposed();
+            comments = YamlRereadComments.None;
             if (index == 0 && !PayloadIsValue)
             {
+                comments = ParsedJsonComments ? YamlRereadComments.Document : YamlRereadComments.None;
                 CountDeserializationPath(fromSource: true);
                 ReadOnlyMemory<byte> source = _utf8Yaml.Slice(0, SourceLength);
                 return _yaml is { RootTagOutsideSource: true } ? WithTagInFront(0, source) : source;
@@ -501,6 +504,7 @@ namespace System.Text.Yaml
                 CountDeserializationPath(fromSource: true);
 
                 // The source bytes start at the node, after its tag (M5d, 5.4: a re-read sees the tag).
+                comments = ParsedJsonComments ? YamlRereadComments.Slice : YamlRereadComments.None;
                 return WithTagInFront(index, raw);
             }
 

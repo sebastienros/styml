@@ -235,6 +235,22 @@ namespace System.Text.Yaml
         }
     }
 
+    /// <summary>
+    /// How a re-read of bytes the library holds looks for JSON comments, whatever the caller's options say: the
+    /// bytes were read once already, and read again the same way.
+    /// </summary>
+    internal enum YamlRereadComments : byte
+    {
+        /// <summary>Text the library's writer wrote, or a document read without JSON comments: '//' is text.</summary>
+        None,
+
+        /// <summary>A document's source from its start, read with JSON comments.</summary>
+        Document,
+
+        /// <summary>A value sliced out of such a source: JSON comments in its flow collections only.</summary>
+        Slice,
+    }
+
     [Flags]
     internal enum YamlParseFlags : ushort
     {

@@ -85,7 +85,7 @@ and `ReadComplexClassIgnoresLeadingOrTrailingTrivia`, 6 rows each; `YamlMarshal_
 (`CommentsAreInvalidByDefault` and its single-segment twin, `TooMuchYamlWithComments`); 1 expects comment-only input to
 be an error (`YamlContainingOnlyCommentsIsInvalid`, D4); 4 expect a strict token-type exception (D2); 2 read several values on one
 line (D3); 1 has mostly rows that are valid YAML. The comment tests retired under other categories (the trailing-comma
-option, multiple values with partial data) stay retired for those categories' reasons.
+option, multiple values with partial data) were not looked at again.
 
 One difference from System.Text.Json is by design and has no retired test: inside a plain scalar that is not a JSON
 number, `true`, `false` or `null`, a comment needs white space before it (`[a//b]` is the scalar `a//b`, where

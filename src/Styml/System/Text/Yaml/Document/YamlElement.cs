@@ -73,10 +73,13 @@ namespace System.Text.Yaml
         internal void CheckNodeDepth(int depth) => _parent.CheckTraversalDepth(depth);
 
         /// <summary>The bytes the serializer reads for this element (M5a, YamlDocument.GetDeserializationValue).</summary>
-        internal ReadOnlyMemory<byte> GetDeserializationValue()
+        internal ReadOnlyMemory<byte> GetDeserializationValue() => GetDeserializationValue(out _);
+
+        /// <summary>The same bytes, and how a re-read of them looks for JSON comments: as the document was read.</summary>
+        internal ReadOnlyMemory<byte> GetDeserializationValue(out YamlRereadComments comments)
         {
             CheckValidInstance();
-            return _parent.GetDeserializationValue(_idx);
+            return _parent.GetDeserializationValue(_idx, out comments);
         }
 
         /// <summary>The row of the alias this element was reached through, or -1.</summary>

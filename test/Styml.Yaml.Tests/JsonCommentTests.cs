@@ -110,6 +110,11 @@ namespace System.Text.Yaml.Tests
             new object[] { "[1/2, 1/, 1//, tru//e\n, 1.//c\n]", "[ '1/2' '1/' 1 <, tru//e>@11 '1.//c' ]", "[ '1/2' '1/' '1//' 'tru//e' '1.//c' ]", false },
             new object[] { "[2020-01-01//c\n, 1 //c\n]", "[ '2020-01-01//c' 1 <c>@19 ]", "[ '2020-01-01//c' '1 //c' ]", false },
             new object[] { "{\"a\":1// c\n,\"b\":false/*x*/}", "{ a: 1 < c>@6 b: false <x>@21 }", "{ a: '1// c' b: 'false/*x*/' }", false },
+            new object[] { "k: [1, // c\n2]\n", "{ k: [ 1 < c>@7 !YamlReaderException", "{ k: [ 1 !YamlReaderException", false },
+            new object[] { "k: [1, /* c */\n2]\n", "{ k: [ 1 < c >@7 !YamlReaderException", "{ k: [ 1 !YamlReaderException", false },
+            new object[] { "[1, // c\n---\n2]", "[ 1 < c>@4 !YamlReaderException", "[ 1 !YamlReaderException", false },
+            new object[] { "[1, // c\n2]", "[ 1 < c>@4 2 ]", "[ 1 '// c 2' ]", false },
+            new object[] { "k:\n  - [1, // c\n  2]\n", "{ k: [ [ 1 < c>@11 !YamlReaderException", "{ k: [ [ 1 !YamlReaderException", false },
         };
 
         [Theory]
@@ -366,6 +371,101 @@ namespace System.Text.Yaml.Tests
             Assert.Equal("d // e", ((YamlElement)map["list"])[0].GetString());
             Assert.Equal("f", ((YamlElement)map["flow"])[0].GetString());
             Assert.Equal("h//i", ((YamlElement)map["flow"])[1].GetString());
+        }
+
+        public sealed record Named(string Name, string[] Tags);
+
+        [Fact]
+        public void Serializer_Skip_ReadersOverASliceOfBlockYamlKeepItsSlashes()
+        {
+            // The serializer, the alias replay and the DOM read values again through readers over a slice of the
+            // document. Such a reader starts at depth 0 inside a block collection: it is not at the document level.
+            var options = new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip };
+
+            Dictionary<string, string> aliased = YamlSerializer.Deserialize<Dictionary<string, string>>("a: &x b // c\nd: *x\n", options)!;
+            Assert.Equal("b // c", aliased["a"]);
+            Assert.Equal("b // c", aliased["d"]);
+
+            // A flow collection keeps its comments when it is replayed.
+            Dictionary<string, int[]> flow = YamlSerializer.Deserialize<Dictionary<string, int[]>>("a: &x [1, /* c */ 2] # d\nb: *x\n", options)!;
+            Assert.Equal(new[] { 1, 2 }, flow["a"]);
+            Assert.Equal(new[] { 1, 2 }, flow["b"]);
+
+            // A constructor's arguments are read again from where each was found.
+            Named named = YamlSerializer.Deserialize<Named>("Tags: [a // t\n  , b//c]\nName: n // m\n", options)!;
+            Assert.Equal("n // m", named.Name);
+            Assert.Equal(new[] { "a", "b//c" }, named.Tags);
+
+            var documentOptions = new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Skip };
+            using YamlDocument document = YamlDocument.Parse("k: b // c\nf: [1, /* c */ 2]\nl:\n  - d /* e */\n", documentOptions);
+            Assert.Equal("b // c", document.RootElement.GetProperty("k").Deserialize<string>(options));
+            Assert.Equal("b // c", document.RootElement.GetProperty("k").Deserialize<string>());
+            Assert.Equal(new[] { 1, 2 }, document.RootElement.GetProperty("f").Deserialize<int[]>(options));
+            Assert.Equal(new[] { "d /* e */" }, document.RootElement.GetProperty("l").Deserialize<string[]>(options));
+
+            YamlNode node = YamlNode.Parse("k: b // c\nf: [1, /* c */ 2]\n", documentOptions: documentOptions)!;
+            Assert.Equal("b // c", node["k"].Deserialize<string>(options));
+            Assert.Equal(new[] { 1, 2 }, node["f"].Deserialize<int[]>(options));
+        }
+
+        [Fact]
+        public void Reread_FollowsHowTheDocumentWasRead_NotTheOptionsOfTheReread()
+        {
+            var skip = new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip };
+
+            // Read with JSON comments: an element's source has them, whatever options deserialize it.
+            using (YamlDocument document = YamlDocument.Parse("// lead\n{\"f\": [1, /* c */ 2], \"g\": 3 // t\n}", new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Skip }))
+            {
+                Assert.Equal(new[] { 1, 2 }, document.RootElement.GetProperty("f").Deserialize<int[]>());
+                Assert.Equal(new[] { 1, 2 }, document.RootElement.GetProperty("f").Deserialize<int[]>(skip));
+                Assert.Equal(3, document.Deserialize<Dictionary<string, object>>()!.Count == 2 ? document.RootElement.GetProperty("g").Deserialize<int>() : -1);
+                Assert.Equal(2, document.RootElement.Deserialize<Dictionary<string, YamlElement>>(skip)!.Count);
+            }
+
+            // Read without: its slashes are text, also when it is deserialized with Skip.
+            using (YamlDocument document = YamlDocument.Parse("f: [a // b\n  , c]\ns: d // e\n"))
+            {
+                Assert.Equal(new[] { "a // b", "c" }, document.RootElement.GetProperty("f").Deserialize<string[]>(skip));
+                Assert.Equal("d // e", document.RootElement.GetProperty("s").Deserialize<string>(skip));
+                Assert.Equal("d // e", document.Deserialize<Dictionary<string, object>>(skip)!["s"].ToString());
+            }
+
+            // A node is written, then read: what the writer wrote has no JSON comments.
+            Assert.Equal("b // c", YamlValue.Create("b // c").Deserialize<string>(skip));
+            Assert.Equal(new[] { "b // c", "/* d */" }, new YamlArray("b // c", "/* d */").Deserialize<string[]>(skip));
+            var flow = new YamlArray("b // c", "1 /* d */") { CollectionStyle = YamlCollectionStyle.Flow };
+            Assert.Equal(new[] { "b // c", "1 /* d */" }, flow.Deserialize<string[]>(skip));
+
+            // Merge keys are resolved by writing the input again.
+            var merge = new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip, ResolveMergeKeys = true };
+            Dictionary<string, Dictionary<string, string>> merged = YamlSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
+                "a: &b\n  x: p // q\nd:\n  <<: *b\n  y: [r // s\n    ] # t\n".Replace("y: [r // s\n    ] # t", "y: u /* v */"), merge)!;
+            Assert.Equal("p // q", merged["d"]["x"]);
+            Assert.Equal("u /* v */", merged["d"]["y"]);
+        }
+
+        [Fact]
+        public void Reader_Skip_AValueReadFromInsideABlockMappingKeepsItsSlashes()
+        {
+            byte[] input = Encoding.UTF8.GetBytes("k: b // c\nf: [1, // c\n  2]\n");
+            var reader = new Utf8YamlReader(input, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            using (YamlDocument value = YamlDocument.ParseValue(ref reader))
+            {
+                Assert.Equal("b // c", value.RootElement.GetString());
+            }
+
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.Equal(new[] { 1, 2 }, YamlSerializer.Deserialize<int[]>(ref reader));
+
+            reader = new Utf8YamlReader(input, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.Equal("b // c", YamlSerializer.Deserialize<string>(ref reader));
         }
 
         [Fact]

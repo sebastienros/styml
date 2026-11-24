@@ -33,8 +33,8 @@ namespace System.Text.Yaml
             ArgumentNullException.ThrowIfNull(document);
 
             YamlTypeInfo<TValue> yamlTypeInfo = GetTypeInfo<TValue>(options);
-            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0).Span;
-            return ReadFromSpan(utf8Yaml, yamlTypeInfo, schema: document.Schema);
+            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0, out YamlRereadComments comments).Span;
+            return ReadFromSpan(utf8Yaml, yamlTypeInfo, schema: document.Schema, reread: comments);
         }
 
         /// <summary>
@@ -62,8 +62,8 @@ namespace System.Text.Yaml
             ArgumentNullException.ThrowIfNull(returnType);
 
             YamlTypeInfo yamlTypeInfo = GetTypeInfo(options, returnType);
-            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0).Span;
-            return ReadFromSpanAsObject(utf8Yaml, yamlTypeInfo, schema: document.Schema);
+            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0, out YamlRereadComments comments).Span;
+            return ReadFromSpanAsObject(utf8Yaml, yamlTypeInfo, schema: document.Schema, reread: comments);
         }
 
         /// <summary>
@@ -89,8 +89,8 @@ namespace System.Text.Yaml
             ArgumentNullException.ThrowIfNull(yamlTypeInfo);
 
             yamlTypeInfo.EnsureConfigured();
-            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0).Span;
-            return ReadFromSpan(utf8Yaml, yamlTypeInfo, schema: document.Schema);
+            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0, out YamlRereadComments comments).Span;
+            return ReadFromSpan(utf8Yaml, yamlTypeInfo, schema: document.Schema, reread: comments);
         }
 
         /// <summary>
@@ -112,8 +112,8 @@ namespace System.Text.Yaml
             ArgumentNullException.ThrowIfNull(yamlTypeInfo);
 
             yamlTypeInfo.EnsureConfigured();
-            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0).Span;
-            return ReadFromSpanAsObject(utf8Yaml, yamlTypeInfo, schema: document.Schema);
+            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0, out YamlRereadComments comments).Span;
+            return ReadFromSpanAsObject(utf8Yaml, yamlTypeInfo, schema: document.Schema, reread: comments);
         }
 
         /// <summary>
@@ -159,8 +159,8 @@ namespace System.Text.Yaml
             ArgumentNullException.ThrowIfNull(context);
 
             YamlTypeInfo yamlTypeInfo = GetTypeInfo(context, returnType);
-            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0).Span;
-            return ReadFromSpanAsObject(utf8Yaml, yamlTypeInfo, schema: document.Schema);
+            ReadOnlySpan<byte> utf8Yaml = document.GetDeserializationValue(0, out YamlRereadComments comments).Span;
+            return ReadFromSpanAsObject(utf8Yaml, yamlTypeInfo, schema: document.Schema, reread: comments);
         }
     }
 }
