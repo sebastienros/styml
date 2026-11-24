@@ -171,45 +171,163 @@ namespace System.Text.Yaml
             }
         }
 
-        // A number by its value, as YamlElement.DeepEquals compares numbers: a JSON spelling by its exact decimal value
-        // (1.0 is 1), any other spelling (0x1F, 012 under YAML 1.1, .inf) by its integer value, or else its double.
-        private string CanonicalNumber(int index)
+        // A number by its value, as YamlElement.DeepEquals compares numbers (NumberNormalForm).
+        private string CanonicalNumber(int index) => NumberNormalForm(index);
+
+        /// <summary>
+        /// The number at <paramref name="index"/> as text that two numbers share exactly when they are equal: a JSON
+        /// spelling's normal form (System.Text.Json's digits comparison, so 1.0 is 1), an integer spelling (decimal with
+        /// leading zeros, hex, octal, binary, '_' separators, sexagesimal, under the document's schema) by its exact
+        /// decimal digits at any size, a decimal spelling (.5, 1., +1.5, 1_0.5) by the same digits comparison, and the
+        /// non-finite values by name.
+        /// </summary>
+        internal string NumberNormalForm(int index)
         {
             ReadOnlySpan<byte> text = GetRawValue(index, includeQuotes: false).Span;
             if (YamlReaderHelper.IsJsonNumber(text))
             {
-                try
+                return NormalForm(text);
+            }
+
+            string written = YamlReaderHelper.TranscodeHelper(text);
+            bool yaml11 = ParsedSchema == YamlSchemaKind.Yaml11;
+            bool negative = written.Length > 0 && written[0] == '-';
+            string body = written.Length > 0 && written[0] is '-' or '+' ? written.Substring(1) : written;
+            if (yaml11)
+            {
+                body = body.Replace("_", "");
+            }
+
+            switch (body.ToLowerInvariant())
+            {
+                case ".inf":
+                    return negative ? "-inf" : "inf";
+                case ".nan":
+                    return "nan";
+            }
+
+            if (IntegerDigits(body, yaml11, index) is string digits)
+            {
+                return NormalForm(Encoding.UTF8.GetBytes(negative && digits != "0" ? "-" + digits : digits));
+            }
+
+            // A decimal spelling, in JSON's form: a leading 0 for .5, a trailing 0 for 1., no leading zeros.
+            string decimalForm = body;
+            if (decimalForm.StartsWith(".", StringComparison.Ordinal))
+            {
+                decimalForm = "0" + decimalForm;
+            }
+
+            decimalForm = decimalForm.Replace(".e", ".0e").Replace(".E", ".0E");
+            if (decimalForm.EndsWith(".", StringComparison.Ordinal))
+            {
+                decimalForm += "0";
+            }
+
+            int integralEnd = decimalForm.IndexOfAny(new[] { '.', 'e', 'E' });
+            int zeros = 0;
+            while (zeros < (integralEnd < 0 ? decimalForm.Length : integralEnd) - 1 && decimalForm[zeros] == '0')
+            {
+                zeros++;
+            }
+
+            decimalForm = (negative ? "-" : "") + decimalForm.Substring(zeros);
+            byte[] utf8 = Encoding.UTF8.GetBytes(decimalForm);
+            if (YamlReaderHelper.IsJsonNumber(utf8))
+            {
+                return NormalForm(utf8);
+            }
+
+            // Anything else the schema reads as a number (sexagesimal floats): by its double, or its text.
+            return TryGetValue(index, out double d) ? d.ToString("R", CultureInfo.InvariantCulture) : written;
+        }
+
+        // The decimal digits of an integer spelling (no sign, no leading zeros), or null when it is not one.
+        private string? IntegerDigits(string body, bool yaml11, int index)
+        {
+            if (body.Length == 0)
+            {
+                return null;
+            }
+
+            if (yaml11 && body.IndexOf(':') > 0)
+            {
+                // Sexagesimal: its value fits a long wherever it reads as an integer.
+                return TryGetValue(index, out long l) ? Math.Abs(l).ToString(CultureInfo.InvariantCulture) : null;
+            }
+
+            if (body.Length > 2 && body[0] == '0' && body[1] is 'x' or 'X')
+            {
+                return Radix(body.Substring(2), 16);
+            }
+
+            if (body.Length > 2 && body[0] == '0' && body[1] is 'o' or 'O')
+            {
+                return Radix(body.Substring(2), 8);
+            }
+
+            if (yaml11 && body.Length > 2 && body[0] == '0' && body[1] is 'b' or 'B')
+            {
+                return Radix(body.Substring(2), 2);
+            }
+
+            if (yaml11 && body.Length > 1 && body[0] == '0' && Radix(body.Substring(1), 8) is string octal)
+            {
+                return octal;
+            }
+
+            foreach (char c in body)
+            {
+                if (c is < '0' or > '9')
                 {
-                    return YamlHelpers.GetNormalFormText(text);
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    // An exponent past int's range: the duplicate check runs at parse, so the text stands for it.
-                    return YamlReaderHelper.TranscodeHelper(text);
+                    return null;
                 }
             }
 
-            string? value = null;
-            if (TryGetValue(index, out long l))
+            string trimmed = body.TrimStart('0');
+            return trimmed.Length == 0 ? "0" : trimmed;
+        }
+
+        private static string? Radix(string digits, int radix)
+        {
+            if (digits.Length == 0)
             {
-                value = l.ToString(CultureInfo.InvariantCulture);
+                return null;
             }
-            else if (TryGetValue(index, out ulong ul))
+
+            var value = System.Numerics.BigInteger.Zero;
+            int shift = radix switch { 2 => 1, 8 => 3, _ => 4 };
+            foreach (char c in digits)
             {
-                value = ul.ToString(CultureInfo.InvariantCulture);
-            }
-            else if (TryGetValue(index, out double d))
-            {
-                if (double.IsNaN(d) || double.IsInfinity(d))
+                int digit = c switch
                 {
-                    return d.ToString(CultureInfo.InvariantCulture);
+                    >= '0' and <= '9' => c - '0',
+                    >= 'a' and <= 'f' => c - 'a' + 10,
+                    >= 'A' and <= 'F' => c - 'A' + 10,
+                    _ => int.MaxValue,
+                };
+                if (digit >= radix)
+                {
+                    return null;
                 }
 
-                value = d.ToString("R", CultureInfo.InvariantCulture);
+                value = (value << shift) | digit;
             }
 
-            // A number no getter reads (one past double's range) keeps its text.
-            return value is null ? YamlReaderHelper.TranscodeHelper(text) : YamlHelpers.GetNormalFormText(Encoding.UTF8.GetBytes(value));
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string NormalForm(ReadOnlySpan<byte> jsonNumber)
+        {
+            try
+            {
+                return YamlHelpers.GetNormalFormText(jsonNumber);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // An exponent past int's range: the text stands for itself (the duplicate check runs at parse).
+                return YamlReaderHelper.TranscodeHelper(jsonNumber);
+            }
         }
 
         private static void AppendPart(StringBuilder builder, char kind, string text) =>

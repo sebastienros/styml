@@ -1442,13 +1442,9 @@ namespace System.Text.Yaml
                 return YamlHelpers.AreEqualYamlNumbers(left, right);
             }
 
-            // A YAML spelling: by value (an integer exactly, otherwise as a double, NaN equal to itself).
-            if (element1.TryGetInt64(out long l1) && element2.TryGetInt64(out long l2))
-            {
-                return l1 == l2;
-            }
-
-            return element1.TryGetDouble(out double d1) && element2.TryGetDouble(out double d2) && d1.Equals(d2);
+            // A YAML spelling: by value, at any size (an integer by its digits, a decimal by System.Text.Json's digits
+            // comparison, NaN equal to itself), as the collection-key identity compares them.
+            return string.Equals(element1._parent.NumberNormalForm(element1._idx), element2._parent.NumberNormalForm(element2._idx), StringComparison.Ordinal);
         }
 
         // M5e: YamlProperty.KeyKind and GetKeyElement, for the property whose value this element is.
