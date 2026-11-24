@@ -43,6 +43,26 @@ namespace System.Text.Yaml.Parity.Tests
         }
 
         // ---------------------------------------------------------------------------------------------------------
+        // JSON comments ('//', '/* */'): text in all three by default; Styml reads them as comments on request.
+
+        private const string JsonComments = "[1, // c\n 2 /* d */]";
+
+        [Fact]
+        public void JsonComments_YamlDotNet_ReadsText() =>
+            Assert.Equal(new[] { "1", "// c 2 /* d */" }, s_yamlDotNet.Deserialize<List<string>>(JsonComments));
+
+        [Fact]
+        public void JsonComments_SharpYaml_ReadsText() =>
+            Assert.Equal(new[] { "1", "// c 2 /* d */" }, SY.YamlSerializer.Deserialize<List<string>>(JsonComments, s_sharpYamlDefault));
+
+        [Fact]
+        public void JsonComments_Styml_ReadsTextByDefault_AndCommentsWithSkip()
+        {
+            Assert.Equal(new[] { "1", "// c 2 /* d */" }, YamlSerializer.Deserialize<List<string>>(JsonComments));
+            Assert.Equal(new[] { "1", "2" }, YamlSerializer.Deserialize<List<string>>(JsonComments, new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip }));
+        }
+
+        // ---------------------------------------------------------------------------------------------------------
         // First table: the M3a calls.
 
         private const string AliasKey = "&k a: 1\n*k : 2\n";

@@ -481,6 +481,25 @@ namespace System.Text.Yaml.Tests.Readme
             Check("json", jsonOut, defaultStyle: false);
         }
 
+        [Fact]
+        public void JsonComments()
+        {
+            // readme: json-comments json
+            string json = """
+                // JSON comments are read when asked for
+                {
+                  "name": "web", /* the service */
+                  "url": "http://example.org", // slashes in a value are text
+                  "ports": [80, 443]
+                }
+                """;
+            var options = new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip };
+            var value = YamlSerializer.Deserialize<Dictionary<string, object>>(json, options)!;
+            string jsonOut = YamlSerializer.Serialize(value, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible });
+            // readme: end
+            Check("json-comments", jsonOut, defaultStyle: false);
+        }
+
         private static string Describe(Func<object?> read)
         {
             try

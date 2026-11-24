@@ -833,6 +833,32 @@ string jsonOut = YamlSerializer.Serialize(value, new YamlSerializerOptions { Wri
 ```
 <!-- /sample:json -->
 
+JSON's own comments, `//` to the end of the line and `/* */`, are not YAML, and by default they are read as YAML reads
+them: as text. `ReadCommentHandling = Skip` (`CommentHandling` on the reader's and the document's options) reads them as
+System.Text.Json does under the same value, inside flow collections and before and after the root value, never inside a
+block collection, where `url: http://x // y` keeps its text. With `Allow`, `Utf8YamlReader` returns them as `Comment`
+tokens:
+
+<!-- sample:json-comments -->
+```csharp
+string json = """
+    // JSON comments are read when asked for
+    {
+      "name": "web", /* the service */
+      "url": "http://example.org", // slashes in a value are text
+      "ports": [80, 443]
+    }
+    """;
+var options = new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip };
+var value = YamlSerializer.Deserialize<Dictionary<string, object>>(json, options)!;
+string jsonOut = YamlSerializer.Serialize(value, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible });
+```
+
+```json
+{"name":"web","url":"http://example.org","ports":[80,443]}
+```
+<!-- /sample:json-comments -->
+
 ## Versions and package feeds
 
 | Source | Purpose | Package feed |
