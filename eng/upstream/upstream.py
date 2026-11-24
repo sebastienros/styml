@@ -9,6 +9,8 @@ and a three-way sync by replay. The procedure is in docs/upstream-sync.md. Run t
   eng/upstream/target <runtime-clone>                   the newest ref of the followed line (also --ls-remote FILE)
   eng/upstream/status <runtime-clone> [ref]             Markdown report of upstream changes since the baseline
                                                         (--output FILE, --summary-json FILE)
+  eng/upstream/sync <runtime-clone> <ref> [--accept-counts] [--keep-scratch]
+  eng/upstream/sync --continue | --abort
 
 The runtime clone is only read (rev-parse, log, diff, ls-tree, archive, cat-file); nothing is written to it. Replays
 run in a scratch directory. Only 'sync' writes to this repository, and only 'sync --continue' commits.
@@ -644,7 +646,251 @@ def render_status(rec, runtime, target_ref, target, files, commits, warning):
     return '\n'.join(out) + '\n'
 
 
-COMMANDS = {'check': cmd_check, 'verify-replay': cmd_verify_replay, 'target': cmd_target, 'status': cmd_status}
+# --- sync --------------------------------------------------------------------------------------------------------------
+
+def state_dir():
+    return os.path.join(REPO, git('rev-parse', '--git-path', 'styml-upstream-sync').strip())
+
+
+def is_binary(path):
+    with open(path, 'rb') as f:
+        return b'\0' in f.read(8000)
+
+
+def cmd_sync(args):
+    if '--continue' in args:
+        return sync_continue()
+    if '--abort' in args:
+        return sync_abort()
+    flags = {a for a in args if a.startswith('--')}
+    pos = [a for a in args if not a.startswith('--')]
+    if len(pos) != 2:
+        die('usage: eng/upstream/sync <runtime-clone> <ref> [--accept-counts] [--keep-scratch] | --continue | --abort')
+    unknown = flags - {'--accept-counts', '--keep-scratch'}
+    if unknown:
+        die(f'unknown option {sorted(unknown)[0]}')
+    sd = state_dir()
+    if os.path.exists(sd):
+        die(f'a sync is in progress ({sd}): finish it with eng/upstream/sync --continue or --abort')
+    if git('status', '--porcelain').strip():
+        die('the working tree has changes: commit or set them aside before a sync')
+    rec = record()
+    runtime = Runtime(pos[0])
+    target_ref = pos[1]
+    base = runtime.rev(rec['commit'])
+    target = runtime.rev(target_ref)
+    if target == base:
+        print(f'{target_ref} is the baseline commit: nothing to sync')
+        return
+    scratch = tempfile.mkdtemp(prefix='styml-sync-')
+    print(f'scratch: {scratch}')
+
+    # 1. The old baseline, replayed with today's tooling, must be exactly the recorded renamed tree.
+    print(f'replaying the baseline {rec["ref"]} ({base[:12]}) ...')
+    base_tree, _ = replay(runtime, base, os.path.join(scratch, 'base'))
+    _, recorded = read_tree_list(os.path.join(REPO, rec['tree']))
+    diffs = compare_trees(recorded, base_tree)
+    if diffs:
+        print('\n'.join(diffs[:40]))
+        die(f'the replay of the baseline differs from {rec["tree"]} in {len(diffs)} files: the import or rename tooling '
+            f'changed since the last sync. Fix the tooling first (eng/upstream/verify-replay). Scratch: {scratch}')
+
+    # 2. The target, with the count guards recording instead of failing.
+    print(f'replaying the target {target_ref} ({target[:12]}) ...')
+    target_tree, missing = replay(runtime, target, os.path.join(scratch, 'target'), update_counts=True, allow_missing=True)
+    count_files = ['eng/rename/protect.json', 'eng/rename/passb/passb.json']
+    changed_counts = []
+    for cf in count_files:
+        with open(os.path.join(REPO, cf), encoding='utf-8') as a, \
+                open(os.path.join(scratch, 'target', cf), encoding='utf-8') as b:
+            if a.read() != b.read():
+                changed_counts.append(cf)
+    if changed_counts:
+        for cf in changed_counts:
+            with open(os.path.join(REPO, cf), encoding='utf-8') as a, \
+                    open(os.path.join(scratch, 'target', cf), encoding='utf-8') as b:
+                sys.stdout.writelines(difflib.unified_diff(a.readlines(), b.readlines(), f'{cf} (baseline)',
+                                                           f'{cf} (target)', n=1))
+        if '--accept-counts' not in flags:
+            die('the rename guards count differently at the target (above). Check that each new occurrence is right '
+                '(a protected token that must stay Json, a literal that names a renamed identifier), then rerun with '
+                f'--accept-counts. Nothing was changed in this repository. Scratch kept: {scratch}')
+
+    # 3. Three-way merge of base -> target onto Styml, file by file.
+    moved, removed, areas = counterparts(rec)
+    ours_head = styml_tree()
+    result = {'merged': [], 'applied': [], 'added': [], 'deleted': [], 'conflicts': [], 'modify_delete': [],
+              'no_counterpart': [], 'binary_conflicts': []}
+    touched = set()
+    for p in sorted(set(base_tree) | set(target_tree)):
+        b, t = base_tree.get(p), target_tree.get(p)
+        if b == t:
+            continue
+        ours_path = moved.get(p, p)
+        ours_file = os.path.join(REPO, ours_path)
+        ours = ours_head.get(ours_path)
+        base_file = os.path.join(scratch, 'base', p)
+        target_file = os.path.join(scratch, 'target', p)
+        if p in removed:
+            result['no_counterpart'].append(f'{p} ({removed[p]})')
+            continue
+        if b is not None and ours is None:
+            result['no_counterpart'].append(f'{p} (Styml deleted or moved it)')
+            continue
+        if b is None and ours is None:
+            os.makedirs(os.path.dirname(ours_file), exist_ok=True)
+            shutil.copyfile(target_file, ours_file)
+            result['added'].append(ours_path)
+            touched.add(ours_path)
+            continue
+        if t is None:
+            if ours == b:
+                os.remove(ours_file)
+                result['deleted'].append(ours_path)
+                touched.add(ours_path)
+            else:
+                result['modify_delete'].append(ours_path)
+            continue
+        if ours == b:
+            shutil.copyfile(target_file, ours_file)
+            result['applied'].append(ours_path)
+            touched.add(ours_path)
+            continue
+        if ours == t:
+            continue
+        if b is None:
+            base_file = os.path.join(scratch, 'empty')
+            open(base_file, 'w').close()
+        if is_binary(ours_file) or is_binary(target_file) or is_binary(base_file):
+            result['binary_conflicts'].append(ours_path)
+            continue
+        p_merge = run(['git', 'merge-file', '-L', 'Styml', '-L', f'upstream {rec["ref"]}', '-L', f'upstream {target_ref}',
+                       ours_file, base_file, target_file], check=False)
+        if p_merge.returncode < 0 or p_merge.returncode > 127:
+            die(f'git merge-file failed on {ours_path}: {p_merge.stderr}')
+        touched.add(ours_path)
+        (result['conflicts'] if p_merge.returncode > 0 else result['merged']).append(ours_path)
+    for cf in changed_counts:
+        shutil.copyfile(os.path.join(scratch, 'target', cf), os.path.join(REPO, cf))
+        touched.add(cf)
+
+    os.makedirs(sd)
+    write_tree_list(os.path.join(sd, 'target-tree.txt'), target, target_tree)
+    write_json(os.path.join(sd, 'state.json'), {
+        'from_ref': rec['ref'], 'from_commit': base, 'ref': target_ref, 'commit': target,
+        'touched': sorted(touched), 'result': result, 'missing_at_target': missing, 'counts': changed_counts,
+        'scratch': scratch if '--keep-scratch' in flags else None})
+    if '--keep-scratch' not in flags:
+        shutil.rmtree(scratch, ignore_errors=True)
+    print_sync_summary(rec['ref'], target_ref, result, missing, changed_counts)
+
+
+def print_sync_summary(from_ref, to_ref, result, missing, changed_counts):
+    print(f'\nsync {from_ref} -> {to_ref}:')
+    labels = [('applied', 'applied (Styml had not edited them)'), ('merged', 'merged cleanly'),
+              ('added', 'added (new upstream files)'), ('deleted', 'deleted (deleted upstream, unedited here)'),
+              ('conflicts', 'CONFLICTS (markers left in the file)'),
+              ('modify_delete', 'DELETED UPSTREAM, EDITED HERE (kept; decide by hand)'),
+              ('binary_conflicts', 'BINARY CONFLICTS (kept as Styml has them; decide by hand)'),
+              ('no_counterpart', 'no counterpart in Styml (not merged; judge by hand)')]
+    for key, label in labels:
+        items = result[key]
+        print(f'  {len(items):4d}  {label}')
+        if key in ('conflicts', 'modify_delete', 'binary_conflicts', 'no_counterpart'):
+            for i in items:
+                print(f'          {i}')
+    for m in missing:
+        print(f'  manifest entry not at the target (remove it from eng/import/manifest.txt or exclude.txt): {m}')
+    for cf in changed_counts:
+        print(f'  rename counts updated: {cf}')
+    print('\nResolve, build and test (docs/upstream-sync.md), then: eng/upstream/sync --continue   (or --abort)')
+
+
+CONFLICT_RE = re.compile(r'^(<{7}|>{7}) ', re.M)
+
+
+def sync_continue():
+    sd = state_dir()
+    if not os.path.exists(os.path.join(sd, 'state.json')):
+        die('no sync in progress')
+    st = load_json(os.path.join(sd, 'state.json'))
+    left = []
+    for p in st['touched']:
+        f = os.path.join(REPO, p)
+        if os.path.isfile(f) and not is_binary(f):
+            with open(f, encoding='utf-8', errors='replace') as fh:
+                if CONFLICT_RE.search(fh.read()):
+                    left.append(p)
+    if left:
+        die('conflict markers remain in:\n  ' + '\n  '.join(left))
+    rec = record()
+    # The next replay of the new baseline is strict: manifest entries absent at the target must be gone.
+    entries, excludes = manifest_entries(rec)
+    listed = {src for _, src, _ in entries} | {f'exclude.txt: {e}' for e in excludes}
+    stale = [m for m in st['missing_at_target'] if m in listed]
+    if stale:
+        die('remove these entries, absent at the target, from eng/import/manifest.txt or exclude.txt (and the project '
+            'items that link them):\n  ' + '\n  '.join(stale))
+    if rec['commit'] != st['from_commit']:
+        die(f'baseline.json changed during the sync ({rec["commit"]}, expected {st["from_commit"]})')
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    rec['ref'], rec['commit'], rec['synced'] = st['ref'], st['commit'], today
+    write_json(RECORD, rec)
+    target_commit, target_tree = read_tree_list(os.path.join(sd, 'target-tree.txt'))
+    write_tree_list(os.path.join(REPO, rec['tree']), target_commit, target_tree)
+    with open(UPSTREAM_MD, encoding='utf-8') as f:
+        text = f.read()
+    text = re.sub(r'^\| Ref \| .*? \|\s*$', f'| Ref | `{st["ref"]}` |', text, count=1, flags=re.M)
+    text = re.sub(r'^\| Commit \| .*? \|\s*$', f'| Commit | `{st["commit"]}` |', text, count=1, flags=re.M)
+    text = re.sub(r'^\| Synced \| .*? \|\s*$', f'| Synced | {today} |', text, count=1, flags=re.M)
+    r = st['result']
+    n_conf = len(r['conflicts']) + len(r['modify_delete']) + len(r['binary_conflicts'])
+    line = (f'- {today} · `{st["ref"]}` · `{st["commit"]}` · sync from `{st["from_ref"]}`: '
+            f'{len(r["applied"]) + len(r["merged"])} files merged, {len(r["added"])} added, {len(r["deleted"])} deleted, '
+            f'{n_conf} resolved by hand')
+    m = re.search(r'^## Syncs\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+    if not m:
+        die('UPSTREAM.md has no "## Syncs" section')
+    body = m.group(1)
+    last = [mm for mm in re.finditer(r'^- .*$', body, re.M)][-1]
+    insert_at = m.start(1) + last.end()
+    text = text[:insert_at] + '\n' + line + text[insert_at:]
+    with open(UPSTREAM_MD, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(text)
+    cmd_check([])
+    git('add', '-A')
+    msg = (f'Sync System.Text.Json with dotnet/runtime {st["ref"]}\n\n'
+           f'Three-way merge by replay of {st["from_ref"]} ({st["from_commit"][:12]}) to {st["ref"]} '
+           f'({st["commit"][:12]}):\n'
+           f'{len(r["applied"])} files applied, {len(r["merged"])} merged, {len(r["added"])} added, '
+           f'{len(r["deleted"])} deleted, {n_conf} resolved by hand,\n'
+           f'{len(r["no_counterpart"])} without a counterpart left for review. The record\n'
+           f'(eng/upstream/baseline.json, baseline-tree.txt) and UPSTREAM.md follow.\n')
+    p = subprocess.run(['git', '-C', REPO, 'commit', '-q', '-F', '-'], input=msg, text=True)
+    if p.returncode != 0:
+        die('git commit failed; the record is updated in the working tree, the sync state is kept')
+    shutil.rmtree(sd, ignore_errors=True)
+    print(git('log', '-1', '--format=%h %s').strip())
+
+
+def sync_abort():
+    sd = state_dir()
+    if not os.path.exists(os.path.join(sd, 'state.json')):
+        die('no sync in progress')
+    st = load_json(os.path.join(sd, 'state.json'))
+    head = styml_tree()
+    at_head = [p for p in st['touched'] if p in head]
+    if at_head:
+        git('checkout', 'HEAD', '--', *at_head)
+    for p in st['touched']:
+        if p not in head and os.path.isfile(os.path.join(REPO, p)):
+            os.remove(os.path.join(REPO, p))
+    shutil.rmtree(sd, ignore_errors=True)
+    print(f'sync aborted: {len(at_head)} files restored, {len(st["touched"]) - len(at_head)} added files removed')
+
+
+COMMANDS = {'check': cmd_check, 'verify-replay': cmd_verify_replay, 'target': cmd_target, 'status': cmd_status,
+            'sync': cmd_sync}
 
 if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
