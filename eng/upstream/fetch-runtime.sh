@@ -38,8 +38,8 @@ else
   refspec="+refs/heads/$target:refs/heads/$target"
 fi
 
-since_date() {  # synced minus N days, GNU or BSD date
-  date -u -d "$synced - $1 days" +%Y-%m-%d 2> /dev/null || date -u -j -v-"$1"d -f %Y-%m-%d "$synced" +%Y-%m-%d
+since_date() {  # synced minus N days
+  python3 -I -c 'import datetime,sys; print(datetime.date.fromisoformat(sys.argv[1]) - datetime.timedelta(days=int(sys.argv[2])))' "$synced" "$1"
 }
 
 # Each attempt starts from a new repository: a second --shallow-since fetch into a shallow partial clone does not
@@ -52,7 +52,7 @@ for days in 30 120 400; do
   git -C "$dest" config remote.origin.promisor true
   git -C "$dest" config remote.origin.partialclonefilter blob:none
   [[ -n "${STYML_UPLOAD_PACK:-}" ]] && git -C "$dest" config remote.origin.uploadpack "$STYML_UPLOAD_PACK"
-  git -C "$dest" fetch -q --no-tags --filter=blob:none --shallow-since="$since" origin "$refspec" "$base" 2> /dev/null || true
+  err="$(git -C "$dest" fetch -q --no-tags --filter=blob:none --shallow-since="$since" origin "$refspec" "$base" 2>&1)" || true
   if git -C "$dest" cat-file -e "$base^{commit}" 2> /dev/null &&
      git -C "$dest" rev-parse -q --verify "${refspec##*:}" > /dev/null &&
      git -C "$dest" merge-base "$base" "${refspec##*:}" > /dev/null 2>&1; then
@@ -61,5 +61,5 @@ for days in 30 120 400; do
     exit 0
   fi
 done
-echo "could not fetch $base and $target with their merge base (history since $since)" >&2
+echo "could not fetch $base and $target with their merge base (history since $since)${err:+: $err}" >&2
 exit 1

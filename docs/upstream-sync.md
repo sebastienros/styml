@@ -50,8 +50,8 @@ eng/upstream/status ~/github/runtime main         # any ref; --output FILE, --su
 
 The clone needs the baseline commit and the target (`git fetch` with tags). The report is Markdown:
 
-- **No counterpart in Styml**: a new upstream file, or a file Styml deleted or folded into its own project files
-  (`counterparts.json` says which and why).
+- **No counterpart in Styml**: a new upstream file (the sync adds it), or a file Styml deleted or folded into its own
+  project files (the sync leaves it out; `counterparts.json` says which and why).
 - **Edited by Styml**: Styml's file differs from the renamed baseline; the sync merges three-way and may conflict.
 - **Not edited by Styml**: Styml's file is the renamed baseline byte for byte; the sync applies the change as is.
 - **For a person to judge**: the commits that touch the first group or a `replaced_areas` path (the reader, document
@@ -107,7 +107,8 @@ the report's "For a person to judge" list and the edited group's commits before 
 
 ### The "no counterpart" group
 
-These changes are never merged automatically, because there is nothing to merge into. For each:
+There is nothing to merge these into: the sync adds new upstream files as they are and leaves changes to files
+Styml removed out. Either way a person decides what Styml needs. For each:
 
 - **New upstream file** under an imported directory (a converter, a test file): the sync adds it. Styml's projects
   list every source file (`EnableDefaultItems` is off), so check that the `Compile` item came in with the merged

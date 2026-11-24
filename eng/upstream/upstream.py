@@ -575,8 +575,8 @@ def render_status(rec, runtime, target_ref, target, files, commits, warning):
         return '\n'.join(out) + '\n'
 
     groups = [
-        (GROUP_NONE, 'No counterpart in Styml', 'a new upstream file, or a file Styml deleted or folded into its own; '
-         'never merged, a person decides what Styml needs'),
+        (GROUP_NONE, 'No counterpart in Styml', 'a new upstream file (the sync adds it), or a file Styml deleted or '
+         'folded into its own (the sync leaves it out); either way a person decides what Styml needs'),
         (GROUP_EDITED, 'Edited by Styml', 'the sync merges these three-way and may leave conflicts'),
         (GROUP_UNEDITED, 'Not edited by Styml', 'the sync applies these mechanically'),
     ]
