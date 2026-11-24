@@ -716,7 +716,7 @@ namespace System.Text.Yaml
 
                     rentedSpan.Slice(0, padPrefix).Fill((byte)' ');
 
-                    document = Parse(rented.AsMemory(0, length), copyOptions, duplicateKeyHandling, rented);
+                    document = Parse(rented.AsMemory(0, length), copyOptions, duplicateKeyHandling, rented, tagDirectives: reader.YamlTagDirectives);
                 }
                 catch
                 {
@@ -742,7 +742,7 @@ namespace System.Text.Yaml
 
                 owned.AsSpan(0, padPrefix).Fill((byte)' ');
 
-                document = ParseUnrented(owned, copyOptions, duplicateKeyHandling, reader.TokenType);
+                document = ParseUnrented(owned, copyOptions, duplicateKeyHandling, reader.TokenType, tagDirectives: reader.YamlTagDirectives);
             }
 
             if (rootTag is not null)
@@ -872,7 +872,8 @@ namespace System.Text.Yaml
             YamlDuplicateKeyHandling duplicateKeyHandling,
             byte[]? extraRentedArrayPoolBytes = null,
             PooledByteBufferWriter? extraPooledByteBufferWriter = null,
-            int maxAliasExpansion = 0)
+            int maxAliasExpansion = 0,
+            YamlTagDirectives? tagDirectives = null)
         {
             ReadOnlySpan<byte> utf8YamlSpan = utf8Yaml.Span;
             var database = MetadataDb.CreateRented(utf8Yaml.Length, convertToAlloc: false);
@@ -882,7 +883,7 @@ namespace System.Text.Yaml
 
             try
             {
-                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out YamlTables? tables);
+                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out YamlTables? tables, tagDirectives);
                 ReadOnlyMemory<byte> payload = AttachDecoded(utf8Yaml, tables, rent: true, out combinedRented);
                 SetYamlOptions(tables, readerOptions, maxAliasExpansion);
                 document = new YamlDocument(payload, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter, isDisposable: true, tables);
@@ -920,7 +921,8 @@ namespace System.Text.Yaml
             YamlReaderOptions readerOptions,
             YamlDuplicateKeyHandling duplicateKeyHandling,
             YamlTokenType tokenType = YamlTokenType.None,
-            int maxAliasExpansion = 0)
+            int maxAliasExpansion = 0,
+            YamlTagDirectives? tagDirectives = null)
         {
             // These tokens should already have been processed.
             Debug.Assert(
@@ -935,7 +937,7 @@ namespace System.Text.Yaml
                 // For primitive types, we can avoid renting MetadataDb and creating StackRowStack.
                 database = MetadataDb.CreateLocked(utf8Yaml.Length);
                 StackRowStack stack = default;
-                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables);
+                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables, tagDirectives);
             }
             else
             {
@@ -943,7 +945,7 @@ namespace System.Text.Yaml
                 var stack = new StackRowStack(YamlDocumentOptions.DefaultMaxDepth * StackRow.Size);
                 try
                 {
-                    Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables);
+                    Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables, tagDirectives);
                 }
                 finally
                 {

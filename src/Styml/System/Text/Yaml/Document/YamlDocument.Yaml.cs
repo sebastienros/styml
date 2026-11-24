@@ -270,7 +270,8 @@ namespace System.Text.Yaml
             YamlReaderOptions readerOptions,
             ref MetadataDb database,
             ref StackRowStack stack,
-            out YamlTables? tables)
+            out YamlTables? tables,
+            YamlTagDirectives? tagDirectives = null)
         {
             tables = null;
             bool inArray = false;
@@ -279,7 +280,11 @@ namespace System.Text.Yaml
             int numberOfRowsForValues = 0;
             int lastEnd = 0;
 
-            var reader = new Utf8YamlReader(utf8YamlSpan, isFinalBlock: true, new YamlReaderState(options: readerOptions));
+            // A value copied out of a larger stream (TryParseValue) reads its tags with the stream's %TAG handles: the
+            // copy starts as a bare first document, which keeps the table it starts with.
+            var reader = tagDirectives is null
+                ? new Utf8YamlReader(utf8YamlSpan, isFinalBlock: true, new YamlReaderState(options: readerOptions))
+                : new Utf8YamlReader(utf8YamlSpan, isFinalBlock: true, new YamlReaderState(0, 0, default, default, default, default, readerOptions, default, new YamlParseState { TagDirectives = tagDirectives }));
 
             while (reader.Read())
             {

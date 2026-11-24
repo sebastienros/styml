@@ -1018,9 +1018,10 @@ namespace System.Text.Yaml
             YamlReaderOptions readerOptions,
             ref MetadataDb database,
             ref StackRowStack stack,
-            out YamlTables? tables)
+            out YamlTables? tables,
+            YamlTagDirectives? tagDirectives = null)
         {
-            ParseYaml(utf8YamlSpan, readerOptions, ref database, ref stack, out tables);
+            ParseYaml(utf8YamlSpan, readerOptions, ref database, ref stack, out tables, tagDirectives);
         }
 
         private static void ValidateNoDuplicateProperties(YamlDocument document)

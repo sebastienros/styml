@@ -39,6 +39,7 @@ Earlier cuts (decision D6), same measurement:
 | Collection key spanning lines inside a flow mapping (`{[a,\n b]: c}`) | Rejected (parser) | Rejected (parser) | Accepted | Keep: YAML 1.2 allows it (flow mapping keys are in flow-in context); accepting more than both is outside the rule. |
 | Merge key (`<<: *base`) | Opt-in (`MergingParser`) | Yes by default for an inline mapping (`<<: {x: 1}`); `<<: *base` needs `ReferenceHandling.Preserve`, like every alias | Opt-in (`ResolveMergeKeys`, serializer and DOM) | **Implemented in M5b**, opt-in (decision 3). |
 | `%TAG` handle expansion | Parser resolves the full tag; the deserializer then rejects the document ("unresolved tag") | Parser resolves the full tag; the serializer accepts the document and ignores the tag | `Tag` as written, `GetExpandedTag()` / `TryCopyExpandedTag()` expanded (percent-decoded, verbatim and redefined handles as both parsers); the serializer ignores the tag | **Implemented in M3d.** |
+| A named-handle tag in a value read as `object`, `YamlElement` or `YamlNode` (`%TAG !e! ...`, then `!e!x`) | Refused untyped ("unresolved tag": an untyped read needs a tag mapping) | Reads | Reads, with the tag expanded through the stream's handles; before, every such route refused it ("The YAML tag handle is not declared") | A standard-YAML defect, fixed. |
 
 ### YAML 1.1 forms (M3d)
 
