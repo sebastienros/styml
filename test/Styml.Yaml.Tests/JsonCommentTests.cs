@@ -286,6 +286,22 @@ namespace System.Text.Yaml.Tests
             Assert.False(reader.Read());
         }
 
+        [Theory]
+        [InlineData("[&a # c\n b]", "[ 'b' ]")]
+        [InlineData("[!!str # c\n b]", "[ 'b' ]")]
+        [InlineData("{? # c\n a: 1}", "{ a: 1 }")]
+        [InlineData("[&a /* c */ b, !!str // d\n e]", "[ 'b' 'e' ]")]
+        [InlineData("k: [a,\n# c\n  b]\n", "{ k: [ 'a' < c>@7 'b' ] }")]
+        public void Allow_ReadsWhatSkipReads(string yaml, string allow)
+        {
+            // A comment between a node's properties (or '?') and its content has no token: it is skipped, also
+            // with Allow. A comment at the start of a line inside a flow collection is not content, so the line's
+            // indentation is not checked at it. Both threw with Allow before, for '#' comments.
+            Assert.Equal(allow, Tokens(yaml, YamlCommentHandling.Allow, false));
+            Assert.Equal(Regex.Replace(allow, @"<[^>]*>@\d+ ?", ""), Tokens(yaml, YamlCommentHandling.Skip, false));
+            ChunkingTests.AssertEverySplit(Encoding.UTF8.GetBytes(yaml), new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+        }
+
         // The serializer, the document and the nodes skip, as System.Text.Json's do.
 
         private const string Payload = """
