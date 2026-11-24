@@ -1,6 +1,7 @@
 // Copyright (c) Sébastien Ros. Licensed under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Text.Yaml
 {
@@ -224,7 +225,12 @@ namespace System.Text.Yaml
                 {
                     YamlThrow(YamlGrammarError.InvalidDirective, c);
                 }
-                _yaml.TagDirectives = YamlTagDirectives.With(_yaml.TagDirectives, handle, prefix);
+                if (!YamlTagDirectives.TryAdd(_yaml.TagDirectives, handle, prefix, out YamlTagDirectives? table))
+                {
+                    YamlThrow(YamlGrammarError.TooManyTagDirectives, c, YamlTagDirectives.MaxEntries.ToString(CultureInfo.InvariantCulture));
+                }
+
+                _yaml.TagDirectives = table;
             }
 
             // Other (reserved) directives are ignored, as the specification recommends.

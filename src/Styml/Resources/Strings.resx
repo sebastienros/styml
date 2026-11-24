@@ -914,6 +914,9 @@
   <data name="YamlGrammar_InvalidDirective" xml:space="preserve">
     <value>Invalid YAML directive.</value>
   </data>
+  <data name="YamlGrammar_TooManyTagDirectives" xml:space="preserve">
+    <value>The YAML document declares more than {0} %TAG directives.</value>
+  </data>
   <data name="YamlGrammar_DirectiveWithoutDocument" xml:space="preserve">
     <value>YAML directives must be followed by a document start marker ('---').</value>
   </data>

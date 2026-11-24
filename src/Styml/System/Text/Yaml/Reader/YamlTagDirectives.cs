@@ -8,58 +8,59 @@ namespace System.Text.Yaml
     /// The <c>%TAG</c> handles of one YAML document and their prefixes.
     /// Immutable: a directive creates a new table, so copies of the reader state (resumed readers, readers scoped to one
     /// value, the constructor replay path) can share one safely. Allocated only for documents that declare handles.
+    /// A table is a list, newest entry first: a directive adds one entry without copying the others, and a lookup finds a
+    /// redefined handle's latest prefix. It holds at most <see cref="MaxEntries"/> entries, so neither a directive nor a
+    /// lookup costs more than that bound however many directives a hostile stream holds.
     /// </summary>
     internal sealed class YamlTagDirectives
     {
         internal static ReadOnlySpan<byte> SecondaryPrefix => "tag:yaml.org,2002:"u8;
 
-        private readonly byte[][] _handles;
-        private readonly byte[][] _prefixes;
+        /// <summary>The most <c>%TAG</c> directives one table holds (a redefinition counts as one).</summary>
+        internal const int MaxEntries = 256;
 
-        private YamlTagDirectives(byte[][] handles, byte[][] prefixes)
+        private readonly byte[] _handle;
+        private readonly byte[] _prefix;
+        private readonly YamlTagDirectives? _next;
+        private readonly int _count;
+
+        private YamlTagDirectives(byte[] handle, byte[] prefix, YamlTagDirectives? next)
         {
-            _handles = handles;
-            _prefixes = prefixes;
+            _handle = handle;
+            _prefix = prefix;
+            _next = next;
+            _count = (next?._count ?? 0) + 1;
         }
 
-        /// <summary>A table with <paramref name="handle"/> added, or redefined when it is already there.</summary>
-        internal static YamlTagDirectives With(YamlTagDirectives? table, ReadOnlySpan<byte> handle, ReadOnlySpan<byte> prefix)
+        /// <summary>
+        /// A table with <paramref name="handle"/> added, or redefined when it is already there; false, with no table, when
+        /// <paramref name="table"/> already holds <see cref="MaxEntries"/> entries.
+        /// </summary>
+        internal static bool TryAdd(YamlTagDirectives? table, ReadOnlySpan<byte> handle, ReadOnlySpan<byte> prefix, out YamlTagDirectives? result)
         {
-            int count = table?._handles.Length ?? 0;
-            int index = table?.IndexOf(handle) ?? -1;
-            byte[][] handles = new byte[index >= 0 ? count : count + 1][];
-            byte[][] prefixes = new byte[handles.Length][];
-            if (table is not null)
+            if (table is not null && table._count >= MaxEntries)
             {
-                Array.Copy(table._handles, handles, count);
-                Array.Copy(table._prefixes, prefixes, count);
+                result = null;
+                return false;
             }
-            if (index < 0)
-            {
-                index = count;
-            }
-            handles[index] = handle.ToArray();
-            prefixes[index] = prefix.ToArray();
-            return new YamlTagDirectives(handles, prefixes);
-        }
 
-        private int IndexOf(ReadOnlySpan<byte> handle)
-        {
-            for (int i = 0; i < _handles.Length; i++)
-            {
-                if (handle.SequenceEqual(_handles[i]))
-                {
-                    return i;
-                }
-            }
-            return -1;
+            result = new YamlTagDirectives(handle.ToArray(), prefix.ToArray(), table);
+            return true;
         }
 
         internal bool TryGetPrefix(ReadOnlySpan<byte> handle, out ReadOnlySpan<byte> prefix)
         {
-            int index = IndexOf(handle);
-            prefix = index >= 0 ? _prefixes[index] : default;
-            return index >= 0;
+            for (YamlTagDirectives? entry = this; entry is not null; entry = entry._next)
+            {
+                if (handle.SequenceEqual(entry._handle))
+                {
+                    prefix = entry._prefix;
+                    return true;
+                }
+            }
+
+            prefix = default;
+            return false;
         }
 
         /// <summary>The prefix of a handle: declared, or the default of '!' and '!!'; false for an undeclared named handle.</summary>
