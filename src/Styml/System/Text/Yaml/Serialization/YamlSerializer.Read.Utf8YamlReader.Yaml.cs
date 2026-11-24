@@ -29,6 +29,7 @@ namespace System.Text.Yaml
             long bytePositionInLine = 0;
             int parentIndent = -1;
             long valueStart = 0;
+            bool documentLine = false;
 
             try
             {
@@ -55,6 +56,7 @@ namespace System.Text.Yaml
                 lineNumber = reader.YamlRawTokenLine;
                 bytePositionInLine = reader.YamlRawTokenColumn;
                 parentIndent = reader.YamlTokenParentIndent;
+                documentLine = reader.YamlPropertiesOnDocumentLine;
 
                 switch (reader.TokenType)
                 {
@@ -121,7 +123,7 @@ namespace System.Text.Yaml
                 previousTokenType: default,
                 readerOptions: scopedOptions,
                 bitStack: default,
-                yaml: YamlParseState.ForScopedValue(parentIndent, reader.YamlTagDirectives, anchorContext));
+                yaml: YamlParseState.ForScopedValue(parentIndent, reader.YamlTagDirectives, anchorContext, documentLine));
 
             return valueSpan.IsEmpty
                 ? new Utf8YamlReader(valueSequence, isFinalBlock: true, state: scopedState)

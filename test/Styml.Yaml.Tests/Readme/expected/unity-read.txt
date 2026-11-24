@@ -1,0 +1,3 @@
+1000: GameObject Player, active 1
+1001: Transform of 1000
+400000: stripped Transform of prefab instance 100100000

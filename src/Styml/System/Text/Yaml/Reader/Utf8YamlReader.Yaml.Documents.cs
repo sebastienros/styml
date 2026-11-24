@@ -78,8 +78,10 @@ namespace System.Text.Yaml
                             YamlThrow(YamlGrammarError.MultipleDocuments, c);
                         }
 
-                        if (!_yaml.Has(YamlParseFlags.DirectivesSeen))
+                        if (!_yaml.Has(YamlParseFlags.DirectivesSeen) && !InheritsTagDirectives)
                         {
+                            // YAML 1.2: a document without directives has only the default handles. Under
+                            // InheritTagDirectives (YAML 1.1) it keeps the previous document's.
                             _yaml.TagDirectives = null;
                         }
 
@@ -138,21 +140,38 @@ namespace System.Text.Yaml
                     if (_yaml.Has(YamlParseFlags.AnyDocument))
                     {
                         // A later bare document has no directives. The first one keeps the table it starts with:
-                        // empty, or the parent's for a reader scoped to one value.
-                        _yaml.TagDirectives = null;
+                        // empty, or the parent's for a reader scoped to one value. Under InheritTagDirectives a later
+                        // one keeps the previous document's.
+                        if (!InheritsTagDirectives)
+                        {
+                            _yaml.TagDirectives = null;
+                        }
+
                         YamlStartAnchorDocument(c.Pos);
                     }
                     _yaml.Set(YamlParseFlags.AnyDocument, true);
                 }
 
-                return YamlParseBlockNode(
+                bool documentLine = onMarkerLine || _yaml.Has(YamlParseFlags.ScopedDocumentLine);
+                YamlStep step = YamlParseBlockNode(
                     ref c,
                     s,
                     parentIndent: _yaml.BaseIndent,
                     allowBlockCollection: !onMarkerLine,
-                    allowIndentlessSequence: false);
+                    allowIndentlessSequence: false,
+                    documentLine: documentLine);
+                if (step == YamlStep.Token)
+                {
+                    _yaml.Set(YamlParseFlags.ScopedDocumentLine, false);
+                }
+
+                return step;
             }
         }
+
+        // A later document without directives keeps the previous one's %TAG handles: under the option, or in a stream that
+        // declared %YAML 1.1.
+        private readonly bool InheritsTagDirectives => _readerOptions.InheritTagDirectives || _yaml.Has(YamlParseFlags.Yaml11Scope);
 
         /// <summary>Reads one directive line (<c>%YAML</c>, <c>%TAG</c> or a reserved directive).</summary>
         private bool YamlReadDirective(ref YamlCursor c)
@@ -160,6 +179,8 @@ namespace System.Text.Yaml
             Debug.Assert(_buffer[c.Pos] == (byte)'%');
             if (!_yaml.Has(YamlParseFlags.DirectivesSeen))
             {
+                // A document's first directive starts its own table, under InheritTagDirectives too (YAML 1.1 section 7.4:
+                // "all directives of previous documents, if any, are ignored").
                 _yaml.TagDirectives = null;
             }
             ReadOnlySpan<byte> rest = _buffer.Slice(c.Pos);
@@ -209,6 +230,9 @@ namespace System.Text.Yaml
                     YamlThrow(YamlGrammarError.UnsupportedYamlVersion, c, YamlReaderHelper.TranscodeHelper(args));
                 }
                 _yaml.Set(YamlParseFlags.YamlDirectiveSeen, true);
+
+                // %YAML 1.0 or 1.1: YAML 1.1's directive scope from this document on; 1.2 or later ends it.
+                _yaml.Set(YamlParseFlags.Yaml11Scope, YamlReaderHelper.IsYaml11Version(args.Slice(dot + 1)));
             }
             else if (name.SequenceEqual("TAG"u8))
             {

@@ -21,6 +21,32 @@ namespace System.Text.Yaml
             _tokenType = YamlTokenType.Null;
         }
 
+        // The DOM: a value that was empty in the source (key:, key: , - , key: &a), written back with nothing after its
+        // indicator or its properties, and its blank when it had one. At the root, in JSON-compatible style, with a hint, null.
+        internal void WriteEmptyValue(bool keepBlank)
+        {
+            if (_style != WriterStyleBlock || _currentDepth == 0 || _scalarStyleHint != YamlScalarStyle.None)
+            {
+                WriteNullValue();
+                return;
+            }
+
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
+            Span<byte> output = BeginBlockValue(scalar: true, 0);
+            if (!keepBlank && BytesPending > 0 && output[BytesPending - 1] == YamlConstants.Space)
+            {
+                BytesPending--;
+            }
+
+            EndBlockScalar(YamlTokenType.Null);
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = YamlTokenType.Null;
+        }
+
         /// <summary>
         /// Writes the <see cref="bool"/> value (as a YAML literal "true" or "false") as an element of a YAML array.
         /// </summary>

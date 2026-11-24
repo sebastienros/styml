@@ -2302,6 +2302,12 @@ namespace System.Text.Yaml.SourceGeneration
                 if (optionsSpec.DisallowImplicitCollectionKeys is bool disallowImplicitCollectionKeys)
                     writer.WriteLine($"DisallowImplicitCollectionKeys = {FormatBoolLiteral(disallowImplicitCollectionKeys)},");
 
+                if (optionsSpec.InheritTagDirectives is bool inheritTagDirectives)
+                    writer.WriteLine($"InheritTagDirectives = {FormatBoolLiteral(inheritTagDirectives)},");
+
+                if (optionsSpec.AcceptUnityStrippedMarker is bool acceptUnityStrippedMarker)
+                    writer.WriteLine($"AcceptUnityStrippedMarker = {FormatBoolLiteral(acceptUnityStrippedMarker)},");
+
                 WriteTagMappings(writer, tagMappings);
 
                 writer.Indentation--;

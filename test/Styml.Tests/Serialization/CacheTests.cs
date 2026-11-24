@@ -410,6 +410,8 @@ namespace System.Text.Yaml.Serialization.Tests
                 yield return (GetProp(nameof(YamlSerializerOptions.AllowOutOfOrderMetadataProperties)), true);
                 yield return (GetProp(nameof(YamlSerializerOptions.AllowTrailingCommas)), true);
                 yield return (GetProp(nameof(YamlSerializerOptions.DisallowImplicitCollectionKeys)), true);
+                yield return (GetProp(nameof(YamlSerializerOptions.InheritTagDirectives)), true);
+                yield return (GetProp(nameof(YamlSerializerOptions.AcceptUnityStrippedMarker)), true);
                 yield return (GetProp(nameof(YamlSerializerOptions.AcceptLenientScalars)), true);
                 yield return (GetProp(nameof(YamlSerializerOptions.MaxAliasExpansion)), 5);
                 yield return (GetProp(nameof(YamlSerializerOptions.ResolveMergeKeys)), true);

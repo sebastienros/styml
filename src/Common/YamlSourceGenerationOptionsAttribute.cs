@@ -276,5 +276,15 @@ namespace System.Text.Yaml.Serialization
         /// Specifies the default value of <see cref="YamlSerializerOptions.DisallowImplicitCollectionKeys"/> when set.
         /// </summary>
         public bool DisallowImplicitCollectionKeys { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="YamlSerializerOptions.InheritTagDirectives"/> when set.
+        /// </summary>
+        public bool InheritTagDirectives { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="YamlSerializerOptions.AcceptUnityStrippedMarker"/> when set.
+        /// </summary>
+        public bool AcceptUnityStrippedMarker { get; set; }
     }
 }

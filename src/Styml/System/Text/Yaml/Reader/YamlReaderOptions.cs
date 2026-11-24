@@ -82,6 +82,25 @@ namespace System.Text.Yaml
         public bool AllowMultipleValues { get; set; }
 
         /// <summary>
+        /// Gets or sets whether a document with no directives keeps the previous document's <c>%TAG</c> handles, as YAML 1.1
+        /// reads a stream (section 7.4): a document that declares any directive starts from its own. A stream that declares
+        /// <c>%YAML 1.1</c> (or 1.0) reads that way without it, as YamlDotNet's parser does, until a document declares
+        /// <c>%YAML 1.2</c>; this option applies the rule whatever the version, for a stream without the directive.
+        /// <see langword="false"/> by default: YAML 1.2 makes each document independent (section 9.1). The schema does not
+        /// change on <c>%YAML 1.1</c>.
+        /// </summary>
+        public bool InheritTagDirectives { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether Unity's <c>stripped</c> marker is accepted after a document root's properties on its
+        /// <c>---</c> line (<c>--- !u!4 &amp;400000 stripped</c>), where YAML would read <c>stripped</c> as the root's
+        /// content. <see langword="false"/> by default. Only the word <c>stripped</c>, after properties that include a tag,
+        /// before the end of the line; the root then starts on the next line, and
+        /// <see cref="Utf8YamlReader.IsUnityStripped"/> is <see langword="true"/> on its token.
+        /// </summary>
+        public bool AcceptUnityStrippedMarker { get; set; }
+
+        /// <summary>
         /// Gets or sets whether a flow collection may <em>not</em> be an implicit mapping key (<c>[a, b]: v</c>,
         /// <c>{a: b}: v</c>, <c>[[a]: b]</c>, <c>{[a]: b}</c>). <see langword="false"/> by default: YAML allows such keys, and
         /// deciding whether a <c>[</c> or <c>{</c> at the root or in a flow sequence starts one needs the rest of its line

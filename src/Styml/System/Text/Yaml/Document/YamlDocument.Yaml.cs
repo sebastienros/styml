@@ -37,6 +37,15 @@ namespace System.Text.Yaml
 
             /// <summary>M5e: on an alias key to a scalar (a copy of the scalar's row), the anchored row plus one; 0 otherwise.</summary>
             internal int AliasKeyTarget;
+
+            /// <summary>
+            /// A document root's <see cref="Utf8YamlReader.OnDocumentLine"/> (its properties on the '---' line) and
+            /// <see cref="Utf8YamlReader.UnityStripped"/>; 0 otherwise.
+            /// </summary>
+            internal byte DocumentLine;
+
+            /// <summary>The source wrote the tag before the anchor (<c>!t &amp;a</c>), which write-back keeps.</summary>
+            internal bool TagFirst;
         }
 
         internal sealed class YamlTables
@@ -270,7 +279,8 @@ namespace System.Text.Yaml
             YamlReaderOptions readerOptions,
             ref MetadataDb database,
             ref StackRowStack stack,
-            out YamlTables? tables)
+            out YamlTables? tables,
+            YamlTagDirectives? tagDirectives = null)
         {
             tables = null;
             bool inArray = false;
@@ -279,7 +289,11 @@ namespace System.Text.Yaml
             int numberOfRowsForValues = 0;
             int lastEnd = 0;
 
-            var reader = new Utf8YamlReader(utf8YamlSpan, isFinalBlock: true, new YamlReaderState(options: readerOptions));
+            // A value copied out of a larger stream (TryParseValue) reads its tags with the stream's %TAG handles: the
+            // copy starts as a bare first document, which keeps the table it starts with.
+            var reader = tagDirectives is null
+                ? new Utf8YamlReader(utf8YamlSpan, isFinalBlock: true, new YamlReaderState(options: readerOptions))
+                : new Utf8YamlReader(utf8YamlSpan, isFinalBlock: true, new YamlReaderState(0, 0, default, default, default, default, readerOptions, default, new YamlParseState { TagDirectives = tagDirectives }));
 
             while (reader.Read())
             {
@@ -416,6 +430,7 @@ namespace System.Text.Yaml
             int numberOfRowsForMembers = state.NumberOfRowsForMembers;
             int numberOfRowsForValues = state.NumberOfRowsForValues;
             int lastEnd = state.LastEnd;
+            byte rootDocumentLine = 0;
 
             do
             {
@@ -432,6 +447,10 @@ namespace System.Text.Yaml
                 string? tag = reader.Tag.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Tag);
                 string? expandedTag = tag is null ? null : reader.GetExpandedTag();
                 bool hasProperties = anchor is not null || tag is not null;
+                if (rowIndex == 0 && baseOffset == 0)
+                {
+                    rootDocumentLine = reader.YamlDocumentLineFlags;
+                }
 
                 if (tokenType == YamlTokenType.StartObject)
                 {
@@ -448,11 +467,11 @@ namespace System.Text.Yaml
                     numberOfRowsForMembers = 0;
                     if (flowPair)
                     {
-                        (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag, FlowPair = true });
+                        (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag, FlowPair = true, TagFirst = reader.YamlTagBeforeAnchor });
                     }
                     else
                     {
-                        AddProperties(ref tables, rowIndex, anchor, tag, expandedTag);
+                        AddProperties(ref tables, rowIndex, anchor, tag, expandedTag, reader.YamlTagBeforeAnchor);
                     }
                     lastEnd = tokenStart + reader.ValueSpan.Length;
                 }
@@ -485,7 +504,7 @@ namespace System.Text.Yaml
                     stack.Push(new StackRow(arrayItemsOrPropertyCount, numberOfRowsForValues + 1));
                     arrayItemsOrPropertyCount = 0;
                     numberOfRowsForValues = 0;
-                    AddProperties(ref tables, rowIndex, anchor, tag, expandedTag);
+                    AddProperties(ref tables, rowIndex, anchor, tag, expandedTag, reader.YamlTagBeforeAnchor);
                     lastEnd = tokenStart + reader.ValueSpan.Length;
                 }
                 else if (tokenType == YamlTokenType.EndArray)
@@ -583,6 +602,13 @@ namespace System.Text.Yaml
                 inArray = reader.IsInArray;
             }
             while (reader.Read());
+
+            if (rootDocumentLine != 0)
+            {
+                // Only a root with properties has these, so its node info exists.
+                Debug.Assert(tables is not null && tables.InfoCount > 0 && tables.Infos[0].Row == 0);
+                tables!.Infos[0].DocumentLine = rootDocumentLine;
+            }
         }
 
         private static int ResolveAnchor(Dictionary<string, int>? anchors, string name)
@@ -600,6 +626,30 @@ namespace System.Text.Yaml
         /// M5d: the tag of a value copied from a reader, which the copy (from
         /// the node's first byte) does not hold.
         /// </summary>
+        /// <summary>The outer reader's document-line flags for a value copied out of a stream (TryParseValue).</summary>
+        internal void AttachRootDocumentLine(byte documentLine)
+        {
+            if (documentLine == 0 || _yaml is null || _yaml.InfoCount == 0 || _yaml.Infos[0].Row != 0)
+            {
+                // Only a root with properties has them, and its node info exists.
+                return;
+            }
+
+            _yaml.Infos[0].DocumentLine = documentLine;
+        }
+
+        /// <summary>Whether the node at <paramref name="index"/> is a document root marked with Unity's stripped marker.</summary>
+        internal bool TagBeforeAnchor(int index) =>
+            _yaml is not null && _parsedData.Get(index).HasNodeInfo && _yaml.TryGet(index, out NodeInfo info) && info.TagFirst;
+
+        internal bool PropertiesOnDocumentLine(int index) =>
+            _yaml is not null && _parsedData.Get(index).HasNodeInfo && _yaml.TryGet(index, out NodeInfo info)
+            && (info.DocumentLine & Utf8YamlReader.OnDocumentLine) != 0;
+
+        internal bool IsUnityStripped(int index) =>
+            _yaml is not null && _parsedData.Get(index).HasNodeInfo && _yaml.TryGet(index, out NodeInfo info)
+            && (info.DocumentLine & Utf8YamlReader.UnityStripped) != 0;
+
         internal void AttachRootTag(string tag, string? expandedTag)
         {
             _yaml ??= new YamlTables();
@@ -634,12 +684,30 @@ namespace System.Text.Yaml
         /// The tag text that reads back alone, without the source's %TAG directives: a local tag as is, a core tag as
         /// <c>!!x</c>, any other global tag verbatim.
         /// </summary>
-        internal static string StandAloneTag(in NodeInfo info)
+        internal static string StandAloneTag(in NodeInfo info) => StandAloneTag(info.Tag!, info.ExpandedTag);
+
+        /// <summary>
+        /// The tag to write back for a node read with <paramref name="tag"/>: the source's shorthand (<c>!u!1</c>) where the
+        /// writer's own %TAG directives expand it to the same tag, otherwise <see cref="StandAloneTag(in NodeInfo)"/>'s
+        /// form; that form under IgnoreSourceStyles.
+        /// </summary>
+        internal static string WritableTag(Utf8YamlWriter writer, string tag, string? expandedTag)
         {
-            string? expanded = info.ExpandedTag;
+            string standAlone = StandAloneTag(tag, expandedTag);
+            if (expandedTag is null || standAlone == tag || writer.Options.IgnoreSourceStyles
+                || writer.TagDirectives is not YamlTagDirectives table || !YamlTagDirectives.ExpandsTo(table, tag, expandedTag))
+            {
+                return standAlone;
+            }
+
+            return tag;
+        }
+
+        internal static string StandAloneTag(string tag, string? expanded)
+        {
             if (expanded is null || expanded.Length == 0)
             {
-                return info.Tag!;
+                return tag;
             }
 
             if (expanded[0] == '!')
@@ -652,11 +720,11 @@ namespace System.Text.Yaml
                 : "!<" + expanded + ">";
         }
 
-        private static void AddProperties(ref YamlTables? tables, int rowIndex, string? anchor, string? tag, string? expandedTag)
+        private static void AddProperties(ref YamlTables? tables, int rowIndex, string? anchor, string? tag, string? expandedTag, bool tagFirst = false)
         {
             if (anchor is not null || tag is not null)
             {
-                (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag });
+                (tables ??= new YamlTables()).Add(new NodeInfo { Row = rowIndex, RawStart = -1, RawLength = -1, Anchor = anchor, Tag = tag, ExpandedTag = expandedTag, TagFirst = tagFirst });
             }
         }
 
@@ -782,6 +850,7 @@ namespace System.Text.Yaml
                     Tag = tag,
                     ExpandedTag = expandedTag,
                     BlockIndent = decoded && style is YamlScalarStyle.Literal or YamlScalarStyle.Folded ? reader.YamlBlockScalarIndent : 0,
+                    TagFirst = reader.YamlTagBeforeAnchor,
                 });
             }
 

@@ -617,6 +617,33 @@ namespace System.Text.Yaml
         // ---------------------------------------------------------------------------------------------------------
         // Block nodes
 
+        // Unity's stripped marker at `pos`: the word "stripped" followed by a blank, a line break or the end of the input
+        // (a comment needs a blank before it). Its length (8), 0 when it is not there, -2 when more data is needed to tell.
+        private int YamlMatchUnityStrippedMarker(int pos)
+        {
+            ReadOnlySpan<byte> word = "stripped"u8;
+            for (int i = 0; i <= word.Length; i++)
+            {
+                int b = YamlPeek(pos + i);
+                if (b == -2)
+                {
+                    return -2;
+                }
+
+                if (i == word.Length)
+                {
+                    return b == -1 || b is (byte)' ' or (byte)'\t' || YamlIsBreak((byte)b) ? word.Length : 0;
+                }
+
+                if (b != word[i])
+                {
+                    return 0;
+                }
+            }
+
+            return 0;
+        }
+
         /// <summary>
         /// Reads the node that starts at <paramref name="c"/> in block context and emits its first token.
         /// </summary>
@@ -625,7 +652,8 @@ namespace System.Text.Yaml
         /// <param name="parentIndent">Indentation of the enclosing block collection (or of the context).</param>
         /// <param name="allowBlockCollection">Whether a block mapping or sequence may start here (fresh line or compact form).</param>
         /// <param name="allowIndentlessSequence">Whether a sequence at <paramref name="parentIndent"/> is allowed (mapping values).</param>
-        private YamlStep YamlParseBlockNode(ref YamlCursor c, YamlScan s, int parentIndent, bool allowBlockCollection, bool allowIndentlessSequence)
+        /// <param name="documentLine">Whether the node starts on its document's '---' line (a document root's properties there).</param>
+        private YamlStep YamlParseBlockNode(ref YamlCursor c, YamlScan s, int parentIndent, bool allowBlockCollection, bool allowIndentlessSequence, bool documentLine = false)
         {
             int rawStart = c.Pos;
             long rawLine = c.Line;
@@ -646,6 +674,41 @@ namespace System.Text.Yaml
                 if (next == -2)
                 {
                     return YamlStep.NeedMoreData;
+                }
+
+                if (documentLine)
+                {
+                    // A document root's properties on its '---' line, written back there by the DOM.
+                    props.DocumentLine = OnDocumentLine;
+                    if (next == (byte)'s' && props.TagLength > 0 && _readerOptions.AcceptUnityStrippedMarker)
+                    {
+                        int marker = YamlMatchUnityStrippedMarker(c.Pos);
+                        if (marker == -2)
+                        {
+                            return YamlStep.NeedMoreData;
+                        }
+
+                        if (marker > 0)
+                        {
+                            // Only at the end of the line: "stripped x" stays the root's content, as without the option.
+                            YamlCursor afterMarker = c;
+                            afterMarker.Pos += marker;
+                            afterMarker.Column += marker;
+                            YamlSkipBlanks(ref afterMarker);
+                            int rest = YamlPeek(afterMarker.Pos);
+                            if (rest == -2)
+                            {
+                                return YamlStep.NeedMoreData;
+                            }
+
+                            if (rest == -1 || YamlIsBreak((byte)rest) || rest == (byte)'#')
+                            {
+                                c = afterMarker;
+                                next = rest;
+                                props.DocumentLine |= UnityStripped;
+                            }
+                        }
+                    }
                 }
 
                 if (next == -1 || YamlIsBreak((byte)next) || next == (byte)'#')

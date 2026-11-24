@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1000
+GameObject:
+  m_Name: Hero
+  m_IsActive: 1
+--- !u!4 &1001
+Transform:
+  m_GameObject: {fileID: 1000}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
+--- !u!4 &400000 stripped
+Transform:
+  m_PrefabInstance: {fileID: 100100000}

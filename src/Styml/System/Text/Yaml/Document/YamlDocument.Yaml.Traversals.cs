@@ -164,16 +164,21 @@ namespace System.Text.Yaml
 
             if (block && row.HasNodeInfo && _yaml!.TryGet(index, out NodeInfo info))
             {
-                if (info.Anchor is not null && !state.SuppressAnchors)
+                if ((info.DocumentLine & Utf8YamlReader.OnDocumentLine) != 0 && !writer.Options.IgnoreSourceStyles)
                 {
-                    writer.WriteAnchor(info.Anchor);
+                    // A document root whose properties were on its '---' line: there again, right after WriteDocumentStart.
+                    writer.KeepRootPropertiesOnMarkerLine();
                 }
 
-                if (info.Tag is not null)
+                // M5d: the tag in the form that reads back without the source's %TAG directives (the same text for a local, a
+                // verbatim or a !! tag). The source's order of the two properties is kept.
+                WriteNodeProperties(writer, info.Anchor is not null && !state.SuppressAnchors ? info.Anchor : null,
+                    info.Tag is null ? null : WritableTag(writer, info.Tag, info.ExpandedTag), info.TagFirst);
+
+                if ((info.DocumentLine & Utf8YamlReader.UnityStripped) != 0)
                 {
-                    // M5d: the form that reads back without the source's %TAG directives (the same text for a local, a
-                    // verbatim or a !! tag).
-                    writer.WriteTag(StandAloneTag(info));
+                    // Unity's stripped marker goes only on a document's '---' line, after the root's tag.
+                    writer.TryWriteUnityStrippedMarker();
                 }
             }
 
@@ -224,15 +229,8 @@ namespace System.Text.Yaml
                             {
                                 if (block && child.HasNodeInfo && _yaml!.TryGet(i, out NodeInfo keyInfo))
                                 {
-                                    if (keyInfo.Anchor is not null && !state.SuppressAnchors)
-                                    {
-                                        writer.WriteAnchor(keyInfo.Anchor);
-                                    }
-
-                                    if (keyInfo.Tag is not null)
-                                    {
-                                        writer.WriteTag(keyInfo.Tag);
-                                    }
+                                    WriteNodeProperties(writer, keyInfo.Anchor is not null && !state.SuppressAnchors ? keyInfo.Anchor : null,
+                                        keyInfo.Tag is null ? null : WritableTag(writer, keyInfo.Tag, keyInfo.ExpandedTag), keyInfo.TagFirst);
                                 }
 
                                 WritePropertyName(child, writer);
@@ -281,11 +279,36 @@ namespace System.Text.Yaml
                     break;
                 default:
                     Debug.Assert(row.TokenType == YamlTokenType.Null);
-                    writer.WriteNullValue();
+                    WriteNull(index, row, writer);
                     break;
             }
 
             return index + DbRow.Size;
+        }
+
+        // A node's anchor and tag, in the source's order (tag first when it was so written), unless IgnoreSourceStyles.
+        private static void WriteNodeProperties(Utf8YamlWriter writer, string? anchor, string? tag, bool tagFirst)
+        {
+            if (tagFirst && tag is not null && !writer.Options.IgnoreSourceStyles)
+            {
+                writer.WriteTag(tag);
+                if (anchor is not null)
+                {
+                    writer.WriteAnchor(anchor);
+                }
+
+                return;
+            }
+
+            if (anchor is not null)
+            {
+                writer.WriteAnchor(anchor);
+            }
+
+            if (tag is not null)
+            {
+                writer.WriteTag(tag);
+            }
         }
 
         // A YAML number spelling (0x1F, .inf, +1) is plain YAML for a block writer; a JSON-compatible writer gets its value.
@@ -296,6 +319,12 @@ namespace System.Text.Yaml
             if (_yaml is not { HasYamlNumbers: true } || YamlReaderHelper.IsJsonNumber(text))
             {
                 writer.WriteNumberValue(text);
+            }
+            else if (writer.WritesYamlText && !writer.Options.IgnoreSourceStyles && ReadsAsTheSameNumber(index, text, writer.Options.ReadSchema))
+            {
+                // Written as it was read (0x1F, 012, 1_000), as JsonElement.WriteTo keeps a number's text: the output reads
+                // to the same number, and a hash or a blob keeps its digits.
+                writer.WriteYamlNumberText(text);
             }
             else if (TryGetValue(index, out long l))
             {
@@ -313,6 +342,41 @@ namespace System.Text.Yaml
             {
                 // Not a number in any spelling (bytes changed after the parse): the writer's own check reports it.
                 writer.WriteNumberValue(text);
+            }
+        }
+
+        // Whether `text`, the number at `index`, reads to the same number under `schema` as under the document's own.
+        private bool ReadsAsTheSameNumber(int index, ReadOnlySpan<byte> text, YamlSchemaKind schema)
+        {
+            if (schema == ParsedSchema)
+            {
+                return true;
+            }
+
+            try
+            {
+                var reader = new Utf8YamlReader(text, new YamlReaderOptions { Schema = schema });
+                if (!reader.Read() || reader.TokenType != YamlTokenType.Number)
+                {
+                    return false;
+                }
+
+                if (TryGetValue(index, out long l))
+                {
+                    return reader.TryGetInt64(out long other) && other == l;
+                }
+
+                if (TryGetValue(index, out ulong ul))
+                {
+                    return reader.TryGetUInt64(out ulong other) && other == ul;
+                }
+
+                return TryGetValue(index, out double d) && reader.TryGetDouble(out double otherDouble) && otherDouble.Equals(d);
+            }
+            catch (YamlException)
+            {
+                // The JSON schema refuses the text.
+                return false;
             }
         }
 
@@ -431,7 +495,7 @@ namespace System.Text.Yaml
         internal byte[] WriteYamlNodeToBytes(int index)
         {
             var buffer = new ArrayBufferWriterOfByte();
-            using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { Style = YamlWriterStyle.Block, NewLine = "\n", MaxDepth = Math.Max(TraversalMaxDepth * 2, 64), SkipValidation = true }))
+            using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { Style = YamlWriterStyle.Block, NewLine = "\n", MaxDepth = Math.Max(TraversalMaxDepth * 2, 64), SkipValidation = true, ReadSchema = Schema }))
             {
                 WriteYamlElementTo(index, writer);
             }

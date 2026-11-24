@@ -195,7 +195,18 @@ namespace System.Text.Yaml
         /// <exception cref="InvalidOperationException">
         /// The writer is inside a collection or a string, or after a property name, while validation is enabled.
         /// </exception>
-        public void WriteDocumentStart()
+        public void WriteDocumentStart() => WriteDocumentStart(rootPropertiesOnMarkerLine: false);
+
+        /// <summary>
+        /// Writes <c>---</c>, the start of a new document; with <paramref name="rootPropertiesOnMarkerLine"/>, the root
+        /// node's properties (<see cref="WriteTag(string)"/>, <see cref="WriteAnchor(string)"/>) go on that line
+        /// (<c>--- !u!1 &amp;1000</c>, as Unity writes its objects) and the root starts on the next line.
+        /// </summary>
+        /// <param name="rootPropertiesOnMarkerLine">Whether the root's properties go on the <c>---</c> line.</param>
+        /// <exception cref="InvalidOperationException">
+        /// The writer is inside a collection or a string, or after a property name, while validation is enabled.
+        /// </exception>
+        public void WriteDocumentStart(bool rootPropertiesOnMarkerLine)
         {
             if (!_options.SkipValidation && (CurrentDepth != 0 || IsWritingPartialString || _tokenType == YamlTokenType.PropertyName))
             {
@@ -215,6 +226,8 @@ namespace System.Text.Yaml
                     ThrowHelper.ThrowInvalidOperationException_NodePropertiesWithoutNode();
                 }
             }
+
+            ScopeTagDirectivesToNewDocument();
 
             // In block style a completed root value has written its line break; in JSON-compatible style, the
             // marker goes on a line of its own.
@@ -242,6 +255,8 @@ namespace System.Text.Yaml
             {
                 _block.AfterDocumentStartMarker = true;
                 _block.YamlDirectivePending = false;
+                _block.PropertiesOnMarkerLine = rootPropertiesOnMarkerLine;
+                _block.OnMarkerLine = false;
             }
         }
 
@@ -469,8 +484,9 @@ namespace System.Text.Yaml
         }
 
         /// <summary>
-        /// The next string value was a plain scalar of a <see cref="YamlDocument"/>: plain where the syntactic check
-        /// allows it (see <see cref="_plainFromSource"/>). Ignored in JSON-compatible style.
+        /// The next string value or key was a plain scalar of a <see cref="YamlDocument"/> that the output's reading schema
+        /// reads as the same string: plain where the syntactic check allows it (see <see cref="_plainFromSource"/>). Ignored
+        /// in JSON-compatible style.
         /// </summary>
         internal void HintPlainFromSource()
         {
@@ -1146,14 +1162,19 @@ namespace System.Text.Yaml
             key = UnescapeForBlock(key, ref unescaped, stackalloc byte[YamlConstants.StackallocByteThreshold]);
 
             YamlScalarStyle hint = YamlScalarStyle.None;
+            bool fromSource = false;
             if (consumeHint)
             {
                 hint = _scalarStyleHint;
+                fromSource = _plainFromSource && hint == YamlScalarStyle.Plain;
                 _scalarStyleHint = YamlScalarStyle.None;
                 _plainFromSource = false;
             }
 
-            bool plain = hint is not (YamlScalarStyle.DoubleQuoted or YamlScalarStyle.SingleQuoted) && YamlWriterHelper.IsBlockPlainKey(key, _lenient);
+            // A plain source key (the DOM's hint) needs only the syntactic check, as a plain source value does.
+            bool plain = hint is not (YamlScalarStyle.DoubleQuoted or YamlScalarStyle.SingleQuoted)
+                && (fromSource ? YamlWriterHelper.IsBlockPlainSyntax(key) && !(_lenient && YamlWriterHelper.HasSpaceBeforeAsterisk(key))
+                    : YamlWriterHelper.IsBlockPlainKey(key, _lenient));
 
             // The written form is known before anything follows the entry's start, so "? " can still go first.
             byte[] escaped = ArrayPool<byte>.Shared.Rent(YamlWriterHelper.GetMaxBlockEscapedLength(key.Length) + 2);
@@ -1199,9 +1220,11 @@ namespace System.Text.Yaml
         private void WriteBlockKeyText(ReadOnlySpan<byte> key, bool consumeHint)
         {
             YamlScalarStyle hint = YamlScalarStyle.None;
+            bool fromSource = false;
             if (consumeHint)
             {
                 hint = _scalarStyleHint;
+                fromSource = _plainFromSource && hint == YamlScalarStyle.Plain;
                 _scalarStyleHint = YamlScalarStyle.None;
                 _plainFromSource = false;
             }
@@ -1226,7 +1249,9 @@ namespace System.Text.Yaml
             }
 
             bool plain = hint is not (YamlScalarStyle.DoubleQuoted or YamlScalarStyle.SingleQuoted)
-                && (_plainNumberKey || YamlWriterHelper.IsBlockPlainKey(key, _lenient))
+                && (_plainNumberKey || (fromSource
+                    ? YamlWriterHelper.IsBlockPlainSyntax(key) && !(_lenient && YamlWriterHelper.HasSpaceBeforeAsterisk(key))
+                    : YamlWriterHelper.IsBlockPlainKey(key, _lenient)))
                 && (!flow || YamlWriterHelper.IsFlowPlain(key, _lenient))
                 && !EncoderEscapes(key);
 
@@ -2252,6 +2277,25 @@ namespace System.Text.Yaml
             BytesPending += bytesWritten;
             EndBlockScalar(YamlTokenType.Number);
         }
+
+        /// <summary>
+        /// A document's number written with its source text (<c>0x1F</c>, <c>012</c>, <c>1_000</c>), in block style: the
+        /// document has checked that the text reads to its number under <see cref="YamlWriterOptions.ReadSchema"/>.
+        /// </summary>
+        internal void WriteYamlNumberText(ReadOnlySpan<byte> text)
+        {
+            Debug.Assert(_style == WriterStyleBlock && text.Length > 0);
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
+            WriteNumberValueBlock(text);
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = YamlTokenType.Number;
+        }
+
+        internal bool WritesYamlText => _style == WriterStyleBlock;
 
         // A formatted number (the raw-number path, and the names of 5.7's non-finite floats): copied as it is.
         [MethodImpl(MethodImplOptions.NoInlining)]

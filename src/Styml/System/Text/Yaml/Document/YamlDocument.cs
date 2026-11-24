@@ -854,7 +854,7 @@ namespace System.Text.Yaml
                     writer.WriteBooleanValue(value: false);
                     return;
                 case YamlTokenType.Null:
-                    writer.WriteNullValue();
+                    WriteNull(index, row, writer);
                     return;
             }
 
@@ -899,7 +899,7 @@ namespace System.Text.Yaml
                         writer.WriteBooleanValue(value: false);
                         continue;
                     case YamlTokenType.Null:
-                        writer.WriteNullValue();
+                        WriteNull(i, row, writer);
                         continue;
                     case YamlTokenType.StartObject:
                         WriteSourceCollectionStyle(i, writer);
@@ -978,7 +978,14 @@ namespace System.Text.Yaml
 
             try
             {
-                writer.WritePropertyName(UnescapeString(row, out rented));
+                ReadOnlySpan<byte> name = UnescapeString(row, out rented);
+                if (writer.KeepsSourceStyles && (row.ScalarFlags & DbRow.PlainFlag) != 0 && ReadsAsAString(name, ParsedSchema, writer.Options.ReadSchema))
+                {
+                    // A plain source key (y, on in a flow vector) stays plain where the output's schema reads it as a string.
+                    writer.HintPlainFromSource();
+                }
+
+                writer.WritePropertyName(name);
             }
             finally
             {
@@ -988,13 +995,7 @@ namespace System.Text.Yaml
 
         private void WriteString(in DbRow row, Utf8YamlWriter writer)
         {
-            if (row.ScalarStyle == YamlScalarStyle.Plain)
-            {
-                // M5a: a plain source scalar, read as a string under the document's schema, is written back plain where
-                // the syntax allows it (the writer skips its resolution check for it).
-                writer.HintPlainFromSource();
-            }
-            else if (row.ScalarStyle is not YamlScalarStyle.None)
+            if (row.ScalarStyle is not (YamlScalarStyle.None or YamlScalarStyle.Plain))
             {
                 // M5f: the source's style, single- or double-quoted, literal or folded, where
                 // the writer can hold the value in it; its default choice otherwise. The merge rewrite's own hint goes first.
@@ -1005,7 +1006,16 @@ namespace System.Text.Yaml
 
             try
             {
-                writer.WriteStringValue(UnescapeString(row, out rented));
+                ReadOnlySpan<byte> text = UnescapeString(row, out rented);
+                if (row.ScalarStyle == YamlScalarStyle.Plain && ReadsAsAString(text, ParsedSchema, writer.Options.ReadSchema))
+                {
+                    // M5a: a plain source scalar, read as a string under the document's schema, is written back plain where
+                    // the syntax allows it (the writer skips its resolution check for it), when the output's schema reads
+                    // it as the same string (y and on under the core schema, not under YAML 1.1).
+                    writer.HintPlainFromSource();
+                }
+
+                writer.WriteStringValue(text);
             }
             finally
             {
@@ -1018,9 +1028,70 @@ namespace System.Text.Yaml
             YamlReaderOptions readerOptions,
             ref MetadataDb database,
             ref StackRowStack stack,
-            out YamlTables? tables)
+            out YamlTables? tables,
+            YamlTagDirectives? tagDirectives = null)
         {
-            ParseYaml(utf8YamlSpan, readerOptions, ref database, ref stack, out tables);
+            ParseYaml(utf8YamlSpan, readerOptions, ref database, ref stack, out tables, tagDirectives);
+        }
+
+        // A null: an empty one in the source (key: or key: with its blank) is written back empty in block style, unless
+        // IgnoreSourceStyles; any other is written null, as a created null is.
+        private void WriteNull(int index, in DbRow row, Utf8YamlWriter writer)
+        {
+            if (row.SizeOrLength == 0 && writer.KeepsSourceStyles)
+            {
+                writer.WriteEmptyValue(keepBlank: EmptyValueHasBlank(row));
+                return;
+            }
+
+            writer.WriteNullValue();
+        }
+
+        // Whether the source had a blank between the indicator (':' or '-', or the value's properties) and the end of an
+        // empty value's line: the empty value's position is what follows it (the next line's content, or a flow ',' or '}').
+        private bool EmptyValueHasBlank(in DbRow row)
+        {
+            ReadOnlySpan<byte> source = _utf8Yaml.Span;
+            int i = Math.Min(row.Location, source.Length) - 1;
+            int blanks = SkipBlanksBack(source, ref i);
+            if (i >= 0 && source[i] == (byte)'\n')
+            {
+                // The position was the next line's content: what was skipped is its indentation.
+                i--;
+                if (i >= 0 && source[i] == (byte)'\r')
+                {
+                    i--;
+                }
+
+                blanks = SkipBlanksBack(source, ref i);
+            }
+
+            // The blanks after the indicator, or after the value's properties (key: &a).
+            return i < 0 || blanks > 0;
+        }
+
+        private static int SkipBlanksBack(ReadOnlySpan<byte> source, ref int i)
+        {
+            int blanks = 0;
+            while (i >= 0 && source[i] is (byte)' ' or (byte)'\t')
+            {
+                blanks++;
+                i--;
+            }
+
+            return blanks;
+        }
+
+        // Whether `text`, a plain scalar read as a string under `source`, reads as a string under `schema`, the output's.
+        internal static bool ReadsAsAString(ReadOnlySpan<byte> text, YamlSchemaKind source, YamlSchemaKind schema)
+        {
+            if (schema == source || schema == YamlSchemaKind.Failsafe || text.IsEmpty)
+            {
+                return true;
+            }
+
+            return schema != YamlSchemaKind.Json
+                && YamlReaderHelper.ResolveYamlPlainScalar(text, yaml11: schema == YamlSchemaKind.Yaml11) == YamlTokenType.String;
         }
 
         private static void ValidateNoDuplicateProperties(YamlDocument document)

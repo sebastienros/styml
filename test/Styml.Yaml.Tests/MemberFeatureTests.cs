@@ -420,7 +420,8 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(YamlSchemaKind.Yaml11, sorted.Options.Schema);
             Assert.Equal(YamlDuplicateKeyHandling.FirstWins, sorted.Options.DuplicateKeyHandling);
             Assert.True(sorted.Options.IndentSequences && sorted.Options.ExpandSequenceItems && sorted.Options.QuoteForLenientReaders);
-            Assert.True(sorted.Options.ResolveMergeKeys && sorted.Options.AcceptLenientScalars && sorted.Options.DisallowImplicitCollectionKeys);
+            Assert.True(sorted.Options.ResolveMergeKeys && sorted.Options.AcceptLenientScalars && sorted.Options.DisallowImplicitCollectionKeys
+                && sorted.Options.InheritTagDirectives && sorted.Options.AcceptUnityStrippedMarker);
             Assert.Equal(40, sorted.Options.MaxLineWidth);
             Assert.Equal(7, sorted.Options.MaxAliasExpansion);
             Assert.Equal(YamlWriterStyle.Block, sorted.Options.WriteStyle);
@@ -454,7 +455,9 @@ namespace System.Text.Yaml.Tests
         MaxAliasExpansion = 7,
         ResolveMergeKeys = true,
         AcceptLenientScalars = true,
-        DisallowImplicitCollectionKeys = true)]
+        DisallowImplicitCollectionKeys = true,
+        InheritTagDirectives = true,
+        AcceptUnityStrippedMarker = true)]
     [YamlSerializable(typeof(MemberFeatureTests.Unsorted))]
     [YamlSerializable(typeof(MemberFeatureTests.Empties))]
     internal partial class SortedContext : YamlSerializerContext;

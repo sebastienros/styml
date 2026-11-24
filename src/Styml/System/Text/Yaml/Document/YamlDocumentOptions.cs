@@ -123,6 +123,19 @@ namespace System.Text.Yaml
         public YamlSchemaKind Schema { get; set; }
 
         /// <summary>
+        /// Gets or sets whether a document with no directives keeps the previous document's <c>%TAG</c> handles, as YAML 1.1
+        /// reads a stream (<see cref="YamlReaderOptions.InheritTagDirectives"/>). <see langword="false"/> by default.
+        /// </summary>
+        public bool InheritTagDirectives { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether Unity's <c>stripped</c> marker is accepted on a document's <c>---</c> line
+        /// (<see cref="YamlReaderOptions.AcceptUnityStrippedMarker"/>); the root element's
+        /// <see cref="YamlElement.IsUnityStripped"/> reports it. <see langword="false"/> by default.
+        /// </summary>
+        public bool AcceptUnityStrippedMarker { get; set; }
+
+        /// <summary>
         /// Gets or sets the most nodes that expanding aliases may add when a document's nodes are copied: a
         /// <see cref="Nodes.YamlNode"/> made from the document, an element written or cloned apart from the anchor it
         /// refers to, or an element deserialized. Reading, enumerating and comparing the document copy nothing, so the
@@ -178,6 +191,8 @@ namespace System.Text.Yaml
                 MaxDepth = MaxDepth,
                 Schema = Schema,
                 AcceptLenientScalars = AcceptLenientScalars,
+                InheritTagDirectives = InheritTagDirectives,
+                AcceptUnityStrippedMarker = AcceptUnityStrippedMarker,
             };
         }
     }

@@ -110,6 +110,10 @@ namespace System.Text.Yaml.SourceGeneration
 
         public required bool? DisallowImplicitCollectionKeys { get; init; }
 
+        public required bool? InheritTagDirectives { get; init; }
+
+        public required bool? AcceptUnityStrippedMarker { get; init; }
+
         public YamlNumberHandling GetEffectiveNumberHandling()
             => NumberHandling ?? (Defaults is YamlSerializerDefaults.Web ? YamlNumberHandling.AllowReadingFromString : YamlNumberHandling.Strict);
 

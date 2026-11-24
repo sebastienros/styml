@@ -782,6 +782,16 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(2, document.RootElement.GetPropertyCount());
         }
 
+        // The written text reads back to the same nodes, with the same key kinds and value kinds.
+        private static void AssertReadsBack(YamlElement source, string written)
+        {
+            using YamlDocument again = YamlDocument.Parse(written);
+            Assert.True(YamlElement.DeepEquals(source, again.RootElement));
+            Assert.Equal(
+                source.EnumerateObject().Select(p => (p.KeyKind, p.Value.ValueKind)),
+                again.RootElement.EnumerateObject().Select(p => (p.KeyKind, p.Value.ValueKind)));
+        }
+
         [Fact]
         public void ExplicitBlockSequenceKey_EmptyEntry_DoesNotCorruptMetadataDb()
         {
@@ -794,12 +804,15 @@ namespace System.Text.Yaml.Tests
                 Assert.Equal(YamlValueKind.Null, Assert.Single(prop.GetKeyElement().EnumerateArray()).ValueKind);
                 Assert.Equal(YamlValueKind.Null, prop.Value.ValueKind);
 
-                Assert.Equal("? - null\n: null\n", Write(doc.RootElement));
+                // An empty value is written back empty, and reads back the same.
+                Assert.Equal("? -\n:\n", Write(doc.RootElement));
+                AssertReadsBack(doc.RootElement, "? -\n:\n");
             }
 
             YamlNode? node1 = YamlNode.Parse("? -");
             Assert.NotNull(node1);
-            Assert.Equal("? - null\n: null\n", node1!.ToYamlString(s_block));
+            Assert.Equal("? -\n:\n", node1!.ToYamlString(s_block));
+            Assert.True(YamlNode.DeepEquals(node1, YamlNode.Parse("? -\n:\n")));
 
             object? obj1 = YamlSerializer.Deserialize<object>("? -");
             Assert.NotNull(obj1);
@@ -817,12 +830,14 @@ namespace System.Text.Yaml.Tests
                 Assert.Equal("a", props[1].Name);
                 Assert.Equal(YamlValueKind.Null, props[1].Value.ValueKind);
 
-                Assert.Equal("? - null\n: null\na: null\n", Write(doc.RootElement));
+                Assert.Equal("? -\n:\na:\n", Write(doc.RootElement));
+                AssertReadsBack(doc.RootElement, "? -\n:\na:\n");
             }
 
             YamlNode? node2 = YamlNode.Parse("? -\na:");
             Assert.NotNull(node2);
-            Assert.Equal("? - null\n: null\na: null\n", node2!.ToYamlString(s_block));
+            Assert.Equal("? -\n:\na:\n", node2!.ToYamlString(s_block));
+            Assert.True(YamlNode.DeepEquals(node2, YamlNode.Parse("? -\n:\na:\n")));
 
             object? obj2 = YamlSerializer.Deserialize<object>("? -\na:");
             Assert.NotNull(obj2);

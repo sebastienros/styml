@@ -681,8 +681,8 @@ a: 2
 ### The DOM
 
 `YamlNode` (`YamlObject`, `YamlArray`, `YamlValue`) and the read-only `YamlDocument` parse YAML and keep its scalar and
-collection styles, anchors and tags, so an edited document is written back in its own styles (comments are not
-kept):
+collection styles, anchors and tags in their order, numbers as written (`0x1F`, `0777`) and empty values, so an edited
+document is written back in its own styles and text (comments are not kept):
 
 <!-- sample:dom -->
 ```csharp
@@ -832,6 +832,130 @@ string jsonOut = YamlSerializer.Serialize(value, new YamlSerializerOptions { Wri
 {"name":"web","ports":[80,443]}
 ```
 <!-- /sample:json -->
+
+### Unity's YAML
+
+Unity writes its scenes, prefabs and assets as a stream of documents: the `%YAML 1.1` and `%TAG !u!
+tag:unity3d.com,2011:` header once, then one object per document, `--- !u!<class ID> &<file ID>`, and `stripped` on the
+document line of a prefab's placeholder objects:
+
+- **The header:** a stream that declares `%YAML 1.1` keeps a document's `%TAG` handles for the later documents that
+  declare none, as YAML 1.1 reads a stream (section 7.4) and YamlDotNet's parser does, so the second object's `!u!` is
+  declared; the schema does not change on `%YAML 1.1`, it stays the core schema unless `Schema` says otherwise. YAML 1.2
+  makes each document independent, so for a Unity-like stream without the `%YAML 1.1` line, `InheritTagDirectives`
+  applies the same rule.
+- **`AcceptUnityStrippedMarker`,** off by default: `stripped` after a document's tag on its `---` line, reported by
+  `IsUnityStripped` on the reader, `YamlElement` and `YamlNode`.
+
+Typed models read the objects by their tags, with `TagMappings` on the expanded tags, and each document's anchor is its
+file ID. Under the core schema, the default, Unity's `0` and `1` flags are numbers (`int` members) and its GUIDs, hashes
+and hex blobs read as text into `string` members; `Yaml11` would read a value such as `n` or `on` as a boolean.
+
+<!-- sample:unity-types -->
+```csharp
+private const string Scene = """
+    %YAML 1.1
+    %TAG !u! tag:unity3d.com,2011:
+    --- !u!1 &1000
+    GameObject:
+      m_Name: Player
+      m_IsActive: 1
+    --- !u!4 &1001
+    Transform:
+      m_GameObject: {fileID: 1000}
+      m_LocalPosition: {x: 0, y: 1, z: -10}
+    --- !u!4 &400000 stripped
+    Transform:
+      m_PrefabInstance: {fileID: 100100000}
+
+    """;
+
+public abstract class UnityObject { }
+public sealed class GameObjectDocument : UnityObject { public GameObjectData? GameObject { get; set; } }
+public sealed class TransformDocument : UnityObject { public TransformData? Transform { get; set; } }
+public sealed class GameObjectData { public string? m_Name { get; set; } public int m_IsActive { get; set; } }
+public sealed class TransformData { public FileReference? m_GameObject { get; set; } public FileReference? m_PrefabInstance { get; set; } }
+public sealed class FileReference { public long fileID { get; set; } }
+```
+<!-- /sample:unity-types -->
+
+<!-- sample:unity-read -->
+```csharp
+var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, AcceptUnityStrippedMarker = true };
+var options = new YamlSerializerOptions();
+options.TagMappings.Add("tag:unity3d.com,2011:1", typeof(GameObjectDocument));
+options.TagMappings.Add("tag:unity3d.com,2011:4", typeof(TransformDocument));
+
+var objects = new List<string>();
+var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(Scene), readerOptions);
+while (reader.Read())
+{
+    string fileID = Encoding.UTF8.GetString(reader.Anchor.ToArray());
+    bool stripped = reader.IsUnityStripped;
+    objects.Add(YamlSerializer.Deserialize<UnityObject>(ref reader, options) switch
+    {
+        GameObjectDocument g => $"{fileID}: GameObject {g.GameObject!.m_Name}, active {g.GameObject.m_IsActive}",
+        TransformDocument { Transform.m_PrefabInstance: { } p } when stripped => $"{fileID}: stripped Transform of prefab instance {p.fileID}",
+        TransformDocument t => $"{fileID}: Transform of {t.Transform!.m_GameObject!.fileID}",
+        _ => fileID,
+    });
+}
+```
+
+```text
+1000: GameObject Player, active 1
+1001: Transform of 1000
+400000: stripped Transform of prefab instance 100100000
+```
+<!-- /sample:unity-read -->
+
+Written back through the DOM, a document keeps what it read: numbers as written, the order of a node's properties, the
+root's properties on its `---` line, a tag in its shorthand where the writer's own `%TAG` directives (`WriteDirective`)
+resolve it, and empty values. So a tool can change one value and write the file back with nothing else moved; the
+reader does not return a stream's directives, so the tool writes the header:
+
+<!-- sample:unity-write-back -->
+```csharp
+var readerOptions = new YamlReaderOptions { AllowMultipleValues = true, AcceptUnityStrippedMarker = true };
+var buffer = new ArrayBufferWriter<byte>();
+using (var writer = new Utf8YamlWriter(buffer))
+{
+    // The reader does not return a stream's directives: the header is written as Unity writes it.
+    writer.WriteDirective("%YAML 1.1");
+    writer.WriteDirective("%TAG !u! tag:unity3d.com,2011:");
+    var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(Scene), readerOptions);
+    while (reader.Read())
+    {
+        YamlNode node = YamlNode.Parse(ref reader)!;
+        if (node["GameObject"] is YamlNode gameObject)
+        {
+            gameObject["m_Name"] = "Hero";
+        }
+
+        writer.WriteDocumentStart();
+        node.WriteTo(writer);
+    }
+}
+
+string written = Encoding.UTF8.GetString(buffer.WrittenSpan.ToArray());
+```
+
+```yaml
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1000
+GameObject:
+  m_Name: Hero
+  m_IsActive: 1
+--- !u!4 &1001
+Transform:
+  m_GameObject: {fileID: 1000}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
+--- !u!4 &400000 stripped
+Transform:
+  m_PrefabInstance: {fileID: 100100000}
+```
+<!-- /sample:unity-write-back -->
 
 ## Versions and package feeds
 

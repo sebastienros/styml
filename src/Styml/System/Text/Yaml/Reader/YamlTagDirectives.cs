@@ -11,7 +11,10 @@ namespace System.Text.Yaml
     /// document starts. Copies of the reader state (resumed readers, readers scoped to one value, the constructor
     /// replay path) can share one: a state copied or restored inside the header can see handles from directive lines it
     /// has not consumed yet, but it reads those same lines again and adds the same handles in the same order.
-    /// Allocated only for documents that declare handles.
+    /// Allocated only for documents that declare handles. Since every header starts from no table, no later header
+    /// changes a table once its document has started, so the readers and documents that hold it share it without a copy:
+    /// a later document that declares none (InheritTagDirectives, or a stream that declared %YAML 1.1), a value read into
+    /// the DOM from a reader, a reader scoped to one value and an anchor's recorded entry.
     /// </summary>
     internal sealed class YamlTagDirectives
     {
@@ -44,6 +47,24 @@ namespace System.Text.Yaml
             table ??= new YamlTagDirectives();
             table.AddOrUpdate(handle, prefix);
             return table;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="written"/>, a tag with a named handle (<c>!u!1</c>), expands through
+        /// <paramref name="table"/> to <paramref name="expanded"/>: the writer can write it in that shorthand.
+        /// </summary>
+        internal static bool ExpandsTo(YamlTagDirectives table, string written, string expanded)
+        {
+            byte[] tag = Encoding.UTF8.GetBytes(written);
+            if (!TrySplitShorthand(tag, out ReadOnlySpan<byte> handle, out _) || handle.Length <= 2 || !table.TryGetPrefix(handle, out _))
+            {
+                return false;
+            }
+
+            byte[] target = Encoding.UTF8.GetBytes(expanded);
+            Span<byte> buffer = target.Length + 1 <= 256 ? stackalloc byte[256] : new byte[target.Length + 1];
+            int length = Expand(table, tag, buffer);
+            return length == target.Length && buffer.Slice(0, length).SequenceEqual(target);
         }
 
         private void AddOrUpdate(ReadOnlySpan<byte> handle, ReadOnlySpan<byte> prefix)

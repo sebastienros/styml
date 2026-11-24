@@ -23,6 +23,7 @@
          where only the test output is present (the net481 leg on another machine). -->
     <None Include="..\..\bench\corpus\*.yaml;..\..\bench\corpus\*.json" LinkBase="BenchCorpus" CopyToOutputDirectory="PreserveNewest" Visible="false" />
     <None Include="PublicApi\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Unity\*.unity;Unity\*.prefab;Unity\*.mat" CopyToOutputDirectory="PreserveNewest" />
     <!-- The README's samples: their expected outputs, and the files ReadmeDocTests compares (the README, the options
          reference and the samples' source), copied so that the tests also run where the repository is not checked out. -->
     <None Include="Readme\expected\*.txt" CopyToOutputDirectory="PreserveNewest" />

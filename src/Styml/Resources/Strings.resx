@@ -914,6 +914,9 @@
   <data name="YamlGrammar_InvalidDirective" xml:space="preserve">
     <value>Invalid YAML directive.</value>
   </data>
+  <data name="UnityStrippedMarkerPosition" xml:space="preserve">
+    <value>Unity's stripped marker goes after a document root's tag on its '---' line: call WriteDocumentStart(rootPropertiesOnMarkerLine: true) and WriteTag first.</value>
+  </data>
   <data name="YamlGrammar_DirectiveWithoutDocument" xml:space="preserve">
     <value>YAML directives must be followed by a document start marker ('---').</value>
   </data>

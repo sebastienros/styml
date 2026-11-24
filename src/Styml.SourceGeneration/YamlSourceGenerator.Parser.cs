@@ -538,6 +538,8 @@ namespace System.Text.Yaml.SourceGeneration
                 bool? resolveMergeKeys = null;
                 bool? acceptLenientScalars = null;
                 bool? disallowImplicitCollectionKeys = null;
+                bool? inheritTagDirectives = null;
+                bool? acceptUnityStrippedMarker = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -731,6 +733,14 @@ namespace System.Text.Yaml.SourceGeneration
                             disallowImplicitCollectionKeys = (bool)namedArg.Value.Value!;
                             break;
 
+                        case nameof(YamlSourceGenerationOptionsAttribute.InheritTagDirectives):
+                            inheritTagDirectives = (bool)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(YamlSourceGenerationOptionsAttribute.AcceptUnityStrippedMarker):
+                            acceptUnityStrippedMarker = (bool)namedArg.Value.Value!;
+                            break;
+
                         case nameof(YamlSourceGenerationOptionsAttribute.TypeClassifiers):
                             typeClassifiers = new List<TypeRef>();
                             foreach (TypedConstant element in namedArg.Value.Values)
@@ -800,6 +810,8 @@ namespace System.Text.Yaml.SourceGeneration
                     ResolveMergeKeys = resolveMergeKeys,
                     AcceptLenientScalars = acceptLenientScalars,
                     DisallowImplicitCollectionKeys = disallowImplicitCollectionKeys,
+                    InheritTagDirectives = inheritTagDirectives,
+                    AcceptUnityStrippedMarker = acceptUnityStrippedMarker,
                 };
             }
 

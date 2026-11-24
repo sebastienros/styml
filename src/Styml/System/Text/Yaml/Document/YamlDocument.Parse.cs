@@ -460,6 +460,7 @@ namespace System.Text.Yaml
             ReadOnlySequence<byte> valueSequence = default;
             int padPrefix = 0;
             string? rootTag = null;
+            byte rootDocumentLine = reader.YamlDocumentLineFlags;
             string? rootExpandedTag = null;
 
             // M5b: a reader scoped to one value (a replay, a nested Deserialize) starts at the value's first byte, so the
@@ -515,6 +516,7 @@ namespace System.Text.Yaml
                         break;
                     case YamlTokenType.String when reader.ScalarStyle != YamlScalarStyle.DoubleQuoted || reader.YamlNeedsProcessing:
                         document = CreateForYamlString(ref reader);
+                        document.AttachRootDocumentLine(rootDocumentLine);
                         return true;
                     case YamlTokenType.Null when reader.ValueSpan.IsEmpty && !reader.HasValueSequence:
                         document = CreateForLiteral(YamlTokenType.Null);
@@ -589,12 +591,13 @@ namespace System.Text.Yaml
                             break;
                         }
 
-                        document = CreateForLiteral(reader.TokenType, cached: rootTag is null);
+                        document = CreateForLiteral(reader.TokenType, cached: rootTag is null && rootDocumentLine == 0);
                         if (rootTag is not null)
                         {
                             document.AttachRootTag(rootTag, rootExpandedTag);
                         }
 
+                        document.AttachRootDocumentLine(rootDocumentLine);
                         return true;
 
                     case YamlTokenType.Number:
@@ -715,8 +718,9 @@ namespace System.Text.Yaml
                     }
 
                     rentedSpan.Slice(0, padPrefix).Fill((byte)' ');
+                    BlankUnityStrippedMarker(rentedSpan, rootDocumentLine);
 
-                    document = Parse(rented.AsMemory(0, length), copyOptions, duplicateKeyHandling, rented);
+                    document = Parse(rented.AsMemory(0, length), copyOptions, duplicateKeyHandling, rented, tagDirectives: reader.YamlTagDirectives);
                 }
                 catch
                 {
@@ -741,8 +745,9 @@ namespace System.Text.Yaml
                 }
 
                 owned.AsSpan(0, padPrefix).Fill((byte)' ');
+                BlankUnityStrippedMarker(owned, rootDocumentLine);
 
-                document = ParseUnrented(owned, copyOptions, duplicateKeyHandling, reader.TokenType);
+                document = ParseUnrented(owned, copyOptions, duplicateKeyHandling, reader.TokenType, tagDirectives: reader.YamlTagDirectives);
             }
 
             if (rootTag is not null)
@@ -750,7 +755,30 @@ namespace System.Text.Yaml
                 document.AttachRootTag(rootTag, rootExpandedTag);
             }
 
+            document.AttachRootDocumentLine(rootDocumentLine);
             return true;
+        }
+
+        // The copy of a root read with Unity's stripped marker starts on its properties' line, which holds the marker; the
+        // copy is not on a '---' line, where the marker is read, so it is turned into spaces (the flag is attached).
+        private static void BlankUnityStrippedMarker(Span<byte> copy, byte rootDocumentLine)
+        {
+            if ((rootDocumentLine & Utf8YamlReader.UnityStripped) == 0)
+            {
+                return;
+            }
+
+            int lineEnd = copy.IndexOfAny((byte)'\n', (byte)'\r');
+            Span<byte> line = lineEnd < 0 ? copy : copy.Slice(0, lineEnd);
+            for (int i = line.Length - 8; i > 0; i--)
+            {
+                if (line[i - 1] is (byte)' ' or (byte)'\t' && line.Slice(i, 8).SequenceEqual("stripped"u8)
+                    && (i + 8 == line.Length || line[i + 8] is (byte)' ' or (byte)'\t' or (byte)'#'))
+                {
+                    line.Slice(i, 8).Fill((byte)' ');
+                    return;
+                }
+            }
         }
 
         /// <summary>
@@ -769,7 +797,7 @@ namespace System.Text.Yaml
             string? anchor = reader.Anchor.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Anchor);
             string? tag = reader.Tag.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Tag);
             YamlTables? tables = null;
-            AddProperties(ref tables, 0, anchor, tag, tag is null ? null : reader.GetExpandedTag());
+            AddProperties(ref tables, 0, anchor, tag, tag is null ? null : reader.GetExpandedTag(), reader.YamlTagBeforeAnchor);
 
             // M5f: the row keeps the source's style (single-quoted, literal or folded; the payload's own form does
             // not depend on it), so that the element is written back in it. A plain source keeps no style: the writer's
@@ -872,7 +900,8 @@ namespace System.Text.Yaml
             YamlDuplicateKeyHandling duplicateKeyHandling,
             byte[]? extraRentedArrayPoolBytes = null,
             PooledByteBufferWriter? extraPooledByteBufferWriter = null,
-            int maxAliasExpansion = 0)
+            int maxAliasExpansion = 0,
+            YamlTagDirectives? tagDirectives = null)
         {
             ReadOnlySpan<byte> utf8YamlSpan = utf8Yaml.Span;
             var database = MetadataDb.CreateRented(utf8Yaml.Length, convertToAlloc: false);
@@ -882,7 +911,7 @@ namespace System.Text.Yaml
 
             try
             {
-                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out YamlTables? tables);
+                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out YamlTables? tables, tagDirectives);
                 ReadOnlyMemory<byte> payload = AttachDecoded(utf8Yaml, tables, rent: true, out combinedRented);
                 SetYamlOptions(tables, readerOptions, maxAliasExpansion);
                 document = new YamlDocument(payload, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter, isDisposable: true, tables);
@@ -920,7 +949,8 @@ namespace System.Text.Yaml
             YamlReaderOptions readerOptions,
             YamlDuplicateKeyHandling duplicateKeyHandling,
             YamlTokenType tokenType = YamlTokenType.None,
-            int maxAliasExpansion = 0)
+            int maxAliasExpansion = 0,
+            YamlTagDirectives? tagDirectives = null)
         {
             // These tokens should already have been processed.
             Debug.Assert(
@@ -935,7 +965,7 @@ namespace System.Text.Yaml
                 // For primitive types, we can avoid renting MetadataDb and creating StackRowStack.
                 database = MetadataDb.CreateLocked(utf8Yaml.Length);
                 StackRowStack stack = default;
-                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables);
+                Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables, tagDirectives);
             }
             else
             {
@@ -943,7 +973,7 @@ namespace System.Text.Yaml
                 var stack = new StackRowStack(YamlDocumentOptions.DefaultMaxDepth * StackRow.Size);
                 try
                 {
-                    Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables);
+                    Parse(utf8YamlSpan, readerOptions, ref database, ref stack, out tables, tagDirectives);
                 }
                 finally
                 {

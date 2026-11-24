@@ -1238,6 +1238,30 @@ namespace System.Text.Yaml
         }
 
         /// <summary>
+        /// Gets whether this element is a document's root whose <c>---</c> line carries Unity's <c>stripped</c> marker
+        /// (<c>--- !u!4 &amp;400000 stripped</c>), read with <see cref="YamlDocumentOptions.AcceptUnityStrippedMarker"/> or
+        /// <see cref="YamlReaderOptions.AcceptUnityStrippedMarker"/>. Written back after the root's tag on a
+        /// <c>---</c> line (<see cref="Utf8YamlWriter.WriteDocumentStart(bool)"/>).
+        /// </summary>
+        public bool IsUnityStripped
+        {
+            get
+            {
+                CheckValidInstance();
+                return _parent.IsUnityStripped(_idx);
+            }
+        }
+
+        /// <summary>Whether this element is a document root whose properties were on its '---' line.</summary>
+        internal bool PropertiesOnDocumentLine => _parent.PropertiesOnDocumentLine(_idx);
+
+        /// <summary>The source style of the scalar key of the property whose value this element is (Plain, quoted).</summary>
+        internal YamlScalarStyle PropertyKeyStyle => _parent.GetScalarStyle(_parent.NameRowOf(_rowIdx));
+
+        /// <summary>Whether this element's source wrote its tag before its anchor.</summary>
+        internal bool TagBeforeAnchor => _parent.TagBeforeAnchor(_idx);
+
+        /// <summary>
         ///   Gets the anchor of this node (<c>&amp;name</c>), without the <c>&amp;</c>, or <see langword="null"/> when it has none.
         /// </summary>
         /// <remarks>
@@ -1418,13 +1442,9 @@ namespace System.Text.Yaml
                 return YamlHelpers.AreEqualYamlNumbers(left, right);
             }
 
-            // A YAML spelling: by value (an integer exactly, otherwise as a double, NaN equal to itself).
-            if (element1.TryGetInt64(out long l1) && element2.TryGetInt64(out long l2))
-            {
-                return l1 == l2;
-            }
-
-            return element1.TryGetDouble(out double d1) && element2.TryGetDouble(out double d2) && d1.Equals(d2);
+            // A YAML spelling: by value, at any size (an integer by its digits, a decimal by System.Text.Json's digits
+            // comparison, NaN equal to itself), as the collection-key identity compares them.
+            return string.Equals(element1._parent.NumberNormalForm(element1._idx), element2._parent.NumberNormalForm(element2._idx), StringComparison.Ordinal);
         }
 
         // M5e: YamlProperty.KeyKind and GetKeyElement, for the property whose value this element is.

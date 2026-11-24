@@ -11,8 +11,7 @@ namespace System.Text.Yaml.Tests
     /// Integers with a leading zero. YAML 1.1 reads <c>012</c> as octal (10), the core schema as decimal (12), and
     /// <c>0o14</c> is octal in both. Every read of a document, an element or a node gives the typed read's value:
     /// the JSON number parser, which reads <c>012</c> as decimal, is not used for such a number under YAML 1.1.
-    /// An element writes the value (<c>10</c>), as it writes every YAML number spelling, so the text reads back the
-    /// same under any schema.
+    /// An element writes its text back where the writer's schema reads it to the same number, and the value elsewhere.
     /// </summary>
     public class LeadingZeroIntegerTests
     {
@@ -110,9 +109,22 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(expected, Assert.Single(YamlSerializer.Deserialize<Dictionary<long, string>>(scalar + ": x\n", options)!).Key);
         }
 
+        // The number the text reads to under `schema`, or null when it is not a number there.
+        private static long? ReadAs(string scalar, YamlSchemaKind schema)
+        {
+            try
+            {
+                return YamlSerializer.Deserialize<long>(scalar, new YamlSerializerOptions { Schema = schema });
+            }
+            catch (YamlException)
+            {
+                return null;
+            }
+        }
+
         [Theory]
         [MemberData(nameof(Forms))]
-        public void WriteBack_WritesTheValue(YamlSchemaKind schema, string scalar, long expected)
+        public void WriteBack_KeepsTheTextWhereItReadsTheSame(YamlSchemaKind schema, string scalar, long expected)
         {
             var documentOptions = new YamlDocumentOptions { Schema = schema };
             using YamlDocument document = YamlDocument.Parse("a: " + scalar + "\n", documentOptions);
@@ -120,25 +132,36 @@ namespace System.Text.Yaml.Tests
             YamlNode node = YamlNode.Parse("a: " + scalar + "\n", documentOptions: documentOptions)!["a"]!;
             object value = YamlSerializer.Deserialize<Dictionary<string, object>>("a: " + scalar + "\n", new YamlSerializerOptions { Schema = schema })!["a"];
 
-            // Under the document's schema or another one, in block style and in JSON.
+            // In block style the text is kept where the writer's schema reads it to the same number (always under the
+            // document's own); otherwise, and in JSON, the value is written.
             foreach (YamlSchemaKind written in new[] { YamlSchemaKind.Core, YamlSchemaKind.Yaml11 })
             {
                 foreach (YamlWriterStyle style in new[] { YamlWriterStyle.Block, YamlWriterStyle.JsonCompatible })
                 {
+                    bool keepsText = style == YamlWriterStyle.Block && (written == schema || ReadAs(scalar, written) == expected);
+                    string text = keepsText ? scalar : Text(expected);
                     var options = new YamlSerializerOptions { Schema = written, WriteStyle = style };
-                    Assert.Equal(Text(expected), YamlSerializer.Serialize(element, options).TrimEnd());
-                    Assert.Equal(Text(expected), YamlSerializer.Serialize(node, options).TrimEnd());
-                    Assert.Equal(Text(expected), YamlSerializer.Serialize(value, options).TrimEnd());
+                    Assert.Equal(text, YamlSerializer.Serialize(element, options).TrimEnd());
+                    Assert.Equal(text, YamlSerializer.Serialize(node, options).TrimEnd());
+                    Assert.Equal(text, YamlSerializer.Serialize(value, options).TrimEnd());
+                    Assert.Equal(expected, YamlSerializer.Deserialize<long>(YamlSerializer.Serialize(element, options), options));
                 }
             }
 
-            // The document's text reads back as the value under both schemas.
-            string text = YamlSerializer.Serialize(document, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block });
-            Assert.Equal("a: " + Text(expected), text.TrimEnd());
-            foreach (YamlSchemaKind reread in new[] { YamlSchemaKind.Core, YamlSchemaKind.Yaml11 })
-            {
-                Assert.Equal(expected, YamlSerializer.Deserialize<Dictionary<string, long>>(text, new YamlSerializerOptions { Schema = reread })!["a"]);
-            }
+            // Under the document's own schema the text is written as it was read, and reads back to the number.
+            var same = new YamlSerializerOptions { Schema = schema, WriteStyle = YamlWriterStyle.Block };
+            string written1 = YamlSerializer.Serialize(document, same);
+            Assert.Equal("a: " + scalar, written1.TrimEnd());
+            Assert.Equal(expected, YamlSerializer.Deserialize<Dictionary<string, long>>(written1, same)!["a"]);
+        }
+
+        [Fact]
+        public void WriteBack_AnOctalUnderACoreWriter_IsTheValue()
+        {
+            // 012 is 10 under YAML 1.1 and 12 under the core schema: a core writer gets the value, a YAML 1.1 one the text.
+            using YamlDocument document = YamlDocument.Parse("a: 012\n", new YamlDocumentOptions { Schema = YamlSchemaKind.Yaml11 });
+            Assert.Equal("a: 10", YamlSerializer.Serialize(document, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block }).TrimEnd());
+            Assert.Equal("a: 012", YamlSerializer.Serialize(document, new YamlSerializerOptions { Schema = YamlSchemaKind.Yaml11, WriteStyle = YamlWriterStyle.Block }).TrimEnd());
         }
 
         [Theory]
@@ -166,7 +189,8 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(double.PositiveInfinity, YamlSerializer.Deserialize<YamlValue>(".inf")!.GetValue<double>());
             Assert.Equal(31, YamlSerializer.Deserialize<YamlValue>("0x1F")!.GetValue<int>());
             Assert.Equal(YamlValueKind.Number, YamlSerializer.Deserialize<YamlValue>("0x1F")!.GetValueKind());
-            Assert.Equal("31", YamlSerializer.Serialize(YamlSerializer.Deserialize<YamlValue>("0x1F"), new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block }).TrimEnd());
+            Assert.Equal("0x1F", YamlSerializer.Serialize(YamlSerializer.Deserialize<YamlValue>("0x1F"), new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block }).TrimEnd());
+            Assert.Equal("31", YamlSerializer.Serialize(YamlSerializer.Deserialize<YamlValue>("0x1F"), new YamlSerializerOptions { WriteStyle = YamlWriterStyle.JsonCompatible }).TrimEnd());
             Assert.Equal(5, YamlSerializer.Deserialize<YamlValue>("0b101", new YamlSerializerOptions { Schema = YamlSchemaKind.Yaml11 })!.GetValue<int>());
             Assert.Equal("012", YamlSerializer.Deserialize<YamlValue>("012", new YamlSerializerOptions { Schema = YamlSchemaKind.Yaml11 })!.GetValue<YamlElement>().GetRawText());
         }

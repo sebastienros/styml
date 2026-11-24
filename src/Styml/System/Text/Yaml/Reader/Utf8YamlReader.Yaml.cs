@@ -27,6 +27,7 @@ namespace System.Text.Yaml
         private bool _yamlIsComplexKey;
         private bool _yamlNumberNotJson;
         private bool _yamlNeedsProcessing;
+        private byte _yamlDocumentLine; // YamlProperties.OnDocumentLine and UnityStripped, for a document's root
         private byte _yamlChomping;
         private int _yamlScalarIndent;
         private int _yamlRawStart;
@@ -39,6 +40,21 @@ namespace System.Text.Yaml
         /// for other tokens.
         /// </summary>
         public readonly YamlScalarStyle ScalarStyle => _yamlStyle;
+
+        /// <summary>
+        /// Gets whether the current node is the root of a document whose <c>---</c> line carries Unity's <c>stripped</c>
+        /// marker after the node's properties (<c>--- !u!4 &amp;400000 stripped</c>): a placeholder for an object of a source
+        /// prefab. Only with <see cref="YamlReaderOptions.AcceptUnityStrippedMarker"/>; <see langword="false"/> otherwise.
+        /// </summary>
+        public readonly bool IsUnityStripped => (_yamlDocumentLine & UnityStripped) != 0;
+
+        /// <summary>Whether the current node is a document's root whose properties are on the document's '---' line.</summary>
+        internal readonly bool YamlPropertiesOnDocumentLine => (_yamlDocumentLine & OnDocumentLine) != 0;
+
+        internal readonly byte YamlDocumentLineFlags => _yamlDocumentLine;
+
+        /// <summary>Whether the current node's tag is written before its anchor (<c>!t &amp;a</c>), for the DOM's write-back.</summary>
+        internal readonly bool YamlTagBeforeAnchor => _yamlTagLength > 0 && _yamlAnchorLength > 0 && _yamlTagStart < _yamlAnchorStart;
 
         /// <summary>Gets the anchor name (without '&amp;') of the current node, or an empty span.</summary>
         public readonly ReadOnlySpan<byte> Anchor => _yamlAnchorLength == 0 ? default
@@ -312,8 +328,15 @@ namespace System.Text.Yaml
             public int AnchorLength;
             public int TagStart;
             public int TagLength;
+
+            // A document root's properties written on its '---' line (OnDocumentLine), and Unity's stripped marker after
+            // them (UnityStripped, under AcceptUnityStrippedMarker).
+            public byte DocumentLine;
             public readonly bool Any => AnchorLength > 0 || TagLength > 0;
         }
+
+        internal const byte OnDocumentLine = 1;
+        internal const byte UnityStripped = 2;
 
         private bool ReadYaml()
         {
@@ -417,6 +440,7 @@ namespace System.Text.Yaml
             _yamlStyle = YamlScalarStyle.None;
             _yamlAnchorLength = 0;
             _yamlTagLength = 0;
+            _yamlDocumentLine = 0;
             _yamlIsFlow = false;
             _yamlIsAlias = false;
             _yamlIsComplexKey = false;
@@ -498,6 +522,7 @@ namespace System.Text.Yaml
             _yamlAnchorLength = props.AnchorLength;
             _yamlTagStart = props.TagStart;
             _yamlTagLength = props.TagLength;
+            _yamlDocumentLine = props.DocumentLine;
         }
 
         /// <summary>Emits a token that consumes nothing beyond the whitespace in front of it.</summary>

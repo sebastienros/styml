@@ -59,6 +59,8 @@ namespace System.Text.Yaml.SourceGeneration.UnitTests
                         ResolveMergeKeys = true,
                         AcceptLenientScalars = true,
                         DisallowImplicitCollectionKeys = true,
+                        InheritTagDirectives = true,
+                        AcceptUnityStrippedMarker = true,
                         DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingEmptyCollection)]
                     [YamlSerializable(typeof(Poco))]
                     internal partial class YamlContext : YamlSerializerContext { }
@@ -82,6 +84,8 @@ namespace System.Text.Yaml.SourceGeneration.UnitTests
             Assert.Contains("ResolveMergeKeys = true,", generated);
             Assert.Contains("AcceptLenientScalars = true,", generated);
             Assert.Contains("DisallowImplicitCollectionKeys = true,", generated);
+            Assert.Contains("InheritTagDirectives = true,", generated);
+            Assert.Contains("AcceptUnityStrippedMarker = true,", generated);
             Assert.Contains("DefaultIgnoreCondition = global::System.Text.Yaml.Serialization.YamlIgnoreCondition.WhenWritingEmptyCollection,", generated);
 
             // The enum wins when both are set: it is assigned after the bool.
