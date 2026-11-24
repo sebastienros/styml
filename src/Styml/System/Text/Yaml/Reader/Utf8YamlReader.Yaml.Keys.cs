@@ -32,7 +32,9 @@ namespace System.Text.Yaml
             /// <summary>The node is a collection (the key is <see cref="YamlKeyKind.Complex"/>).</summary>
             public bool Complex;
 
-            /// <summary>End of the last token of the node that consumed bytes.</summary>
+            /// <summary>End of the node's last content: the end of its last token that consumed bytes, without the
+            /// blanks, line breaks and comments a key or an empty node reads past (an empty node ends after its
+            /// indicator and properties).</summary>
             public int RawEnd;
 
             /// <summary>Indentation the key node's first token belongs to (+1): one less for a zero-indented sequence.</summary>
@@ -98,24 +100,25 @@ namespace System.Text.Yaml
                     {
                         YamlThrow(YamlGrammarError.UnexpectedEndOfFlow, new YamlCursor { Pos = copy._consumed, Line = copy._lineNumber, Column = copy._bytePositionInLine });
                     }
-                    if (copy._consumed > copy.TokenStartIndex)
+                    if (copy._tokenType == YamlTokenType.PropertyName && copy._yamlStyle is not (YamlScalarStyle.Literal or YamlScalarStyle.Folded))
+                    {
+                        // A key token reads past its own bytes to its ':', and an explicit key with no ':' on its line
+                        // reads the blanks, line breaks and comments after it: the key node's content ends at the key's
+                        // bytes (its closing quote included), or at the ':' and properties that follow them.
+                        int quote = copy._yamlStyle is YamlScalarStyle.SingleQuoted or YamlScalarStyle.DoubleQuoted ? 1 : 0;
+                        int keyEnd = Math.Min(copy._yamlValueWindowStart + copy.YamlValueBytes.Length + quote, copy._consumed);
+                        node.RawEnd = Math.Max(node.RawEnd, copy.YamlContentEnd(Math.Max(node.RawEnd, keyEnd), copy._consumed));
+                    }
+                    else if (copy._consumed > copy.TokenStartIndex)
                     {
                         node.RawEnd = Math.Max(node.RawEnd, copy._consumed);
                     }
-                    else if (copy._tokenType is not (YamlTokenType.EndObject or YamlTokenType.EndArray) && copy._consumed > node.RawEnd)
+                    else if (copy._tokenType is not (YamlTokenType.EndObject or YamlTokenType.EndArray))
                     {
-                        // A zero-width token inside a block collection (e.g. an empty sequence entry '-' or empty
-                        // explicit key '?') still consumed its structural indicator before reaching TokenStartIndex.
-                        // Trim trailing whitespace/line breaks that were skipped while peeking past the indicator.
-                        int end = copy._consumed;
-                        while (end > node.RawEnd && _buffer[end - 1] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n')
-                        {
-                            end--;
-                        }
-                        if (end > node.RawEnd)
-                        {
-                            node.RawEnd = end;
-                        }
+                        // An empty node (an entry '-' or a key '?' with no content) still consumed its indicator and
+                        // properties, then read past the blanks, line breaks and comments that follow them: the key
+                        // ends after the indicator and properties.
+                        node.RawEnd = Math.Max(node.RawEnd, copy.YamlContentEnd(node.RawEnd, copy._consumed));
                     }
                 }
             }
@@ -147,6 +150,35 @@ namespace System.Text.Yaml
             return YamlStep.Token;
         }
 
+        /// <summary>
+        /// End of the last byte in [<paramref name="from"/>, <paramref name="to"/>) that is not a blank, a line break
+        /// or part of a comment; <paramref name="from"/> when there is none.
+        /// </summary>
+        private readonly int YamlContentEnd(int from, int to)
+        {
+            int end = from;
+            for (int i = from; i < to; i++)
+            {
+                byte b = _buffer[i];
+                if (YamlIsWhiteSpaceOrBreak(b))
+                {
+                    continue;
+                }
+
+                if (b == (byte)'#' && (i == 0 || YamlIsWhiteSpaceOrBreak(_buffer[i - 1])))
+                {
+                    while (i + 1 < to && !YamlIsBreak(_buffer[i + 1]))
+                    {
+                        i++;
+                    }
+                    continue;
+                }
+
+                end = i + 1;
+            }
+            return end;
+        }
+
         private readonly void YamlEnsureStackForKeyNode(in YamlCursor at)
         {
 #if NET
@@ -167,8 +199,8 @@ namespace System.Text.Yaml
         }
 
         /// <summary>
-        /// Sets the token fields of a Complex key: ValueSpan is the raw key node, up to the end of its last token that
-        /// consumed bytes. Nothing is trimmed: a block scalar's trailing line breaks are its content (keep chomping).
+        /// Sets the token fields of a Complex key: ValueSpan is the raw key node, up to <see cref="YamlKeyNode.RawEnd"/>.
+        /// Nothing more is trimmed: a block scalar's trailing line breaks are its content (keep chomping).
         /// </summary>
         private void YamlSetComplexKey(in YamlKeyNode node)
         {

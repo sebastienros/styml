@@ -794,17 +794,12 @@ namespace System.Text.Yaml.Tests
                 Assert.Equal(YamlValueKind.Null, Assert.Single(prop.GetKeyElement().EnumerateArray()).ValueKind);
                 Assert.Equal(YamlValueKind.Null, prop.Value.ValueKind);
 
-                using var ms = new MemoryStream();
-                using (var writer = new Utf8YamlWriter(ms))
-                {
-                    doc.WriteTo(writer);
-                }
-                Assert.NotEmpty(ms.ToArray());
+                Assert.Equal("? - null\n: null\n", Write(doc.RootElement));
             }
 
             YamlNode? node1 = YamlNode.Parse("? -");
             Assert.NotNull(node1);
-            Assert.NotEmpty(node1!.ToYamlString());
+            Assert.Equal("? - null\n: null\n", node1!.ToYamlString(s_block));
 
             object? obj1 = YamlSerializer.Deserialize<object>("? -");
             Assert.NotNull(obj1);
@@ -822,17 +817,12 @@ namespace System.Text.Yaml.Tests
                 Assert.Equal("a", props[1].Name);
                 Assert.Equal(YamlValueKind.Null, props[1].Value.ValueKind);
 
-                using var ms = new MemoryStream();
-                using (var writer = new Utf8YamlWriter(ms))
-                {
-                    doc.WriteTo(writer);
-                }
-                Assert.NotEmpty(ms.ToArray());
+                Assert.Equal("? - null\n: null\na: null\n", Write(doc.RootElement));
             }
 
             YamlNode? node2 = YamlNode.Parse("? -\na:");
             Assert.NotNull(node2);
-            Assert.NotEmpty(node2!.ToYamlString());
+            Assert.Equal("? - null\n: null\na: null\n", node2!.ToYamlString(s_block));
 
             object? obj2 = YamlSerializer.Deserialize<object>("? -\na:");
             Assert.NotNull(obj2);
@@ -856,8 +846,47 @@ namespace System.Text.Yaml.Tests
                 Assert.Equal(2, props.Length);
                 Assert.Equal(YamlKeyKind.Complex, props[0].KeyKind);
                 Assert.Equal(YamlValueKind.Object, props[0].GetKeyElement().ValueKind);
+                Assert.Equal("?", props[0].Name);
                 Assert.Equal("a", props[1].Name);
             }
+        }
+
+        [Theory]
+        [InlineData("? -", "-")]
+        [InlineData("? -\r\n: v", "-")]
+        [InlineData("? - # c\n: v", "-")]
+        [InlineData("? - # c1\n  # c2\n: v", "-")]
+        [InlineData("? - &a#b\n: v", "- &a#b")]
+        [InlineData("? - !t#x\n: v", "- !t#x")]
+        [InlineData("? - a\n  -\n  # c\n: v", "- a\n  -")]
+        [InlineData("? a: # c\n: v", "a:")]
+        [InlineData("? ?\n: v", "?")]
+        [InlineData("? a:\n  ?\n: v", "a:\n  ?")]
+        [InlineData("? a: !t #c\n: v", "a: !t")]
+        [InlineData("? ? -\n: v", "? -")]
+        [InlineData("? ? ?\n: v", "? ?")]
+        [InlineData("? ? - ? -\n: v", "? - ? -")]
+        [InlineData("? ? [a] # c\n\n: v", "? [a]")]
+        [InlineData("? ? 'a #b' # c\n: v", "? 'a #b'")]
+        [InlineData("? ? \"a\n    b\"\n: v", "? \"a\n    b\"")]
+        [InlineData("? ? |+\n    x\n\n: v", "? |+\n    x\n\n")]
+        public void ExplicitCollectionKey_RawTextEndsAtLastContent(string yaml, string expected)
+        {
+            var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(yaml), new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            while (reader.Read() && reader.TokenType != YamlTokenType.PropertyName)
+            {
+            }
+            Assert.Equal(YamlKeyKind.Complex, reader.KeyKind);
+            Assert.Equal(expected, Encoding.UTF8.GetString(reader.ValueSpan));
+
+            Utf8YamlReader keyReader = reader.CreateKeyReader();
+            while (keyReader.Read())
+            {
+                Assert.NotEqual(YamlTokenType.Comment, keyReader.TokenType);
+            }
+
+            using YamlDocument doc = YamlDocument.Parse(yaml);
+            Assert.Equal(expected, doc.RootElement.EnumerateObject().First().Name);
         }
     }
 }
