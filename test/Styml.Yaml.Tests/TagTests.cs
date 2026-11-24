@@ -42,6 +42,9 @@ namespace System.Text.Yaml.Tests
         [InlineData("%TAG ! tag:prim.org,1:\n--- !foo x\n", "!foo", "tag:prim.org,1:foo")]
         [InlineData("%TAG !e! tag:e,1:\n%TAG !e! tag:f,2:\n--- !e!x y\n", "!e!x", "tag:f,2:x")]
         [InlineData("--- !%C3%A9t%C3%A9 x\n", "!%C3%A9t%C3%A9", "!été")]
+        [InlineData("--- !<tag:yaml.org,2002:str> x\n", "!<tag:yaml.org,2002:str>", "tag:yaml.org,2002:str")]
+        [InlineData("--- !<tag:e,1:a%21> x\n", "!<tag:e,1:a%21>", "tag:e,1:a%21")]
+        [InlineData("--- !<!bar> x\n", "!<!bar>", "!bar")]
         public void TagsAreExpanded(string yaml, string written, string expanded)
         {
             Assert.Equal(new[] { (written, expanded) }, Tags(yaml));
@@ -201,7 +204,8 @@ namespace System.Text.Yaml.Tests
         [InlineData("*\u001D")]
         public void InvalidAnchorCharactersAreRejected(string yaml)
         {
-            Assert.ThrowsAny<YamlException>(() => YamlNode.Parse(yaml));
+            // The reader rejects it, not a later stage (an alias to no anchor also throws a YamlException).
+            Assert.Throws<YamlReaderException>(() => YamlNode.Parse(yaml));
         }
 
         [Theory]
@@ -212,7 +216,36 @@ namespace System.Text.Yaml.Tests
         [InlineData("--- !! a")]
         public void InvalidTagCharactersAreRejected(string yaml)
         {
-            Assert.ThrowsAny<YamlException>(() => YamlNode.Parse(yaml));
+            Assert.Throws<YamlReaderException>(() => YamlNode.Parse(yaml));
+        }
+
+        [Theory]
+        [InlineData("a:b")]
+        [InlineData("a!b*c&d")]
+        [InlineData("\u00E9t\u00E9")]
+        [InlineData("\u65E5\u672C")]
+        [InlineData("\U0001F600")]
+        public void ValidAnchorNamesAreAccepted(string name)
+        {
+            string yaml = $"- &{name} x\n- *{name}\n";
+            var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(yaml));
+            var names = new List<string>();
+            while (reader.Read())
+            {
+                if (!reader.Anchor.IsEmpty)
+                {
+                    names.Add(Encoding.UTF8.GetString(reader.Anchor.ToArray()));
+                }
+                else if (reader.TokenType == YamlTokenType.Alias)
+                {
+                    names.Add(Encoding.UTF8.GetString(reader.ValueSpan.ToArray()));
+                }
+            }
+            Assert.Equal(new[] { name, name }, names);
+
+            // The writer accepts what the reader read.
+            var block = new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block, NewLine = "\n" };
+            Assert.Equal(yaml, YamlNode.Parse(yaml)!.ToYamlString(block));
         }
     }
 }
