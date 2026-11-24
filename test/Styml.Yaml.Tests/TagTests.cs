@@ -191,5 +191,27 @@ namespace System.Text.Yaml.Tests
             Mixed m = YamlSerializer.Deserialize<Mixed>("%TAG !e! tag:e,1:\n---\nBefore: !e!b b\nFirst: !e!f f\n")!;
             Assert.Equal(("f", "b"), (m.First, m.Before));
         }
+
+        [Fact]
+        public void ManyTagDirectivesScaleLinearly()
+        {
+            const int Count = 50_000;
+            var sb = new StringBuilder(Count * 28 + 128);
+            for (int i = 0; i < Count; i++)
+            {
+                sb.Append("%TAG !t").Append(i).Append("! tag:x,").Append(i).Append(":\n");
+            }
+            sb.Append("%TAG !t0! tag:redefined,0:\n");
+            sb.Append("--- [!t0!first a, !t").Append(Count - 1).Append("!last b]\n");
+            string yaml = sb.ToString();
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            using YamlDocument doc = YamlDocument.Parse(yaml);
+            sw.Stop();
+
+            Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5), $"Parsing {Count} %TAG directives took {sw.Elapsed.TotalMilliseconds:F1} ms.");
+            Assert.Equal("tag:redefined,0:first", doc.RootElement[0].GetExpandedTag());
+            Assert.Equal($"tag:x,{Count - 1}:last", doc.RootElement[1].GetExpandedTag());
+        }
     }
 }
