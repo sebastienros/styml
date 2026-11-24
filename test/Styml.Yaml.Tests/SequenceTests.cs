@@ -568,11 +568,28 @@ namespace System.Text.Yaml.Tests
             byte[] input = File.ReadAllBytes(Path.Combine(BenchCorpus, name));
             Read(new ReadOnlySequence<byte>(input));
             ReadSpan(input);
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            Read(new ReadOnlySequence<byte>(input));
-            ReadSpan(input);
-            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.Equal(0, allocated);
+
+            // The reader takes the same path on every pass over the same input, so a read that allocates allocates on
+            // every pass, and one pass that allocates nothing proves the claim. A single window can count bytes nobody
+            // allocated: when a background GC, started by other tests' allocations, pauses this thread inside it,
+            // GetAllocatedBytesForCurrentThread can grow by up to the thread's allocation quantum (24, 312 and 4800
+            // bytes seen in the full suite; a stress run reproduces it, and DOTNET_gcConcurrent=0 makes it go away).
+            // The pause does not repeat on the next pass, so a few passes absorb it; a real allocation fails all of
+            // them, and the message lists each pass.
+            long[] allocated = new long[5];
+            for (int pass = 0; pass < allocated.Length; pass++)
+            {
+                long before = GC.GetAllocatedBytesForCurrentThread();
+                Read(new ReadOnlySequence<byte>(input));
+                ReadSpan(input);
+                allocated[pass] = GC.GetAllocatedBytesForCurrentThread() - before;
+                if (allocated[pass] == 0)
+                {
+                    return;
+                }
+            }
+
+            Assert.Fail($"Every pass allocated: {string.Join(", ", allocated)} bytes.");
 
             static void Read(ReadOnlySequence<byte> sequence)
             {
