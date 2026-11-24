@@ -7,6 +7,8 @@ and a three-way sync by replay. The procedure is in docs/upstream-sync.md. Run t
   eng/upstream/verify-replay <runtime-clone>            import + rename of the recorded commit reproduce the recorded
                                                         renamed tree byte for byte
   eng/upstream/target <runtime-clone>                   the newest ref of the followed line (also --ls-remote FILE)
+  eng/upstream/status <runtime-clone> [ref]             Markdown report of upstream changes since the baseline
+                                                        (--output FILE, --summary-json FILE)
 
 The runtime clone is only read (rev-parse, log, diff, ls-tree, archive, cat-file); nothing is written to it. Replays
 run in a scratch directory. Only 'sync' writes to this repository, and only 'sync --continue' commits.
@@ -380,7 +382,269 @@ def cmd_verify_replay(args):
     sys.exit(1 if diffs else 0)
 
 
-COMMANDS = {'check': cmd_check, 'verify-replay': cmd_verify_replay, 'target': cmd_target}
+# --- status ------------------------------------------------------------------------------------------------------------
+
+GROUP_NONE, GROUP_EDITED, GROUP_UNEDITED = 'none', 'edited', 'unedited'
+
+
+def styml_tree(rev='HEAD'):
+    tree = {}
+    for line in git('ls-tree', '-r', '-z', rev).split('\0'):
+        if not line:
+            continue
+        meta, path = line.split('\t', 1)
+        mode, kind, sha = meta.split()
+        if kind == 'blob':
+            tree[path] = sha
+    return tree
+
+
+def in_areas(path, areas):
+    for a in areas:
+        if any(fnmatch.fnmatchcase(path, g) for g in a['paths']):
+            return a
+    return None
+
+
+def classify(rec, runtime, base, target):
+    """Changed upstream files between base and target, each with its group, its Styml path and a note."""
+    pm = PathMap(rec)
+    moved, removed, areas = counterparts(rec)
+    _, baseline = read_tree_list(os.path.join(REPO, rec['tree']))
+    ours = styml_tree()
+    srcs = pm.sources()
+    numstat = {}
+    for line in runtime.git('diff', '--no-renames', '--numstat', base, target, '--', *srcs).stdout.splitlines():
+        a, d, p = line.split('\t', 2)
+        numstat[p] = (a, d)
+    files = []
+    manifest_files = {src for kind, src, _ in pm.entries if kind == 'file'}
+    for line in runtime.git('diff', '--no-renames', '--name-status', base, target, '--', *srcs).stdout.splitlines():
+        status, p = line.split('\t', 1)
+        renamed = pm.renamed(p)
+        if renamed is None:
+            continue   # excluded upstream path
+        styml_path = moved.get(renamed, renamed)
+        notes = []
+        area = in_areas(p, areas)
+        if status == 'A':
+            if styml_path in ours:
+                group = GROUP_EDITED
+                notes.append('new upstream file; Styml has a file at that path')
+            else:
+                group = GROUP_NONE
+                notes.append('new upstream file')
+        else:
+            base_blob = baseline.get(renamed)
+            if base_blob is None:
+                group = GROUP_NONE
+                notes.append('not in the recorded baseline tree')
+            elif renamed in removed:
+                group = GROUP_NONE
+                notes.append(f'Styml removed it: {removed[renamed]}')
+            elif styml_path not in ours:
+                group = GROUP_NONE
+                notes.append('Styml deleted or moved it')
+            elif ours[styml_path] == base_blob:
+                group = GROUP_UNEDITED
+            else:
+                group = GROUP_EDITED
+            if status == 'D':
+                notes.append('deleted upstream' + ('; manifest.txt names it' if p in manifest_files else ''))
+        if renamed in moved:
+            notes.append(f'Styml keeps it as {moved[renamed]}')
+        if area:
+            notes.append('code Styml replaced')
+        a, d = numstat.get(p, ('-', '-'))
+        files.append({'upstream': p, 'status': status, 'renamed': renamed, 'styml': styml_path, 'group': group,
+                      'area': area, 'notes': notes, 'added': a, 'deleted': d})
+    return files
+
+
+def patch_ids(runtime, side, rng, srcs):
+    """commit -> patch id of its diff limited to the imported paths (git patch-id --stable)."""
+    log = runtime.git('log', '-p', '--no-merges', '--format=commit %H', side, rng, '--', *srcs).stdout
+    p = subprocess.run(['git', '-C', runtime.path, 'patch-id', '--stable'], input=log, text=True,
+                       stdout=subprocess.PIPE, check=True)
+    ids = {}
+    for line in p.stdout.splitlines():
+        pid, sha = line.split()
+        ids[sha] = pid
+    return ids
+
+
+def upstream_commits(runtime, base, target, srcs):
+    """Commits reachable from target and not from base that touch srcs. A commit whose change to the imported paths
+    is patch-equivalent to one on the baseline's side (a backport) is marked '='. Equivalence is computed on the
+    imported paths only (path-limited patch ids), which is what matters here and much faster than --cherry-mark."""
+    shallow_warning = None
+    if runtime.git('merge-base', base, target, check=False).returncode != 0:
+        shallow_warning = ('no merge base between the baseline and the target in this clone (shallow fetch?): commits are '
+                           'listed as target ^baseline, without detecting backports')
+        rng, left = f'{base}..{target}', {}
+        side = '--topo-order'
+    else:
+        rng = f'{base}...{target}'
+        left = set(patch_ids(runtime, '--left-only', rng, srcs).values())
+        side = '--right-only'
+    right = patch_ids(runtime, side, rng, srcs) if left else {}
+    out = runtime.git('log', '--no-merges', side, '--format=%x00%H %cs %s', '--name-only', rng, '--', *srcs).stdout
+    commits = []
+    for chunk in out.split('\0')[1:]:
+        lines = chunk.strip('\n').split('\n')
+        sha, date, subject = (lines[0].split(' ', 2) + [''])[:3]
+        mark = '=' if right.get(sha) in left else '>'
+        commits.append({'mark': mark, 'sha': sha, 'date': date, 'subject': subject,
+                        'files': [l for l in lines[1:] if l.strip()]})
+    return commits, shallow_warning
+
+
+def code(s):
+    """Untrusted text (commit subjects, paths) as a Markdown code span: no mention, link or reference fires."""
+    s = s.replace('`', "'").replace('\n', ' ').strip()
+    return f'`{s}`' if s else '``'
+
+
+def commit_link(repo_url, sha):
+    return f'[`{sha[:12]}`]({repo_url}/commit/{sha})'
+
+
+def cmd_status(args):
+    if not args:
+        die('usage: eng/upstream/status <runtime-clone> [ref] [--output FILE] [--summary-json FILE]')
+    opts = {}
+    for opt in ('--output', '--summary-json'):
+        if opt in args:
+            i = args.index(opt)
+            opts[opt] = args[i + 1]
+            args = args[:i] + args[i + 2:]
+    output = opts.get('--output')
+    rec = record()
+    runtime = Runtime(args[0])
+    target_ref = args[1] if len(args) > 1 else None
+    if target_ref is None:
+        follow = rec['follow']
+        target_ref = follow['ref'] if follow['line'] == 'main' else (
+            pick_tag(follow['tags'], runtime.git('tag', '--list').stdout.split()) or rec['ref'])
+    base = rec['commit']
+    if runtime.git('cat-file', '-e', f'{base}^{{commit}}', check=False).returncode != 0:
+        die(f'the baseline commit {base} is not in {runtime.path} (fetch it first)')
+    target = runtime.rev(target_ref)
+    files = classify(rec, runtime, base, target)
+    pm = PathMap(rec)
+    commits, warning = upstream_commits(runtime, base, target, pm.sources())
+    text = render_status(rec, runtime, target_ref, target, files, commits, warning)
+    if '--summary-json' in opts:
+        groups = {g: sum(1 for f in files if f['group'] == g) for g in (GROUP_NONE, GROUP_EDITED, GROUP_UNEDITED)}
+        write_json(opts['--summary-json'], {
+            'baseline_ref': rec['ref'], 'baseline_commit': rec['commit'], 'target_ref': target_ref,
+            'target_commit': target, 'files': len(files), 'groups': groups,
+            'commits': sum(1 for c in commits if c['mark'] != '='),
+            'backports': sum(1 for c in commits if c['mark'] == '=')})
+    if output:
+        with open(output, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(text)
+    else:
+        sys.stdout.write(text)
+
+
+def render_status(rec, runtime, target_ref, target, files, commits, warning):
+    url = rec['repository'].rstrip('/')
+    by_path = {f['upstream']: f for f in files}
+    real = [c for c in commits if c['mark'] != '=']
+    backports = [c for c in commits if c['mark'] == '=']
+    for c in real:
+        c['changed'] = [p for p in c['files'] if p in by_path]
+    out = []
+    w = out.append
+    w(f'# Upstream System.Text.Json changes: {code(rec["ref"])} → {code(target_ref)}\n')
+    w('| | |\n|---|---|')
+    w(f'| Baseline | {code(rec["ref"])}, {commit_link(url, rec["commit"])}, synced {rec["synced"]} |')
+    w(f'| Target | {code(target_ref)}, {commit_link(url, target)}, {runtime.date(target)} |')
+    follow = rec['follow']
+    w(f'| Followed line | {follow["line"]} ({code(follow.get("tags") or follow.get("ref"))}) |')
+    w(f'| Upstream commits | {len(real)} touching the imported paths'
+      + (f', and {len(backports)} already in the baseline as backports' if backports else '') + ' |')
+    w('')
+    if warning:
+        w(f'> **Note:** {warning}.\n')
+    if target == rec['commit'] or not files:
+        w(f'Styml is in step with {code(target_ref)}: no imported upstream file changed since the baseline.\n')
+        return '\n'.join(out) + '\n'
+
+    groups = [
+        (GROUP_NONE, 'No counterpart in Styml', 'a new upstream file, or a file Styml deleted or folded into its own; '
+         'never merged, a person decides what Styml needs'),
+        (GROUP_EDITED, 'Edited by Styml', 'the sync merges these three-way and may leave conflicts'),
+        (GROUP_UNEDITED, 'Not edited by Styml', 'the sync applies these mechanically'),
+    ]
+
+    def lines_of(fs):
+        a = sum(int(f['added']) for f in fs if f['added'].isdigit())
+        d = sum(int(f['deleted']) for f in fs if f['deleted'].isdigit())
+        return f'+{a} / −{d}'
+
+    def commits_of(fs):
+        paths = {f['upstream'] for f in fs}
+        return [c for c in real if paths & set(c['changed'])]
+
+    w('| Group | Files | Lines | Commits |\n|---|---:|---:|---:|')
+    for key, title, _ in groups:
+        fs = [f for f in files if f['group'] == key]
+        w(f'| {title} | {len(fs)} | {lines_of(fs)} | {len(commits_of(fs))} |')
+    w(f'| **Total** | **{len(files)}** | **{lines_of(files)}** | **{len(real)}** |')
+    w('')
+
+    review = [f for f in files if f['group'] == GROUP_NONE or f['area']]
+    w('## For a person to judge\n')
+    w('Upstream commits that change files with no counterpart in Styml, or code Styml replaced with YAML code (the '
+      'reader, document parsing, the writer: eng/upstream/counterparts.json). A fix there may need an equivalent in '
+      'the YAML reader or writer even when the merge is clean or does not apply.\n')
+    rc = commits_of(review)
+    if not rc:
+        w('None.\n')
+    for c in rc:
+        touched = [by_path[p] for p in c['changed'] if by_path[p] in review]
+        names = ', '.join(code(os.path.basename(f['upstream'])) for f in touched[:6])
+        more = f' and {len(touched) - 6} more' if len(touched) > 6 else ''
+        w(f'- {commit_link(url, c["sha"])} {c["date"]} {code(c["subject"])}: {names}{more}')
+    w('')
+
+    for key, title, blurb in groups:
+        fs = sorted((f for f in files if f['group'] == key), key=lambda f: f['upstream'])
+        w(f'## {title} ({len(fs)} files)\n')
+        w(f'{blurb[0].upper() + blurb[1:]}.\n')
+        if not fs:
+            w('None.\n')
+            continue
+        w('| Upstream file | Styml file | Change | Lines | Commits | Notes |\n|---|---|---|---:|---:|---|')
+        prefix = 'src/libraries/'
+        for f in fs:
+            up = f['upstream'][len(prefix):] if f['upstream'].startswith(prefix) else f['upstream']
+            n = sum(1 for c in real if f['upstream'] in c['changed'])
+            change = {'A': 'added', 'M': 'modified', 'D': 'deleted'}.get(f['status'], f['status'])
+            w(f'| {code(up)} | {code(f["styml"])} | {change} | +{f["added"]} / −{f["deleted"]} | {n} | '
+              f'{"; ".join(f["notes"])} |')
+        w('')
+        gc = commits_of(fs)
+        if gc and key != GROUP_NONE:
+            w('<details><summary>Commits</summary>\n')
+            for c in gc:
+                w(f'- {commit_link(url, c["sha"])} {c["date"]} {code(c["subject"])}')
+            w('\n</details>\n')
+
+    if backports:
+        w(f'## Already in the baseline ({len(backports)} commits)\n')
+        w('Patch-equivalent to a commit the baseline already contains (backports); nothing to bring in.\n')
+        for c in backports:
+            w(f'- {commit_link(url, c["sha"])} {c["date"]} {code(c["subject"])}')
+        w('')
+    w(f'Produced by `eng/upstream/status`. Upstream paths are relative to {code("src/libraries/")} when under it; '
+      f'the imported paths are {code(rec["manifest"])} minus {code(rec["exclude"])}.')
+    return '\n'.join(out) + '\n'
+
+
+COMMANDS = {'check': cmd_check, 'verify-replay': cmd_verify_replay, 'target': cmd_target, 'status': cmd_status}
 
 if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
