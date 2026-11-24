@@ -436,6 +436,15 @@ namespace System.Text.Yaml
                             YamlThrow(YamlGrammarError.InvalidEscape, p);
                         }
                     }
+                    if (hexDigits == 8)
+                    {
+                        // \U must name a Unicode scalar value: at most U+10FFFF and not a surrogate.
+                        uint codePoint = (uint)YamlReaderHelper.ParseHex(buffer.Slice(p.Pos + 2, 8));
+                        if (codePoint > 0x10FFFF || codePoint is >= 0xD800 and <= 0xDFFF)
+                        {
+                            YamlThrow(YamlGrammarError.InvalidEscape, p);
+                        }
+                    }
 
                     p.Pos += 2 + hexDigits;
                     p.Column += 2 + hexDigits;
