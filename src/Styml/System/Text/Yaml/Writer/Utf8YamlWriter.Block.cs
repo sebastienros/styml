@@ -2253,8 +2253,6 @@ namespace System.Text.Yaml
             EndBlockScalar(YamlTokenType.Number);
         }
 
-        // A formatted number (the raw-number path, and the names of 5.7's non-finite floats): copied as it is.
-        [MethodImpl(MethodImplOptions.NoInlining)]
         /// <summary>
         /// A document's number written with its source text (<c>0x1F</c>, <c>012</c>, <c>1_000</c>), in block style: the
         /// document has checked that the text reads to its number under <see cref="YamlWriterOptions.ReadSchema"/>.
@@ -2274,6 +2272,8 @@ namespace System.Text.Yaml
 
         internal bool WritesYamlText => _style == WriterStyleBlock;
 
+        // A formatted number (the raw-number path, and the names of 5.7's non-finite floats): copied as it is.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void WriteNumberValueBlock(ReadOnlySpan<byte> utf8FormattedNumber)
         {
             CheckNoScalarStyleHint();
