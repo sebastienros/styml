@@ -722,7 +722,11 @@ namespace System.Text.Yaml
                 int valueIdx = YamlWriterHelper.BlockEncoderEscapeIndex(value, stop);
                 if (valueIdx != -1)
                 {
-                    WriteStringEscapeValue(value, valueIdx);
+                    // The text before `stop` is ASCII the scan judged, with no line break.
+                    if (value.Slice(stop).IndexOf('\n') < 0 || !TryWriteLiteralStringValue(value))
+                    {
+                        WriteStringEscapeValue(value, valueIdx);
+                    }
                 }
                 else
                 {
@@ -739,6 +743,48 @@ namespace System.Text.Yaml
 
             WriteStringValueBlock(value, scan);
             return true;
+        }
+
+        // M7d item 4: a string with a line break, under the default multi-line style
+        // (literal), is written as a literal block scalar from its UTF-8 form. The general path escapes it, transcodes
+        // the escaped text into the output, copies it back out and unescapes it before it reaches the same literal
+        // writer. False, with nothing written, when that path must decide: a hint, a flow collection, a user encoder,
+        // an unpaired surrogate, or text a literal cannot hold.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private bool TryWriteLiteralStringValue(ReadOnlySpan<char> value)
+        {
+            if (_blockSpecial != 0 || _scalarStyleHint != YamlScalarStyle.None || UserEncoder is not null
+                || _options.MultiLineStringStyle != YamlScalarStyle.None)
+            {
+                return false;
+            }
+
+            int maxBytes = value.Length * YamlConstants.MaxExpansionFactorWhileTranscoding;
+            byte[]? rented = null;
+            Span<byte> buffer = maxBytes <= YamlConstants.StackallocByteThreshold
+                ? stackalloc byte[YamlConstants.StackallocByteThreshold]
+                : (rented = ArrayPool<byte>.Shared.Rent(maxBytes));
+            bool written = false;
+            if (YamlWriterHelper.ToUtf8(value, buffer, out int length) == OperationStatus.Done)
+            {
+                ReadOnlySpan<byte> text = buffer.Slice(0, length);
+                if (YamlWriterHelper.CanWriteLiteral(text, _lenient))
+                {
+                    if (!_options.SkipValidation)
+                    {
+                        ValidateWritingValue();
+                    }
+
+                    if (TryWriteBlockScalar(text, folded: false))
+                    {
+                        EndBlockScalar(YamlTokenType.String);
+                        written = true;
+                    }
+                }
+            }
+
+            ReturnRented(rented);
+            return written;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1935,16 +1981,23 @@ namespace System.Text.Yaml
             // Each line break can add an empty line (folded) and each space a fold (MaxLineWidth).
             int lines = 1;
             int spaces = 0;
-            foreach (byte b in text)
+            if (folded)
             {
-                if (b == (byte)'\n')
+                foreach (byte b in text)
                 {
-                    lines++;
+                    if (b == (byte)'\n')
+                    {
+                        lines++;
+                    }
+                    else if (b == YamlConstants.Space)
+                    {
+                        spaces++;
+                    }
                 }
-                else if (b == YamlConstants.Space)
-                {
-                    spaces++;
-                }
+            }
+            else
+            {
+                lines += YamlWriterHelper.CountLineBreaks(text);
             }
 
             int breaks = folded ? 2 * lines + spaces : lines;

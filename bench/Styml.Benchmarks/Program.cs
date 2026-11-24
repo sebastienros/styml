@@ -88,6 +88,12 @@ namespace Styml.Benchmarks
             return () => WriteLibraries.StymlGeneratedWrite(graph, doc.Family, context) is null ? 0 : 1;
         }
 
+        private static Func<long> SerializeReflection(Doc doc)
+        {
+            object graph = Libraries.Json(doc.Json, doc.Family)!;
+            return () => WriteLibraries.Styml(graph, doc.Family, BlockLibraries.BlockOptions) is null ? 0 : 1;
+        }
+
         private static int Profile(string scenario, Doc doc, TimeSpan duration)
         {
             Func<long> work = scenario switch
@@ -104,6 +110,8 @@ namespace Styml.Benchmarks
                 // writer in JSON-compatible style, level with STJ since M6b) to set the block side's own cost apart.
                 "serialize-block" => SerializeGenerated(doc, BlockLibraries.BlockGenerated),
                 "serialize-json" => SerializeGenerated(doc, YamlWriteLibraries.JsonGenerated),
+                // M7d (item 4): SerializeReflectionBlock's Styml_Block row, whose workflow documents write literal blocks.
+                "serialize-reflection-block" => SerializeReflection(doc),
                 _ => throw new ArgumentException("unknown scenario " + scenario),
             };
             var clock = System.Diagnostics.Stopwatch.StartNew();

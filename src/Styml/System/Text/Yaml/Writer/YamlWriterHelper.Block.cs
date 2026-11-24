@@ -1672,6 +1672,25 @@ namespace System.Text.Yaml
             return (byte)(value < 10 ? '0' + value : 'A' + value - 10);
         }
 
+        /// <summary>The number of line feeds in the text.</summary>
+        internal static int CountLineBreaks(ReadOnlySpan<byte> text)
+        {
+#if NET
+            return text.Count((byte)'\n');
+#else
+            int count = 0;
+            foreach (byte b in text)
+            {
+                if (b == (byte)'\n')
+                {
+                    count++;
+                }
+            }
+
+            return count;
+#endif
+        }
+
         /// <summary>
         /// The string (with at least one line break) can be written as a literal block scalar. The input
         /// is valid UTF-8.
@@ -1685,6 +1704,20 @@ namespace System.Text.Yaml
             for (int i = 0; i < s.Length; i++)
             {
                 byte b = s[i];
+#if NET
+                if (b is > (byte)' ' and < 0x7F)
+                {
+                    // M7d item 4: a run of printable ASCII other than the space is content that changes nothing the
+                    // checks below look at but the line's length, so it is skipped in one vectorised step.
+                    int run = s.Slice(i).IndexOfAnyExceptInRange((byte)'!', (byte)'~');
+                    run = run < 0 ? s.Length - i : run;
+                    hasContent = true;
+                    lineOnlySpaces = false;
+                    lineLength += run;
+                    i += run - 1;
+                    continue;
+                }
+#endif
                 if (b == (byte)'\n')
                 {
                     if (lineLength > 0 && lineOnlySpaces)
