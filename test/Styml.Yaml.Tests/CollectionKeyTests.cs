@@ -781,5 +781,83 @@ namespace System.Text.Yaml.Tests
             using YamlDocument document = YamlDocument.Parse(Yaml);
             Assert.Equal(2, document.RootElement.GetPropertyCount());
         }
+
+        [Fact]
+        public void ExplicitBlockSequenceKey_EmptyEntry_DoesNotCorruptMetadataDb()
+        {
+            // Issue #2: "? -"
+            using (YamlDocument doc = YamlDocument.Parse("? -"))
+            {
+                YamlProperty prop = Assert.Single(doc.RootElement.EnumerateObject());
+                Assert.Equal(YamlKeyKind.Complex, prop.KeyKind);
+                Assert.Equal(YamlValueKind.Array, prop.GetKeyElement().ValueKind);
+                Assert.Equal(YamlValueKind.Null, Assert.Single(prop.GetKeyElement().EnumerateArray()).ValueKind);
+                Assert.Equal(YamlValueKind.Null, prop.Value.ValueKind);
+
+                using var ms = new MemoryStream();
+                using (var writer = new Utf8YamlWriter(ms))
+                {
+                    doc.WriteTo(writer);
+                }
+                Assert.NotEmpty(ms.ToArray());
+            }
+
+            YamlNode? node1 = YamlNode.Parse("? -");
+            Assert.NotNull(node1);
+            Assert.NotEmpty(node1!.ToYamlString());
+
+            object? obj1 = YamlSerializer.Deserialize<object>("? -");
+            Assert.NotNull(obj1);
+
+            // Issue #2: "? -\na:"
+            using (YamlDocument doc = YamlDocument.Parse("? -\na:"))
+            {
+                YamlProperty[] props = doc.RootElement.EnumerateObject().ToArray();
+                Assert.Equal(2, props.Length);
+                Assert.Equal(YamlKeyKind.Complex, props[0].KeyKind);
+                Assert.Equal(YamlValueKind.Array, props[0].GetKeyElement().ValueKind);
+                Assert.Equal(YamlValueKind.Null, Assert.Single(props[0].GetKeyElement().EnumerateArray()).ValueKind);
+                Assert.Equal(YamlValueKind.Null, props[0].Value.ValueKind);
+                Assert.Equal(YamlKeyKind.Scalar, props[1].KeyKind);
+                Assert.Equal("a", props[1].Name);
+                Assert.Equal(YamlValueKind.Null, props[1].Value.ValueKind);
+
+                using var ms = new MemoryStream();
+                using (var writer = new Utf8YamlWriter(ms))
+                {
+                    doc.WriteTo(writer);
+                }
+                Assert.NotEmpty(ms.ToArray());
+            }
+
+            YamlNode? node2 = YamlNode.Parse("? -\na:");
+            Assert.NotNull(node2);
+            Assert.NotEmpty(node2!.ToYamlString());
+
+            object? obj2 = YamlSerializer.Deserialize<object>("? -\na:");
+            Assert.NotNull(obj2);
+
+            // Trailing empty entry in a multi-item block sequence complex key is preserved.
+            using (YamlDocument doc = YamlDocument.Parse("? - a\n  -\n: v\n"))
+            {
+                YamlProperty prop = Assert.Single(doc.RootElement.EnumerateObject());
+                Assert.Equal(YamlKeyKind.Complex, prop.KeyKind);
+                YamlElement[] items = prop.GetKeyElement().EnumerateArray().ToArray();
+                Assert.Equal(2, items.Length);
+                Assert.Equal("a", items[0].GetString());
+                Assert.Equal(YamlValueKind.Null, items[1].ValueKind);
+                Assert.Equal("v", prop.Value.GetString());
+            }
+
+            // Explicit empty key inside an explicit block mapping key.
+            using (YamlDocument doc = YamlDocument.Parse("? ?\na:"))
+            {
+                YamlProperty[] props = doc.RootElement.EnumerateObject().ToArray();
+                Assert.Equal(2, props.Length);
+                Assert.Equal(YamlKeyKind.Complex, props[0].KeyKind);
+                Assert.Equal(YamlValueKind.Object, props[0].GetKeyElement().ValueKind);
+                Assert.Equal("a", props[1].Name);
+            }
+        }
     }
 }

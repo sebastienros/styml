@@ -102,6 +102,21 @@ namespace System.Text.Yaml
                     {
                         node.RawEnd = Math.Max(node.RawEnd, copy._consumed);
                     }
+                    else if (copy._tokenType is not (YamlTokenType.EndObject or YamlTokenType.EndArray) && copy._consumed > node.RawEnd)
+                    {
+                        // A zero-width token inside a block collection (e.g. an empty sequence entry '-' or empty
+                        // explicit key '?') still consumed its structural indicator before reaching TokenStartIndex.
+                        // Trim trailing whitespace/line breaks that were skipped while peeking past the indicator.
+                        int end = copy._consumed;
+                        while (end > node.RawEnd && _buffer[end - 1] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n')
+                        {
+                            end--;
+                        }
+                        if (end > node.RawEnd)
+                        {
+                            node.RawEnd = end;
+                        }
+                    }
                 }
             }
             else
