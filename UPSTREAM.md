@@ -5,9 +5,18 @@ Styml is derived from `System.Text.Json` in [dotnet/runtime](https://github.com/
 | | |
 |---|---|
 | Repository | https://github.com/dotnet/runtime |
-| Tag | `v11.0.0` |
+| Ref | `v11.0.0` |
 | Commit | `deae2e32bf0e018e09d64597b7c59b62b73bb3ce` |
+| Synced | 2026-11-17 |
+| Record | `eng/upstream/baseline.json` (machine-readable: ref, commit, sync date, followed line, imported paths); `eng/upstream/check` fails if this table or the Syncs section disagrees with it |
 | License | MIT, © .NET Foundation and Contributors; Styml's own code MIT, © Sébastien Ros (see `LICENSE`, `THIRD-PARTY-NOTICES.txt`) |
+
+## Syncs
+
+One line per sync with dotnet/runtime, oldest first, written by `eng/upstream/sync --continue` with the commit that
+brings the changes in. The procedure is in [docs/upstream-sync.md](docs/upstream-sync.md).
+
+- 2026-11-17 · `v11.0.0` · `deae2e32bf0e018e09d64597b7c59b62b73bb3ce` · import (eng/import, then eng/rename passes A and B)
 
 ## How the import is produced
 
@@ -15,8 +24,10 @@ The import is scripted and replayable. It reads only the runtime repo's object d
 its working tree, and never writes to it.
 
 ```bash
-eng/import/import.sh <runtime-clone> deae2e32bf0e018e09d64597b7c59b62b73bb3ce   # copy per eng/import/manifest.txt
-eng/import/verify.sh <runtime-clone> deae2e32bf0e018e09d64597b7c59b62b73bb3ce   # blob-SHA comparison, expect 0 problems
+eng/import/import.sh <runtime-clone> [commit]   # copy per eng/import/manifest.txt; default: the recorded commit
+eng/import/verify.sh <runtime-clone> [commit]   # blob-SHA comparison, expect 0 problems
+eng/upstream/verify-replay <runtime-clone>      # import + rename in a scratch directory, compared file by file
+                                                # with eng/upstream/baseline-tree.txt; expect 0 differences
 ```
 
 - `eng/import/manifest.txt`: every upstream directory/file and where it lands here. The vendored file list
@@ -28,6 +39,11 @@ eng/import/verify.sh <runtime-clone> deae2e32bf0e018e09d64597b7c59b62b73bb3ce   
 At the import commit `eng/import/verify.sh` reports `verified 1040 files, 0 problems`.
 
 The rename to `System.Text.Yaml` / `Yaml*` is a separate, scripted step: see `eng/rename/`.
+
+`eng/upstream/baseline-tree.txt` lists the blob SHA-1 of every file of the renamed import (1,040 files): the tree
+Styml was built from, taken from the original import, rename and pass B commits. Replaying `eng/import`,
+`eng/rename/rename.py` and `eng/rename/passb/passb.cs` on the recorded commit reproduces it byte for byte
+(`eng/upstream/verify-replay`). Nothing in the rename is done by hand any more.
 
 ## Layout mapping
 

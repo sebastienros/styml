@@ -1,0 +1,47 @@
+{
+  "comment": "Where a file of the renamed baseline (eng/upstream/baseline-tree.txt) lives in Styml when it is not at its renamed path, and the upstream areas that Styml replaced with YAML code. Maintained by hand; read by eng/upstream/status and eng/upstream/sync.",
+  "moved": {
+    "comment": "Renamed-baseline path -> Styml path. The sync merges upstream changes into the Styml file.",
+    "src/Styml/System.Text.Yaml.csproj": "src/Styml/Styml.csproj",
+    "src/Styml.SourceGeneration/System.Text.Yaml.SourceGeneration.Roslyn4.4.csproj": "src/Styml.SourceGeneration/Styml.SourceGeneration.csproj",
+    "test/Styml.Tests/System.Text.Yaml.Tests.csproj": "test/Styml.Tests/Styml.Tests.csproj",
+    "test/Styml.SourceGeneration.Tests/System.Text.Yaml.SourceGeneration.Roslyn4.4.Tests.csproj": "test/Styml.SourceGeneration.Tests/Styml.SourceGeneration.Tests.csproj",
+    "test/Styml.SourceGeneration.Unit.Tests/System.Text.Yaml.SourceGeneration.Roslyn4.4.Unit.Tests.csproj": "test/Styml.SourceGeneration.Unit.Tests/Styml.SourceGeneration.Unit.Tests.csproj",
+    "test/Styml.SourceGeneration.TestLibrary/System.Text.Yaml.TestLibrary.Roslyn4.4.csproj": "test/Styml.SourceGeneration.TestLibrary/Styml.SourceGeneration.TestLibrary.csproj"
+  },
+  "removed": {
+    "comment": "Renamed-baseline path -> why Styml has no counterpart. Upstream changes to these files are reported for a person to judge, never merged.",
+    "src/Styml.SourceGeneration/System.Text.Yaml.SourceGeneration.targets": "shared upstream project settings, folded into Styml.SourceGeneration.csproj",
+    "test/Styml.SourceGeneration.TestLibrary/System.Text.Yaml.TestLibrary.targets": "shared upstream project settings, folded into Styml.SourceGeneration.TestLibrary.csproj",
+    "test/Styml.SourceGeneration.Tests/System.Text.Yaml.SourceGeneration.Tests.targets": "shared upstream project settings, folded into Styml.SourceGeneration.Tests.csproj",
+    "test/Styml.SourceGeneration.Unit.Tests/System.Text.Yaml.SourceGeneration.Unit.Tests.targets": "shared upstream project settings, folded into Styml.SourceGeneration.Unit.Tests.csproj",
+    "src/Styml/System/Text/Yaml/Reader/ConsumeNumberResult.cs": "the JSON lexer's number parsing, deleted with the JSON grammar",
+    "src/Styml/System/Text/Yaml/Reader/ConsumeTokenResult.cs": "the JSON lexer's token results, deleted with the JSON grammar",
+    "src/Styml/System/Text/Yaml/Reader/YamlReaderHelper.net8.cs": "the JSON lexer's search helpers, deleted with the JSON grammar",
+    "src/Styml/System/Text/Yaml/Reader/YamlReaderHelper.netstandard.cs": "the JSON lexer's search helpers, deleted with the JSON grammar"
+  },
+  "replaced_areas": [
+    {
+      "paths": [
+        "src/libraries/System.Text.Json/src/System/Text/Json/Reader/*"
+      ],
+      "why": "the JSON reader: lexer, number parsing, string unescaping, depth and size limits. Styml's YAML grammar replaces the lexer, so a fix here may need an equivalent in Utf8YamlReader.Yaml*.cs."
+    },
+    {
+      "paths": [
+        "src/libraries/System.Text.Json/src/System/Text/Json/Document/JsonDocument.Parse.cs",
+        "src/libraries/System.Text.Json/src/System/Text/Json/Document/JsonDocument.cs",
+        "src/libraries/System.Text.Json/src/System/Text/Json/JsonHelpers.cs",
+        "src/libraries/System.Text.Json/src/System/Text/Json/JsonConstants.cs",
+        "src/libraries/System.Text.Json/src/System/Text/Json/Serialization/JsonSerializer.Read.Utf8JsonReader.cs"
+      ],
+      "why": "code built on the JSON token stream (document parsing, unescaping helpers, limits, reader scoping) that Styml changed for YAML scalars and collections."
+    },
+    {
+      "paths": [
+        "src/libraries/System.Text.Json/src/System/Text/Json/Writer/*"
+      ],
+      "why": "the JSON writer: escaping and number formatting. Styml's block style (Utf8YamlWriter.Block*.cs) writes the same values another way and may need the same fix."
+    }
+  ]
+}

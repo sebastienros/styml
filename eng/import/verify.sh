@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Verifies that the imported tree is byte-identical to the upstream ref (blob SHA comparison).
 # Run on the import commit (before the rename), e.g.: git stash/checkout <import commit> && eng/import/verify.sh
-# Usage: eng/import/verify.sh <runtime-repo> [ref]
+# Usage: eng/import/verify.sh <runtime-repo> [ref]   (default ref: the commit recorded in eng/upstream/baseline.json)
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
 runtime="${1:?usage: eng/import/verify.sh <runtime-repo> [ref]}"
-ref="${2:-deae2e32bf0e018e09d64597b7c59b62b73bb3ce}"
+ref="${2:-$(sed -n 's/^ *"commit": *"\([0-9a-f]\{40\}\)".*/\1/p' "$repo/eng/upstream/baseline.json" 2>/dev/null)}"
+[[ -n "$ref" ]] || { echo "no ref given and none recorded in eng/upstream/baseline.json" >&2; exit 1; }
 
 excluded() {
   local p="$1"
