@@ -297,6 +297,10 @@ namespace System.Text.Yaml.Tests
         [InlineData("{? # c\n a: 1}", "{ a: 1 }")]
         [InlineData("[&a /* c */ b, !!str // d\n e]", "[ 'b' 'e' ]")]
         [InlineData("k: [a,\n# c\n  b]\n", "{ k: [ 'a' < c>@7 'b' ] }")]
+        [InlineData("[[1//]: x\n, 2]]", "[ [ 1 <]: x>@3 2 ] ]")]
+        [InlineData("{\"k\": [true/* ]: */, 2]}", "{ k: [ true < ]: >@11 2 ] }")]
+        [InlineData("          k: [1,\n/* c */ 2]\n", "{ k: [ 1 < c >@17 !YamlReaderException")]
+        [InlineData("  k: [1,\n/* c */ 2]\n", "{ k: [ 1 < c >@9 2 ] }")]
         public void Allow_ReadsWhatSkipReads(string yaml, string allow)
         {
             // A comment between a node's properties (or '?') and its content has no token: it is skipped, also
@@ -418,7 +422,8 @@ namespace System.Text.Yaml.Tests
             {
                 Assert.Equal(new[] { 1, 2 }, document.RootElement.GetProperty("f").Deserialize<int[]>());
                 Assert.Equal(new[] { 1, 2 }, document.RootElement.GetProperty("f").Deserialize<int[]>(skip));
-                Assert.Equal(3, document.Deserialize<Dictionary<string, object>>()!.Count == 2 ? document.RootElement.GetProperty("g").Deserialize<int>() : -1);
+                Assert.Equal(3, document.RootElement.GetProperty("g").Deserialize<int>());
+                Assert.Equal(2, document.Deserialize<Dictionary<string, object>>()!.Count);
                 Assert.Equal(2, document.RootElement.Deserialize<Dictionary<string, YamlElement>>(skip)!.Count);
             }
 
@@ -439,7 +444,7 @@ namespace System.Text.Yaml.Tests
             // Merge keys are resolved by writing the input again.
             var merge = new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip, ResolveMergeKeys = true };
             Dictionary<string, Dictionary<string, string>> merged = YamlSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
-                "a: &b\n  x: p // q\nd:\n  <<: *b\n  y: [r // s\n    ] # t\n".Replace("y: [r // s\n    ] # t", "y: u /* v */"), merge)!;
+                "a: &b\n  x: p // q\nd:\n  <<: *b\n  y: u /* v */\n", merge)!;
             Assert.Equal("p // q", merged["d"]["x"]);
             Assert.Equal("u /* v */", merged["d"]["y"]);
         }
@@ -518,6 +523,20 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(443, (int)node["ports"]![1]!);
 
             Assert.ThrowsAny<YamlException>(() => YamlNode.Parse(Payload));
+        }
+
+        [Fact]
+        public void ComplexKey_ATagWithSlashesIsNotAComment()
+        {
+            // The raw key ends after its last content; a verbatim tag's '//' is part of the tag.
+            foreach (YamlCommentHandling handling in new[] { YamlCommentHandling.Disallow, YamlCommentHandling.Skip, YamlCommentHandling.Allow })
+            {
+                var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes("? - !<http://x/y>\n: v\n"), new YamlReaderOptions { CommentHandling = handling });
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.Equal(YamlKeyKind.Complex, reader.KeyKind);
+                Assert.Equal("- !<http://x/y>", Encoding.UTF8.GetString(reader.ValueSpan.ToArray()));
+            }
         }
 
         [Fact]

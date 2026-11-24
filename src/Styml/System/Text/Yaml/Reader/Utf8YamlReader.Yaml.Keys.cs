@@ -178,6 +178,20 @@ namespace System.Text.Yaml
                     continue;
                 }
 
+                if (b is (byte)'!' or (byte)'&' && (i == from || YamlIsWhiteSpaceOrBreak(_buffer[i - 1]) || YamlIsFlowIndicator(_buffer[i - 1])))
+                {
+                    // A tag or an anchor, whole: its slashes are its own ('!<http://x/y>'), not a JSON comment.
+                    bool verbatim = b == (byte)'!' && i + 1 < to && _buffer[i + 1] == (byte)'<';
+                    while (i + 1 < to && (verbatim
+                        ? _buffer[i] != (byte)'>'
+                        : !YamlIsWhiteSpaceOrBreak(_buffer[i + 1]) && !YamlIsFlowIndicator(_buffer[i + 1])))
+                    {
+                        i++;
+                    }
+                    end = i + 1;
+                    continue;
+                }
+
                 if (b == (byte)'/' && i + 1 < to && _buffer[i + 1] is (byte)'/' or (byte)'*' && YamlJsonComments)
                 {
                     if (_buffer[i + 1] == (byte)'/')

@@ -241,6 +241,7 @@ namespace System.Text.Yaml
             bool afterBlank = false;
             byte quote = 0;
             bool lineEnded = false;
+            int plainStart = pos;
             int i = pos;
 
             for (; i < buffer.Length; i++)
@@ -328,10 +329,12 @@ namespace System.Text.Yaml
                     goto Done;
                 }
 
-                if (b == (byte)'/' && (afterBlank || state is BetweenNodes or AfterNode) && i + 1 < buffer.Length && YamlJsonComments)
+                if (b == (byte)'/' && i + 1 < buffer.Length && YamlJsonComments
+                    && (afterBlank || state is BetweenNodes or AfterNode || (state == InPlain && YamlIsJsonLiteral(buffer.Slice(plainStart, i - plainStart)))))
                 {
-                    // A JSON comment, where the reader starts one (YamlScanToContent, YamlScanPlain): '//' ends the
-                    // line; a '/* */' closed on the line is white space, and one that is not ends the line too.
+                    // A JSON comment, where the reader starts one (YamlScanToContent, YamlScanPlain): after a blank,
+                    // where a node may start, or directly after a JSON literal. '//' ends the line; a '/* */' closed
+                    // on the line is white space, and one that is not ends the line too.
                     if (buffer[i + 1] == (byte)'/')
                     {
                         lineEnded = true;
@@ -409,6 +412,7 @@ namespace System.Text.Yaml
                         // ':' may be adjacent to a JSON-like node; anything else here is not valid YAML, and is read on
                         // as a plain scalar would be.
                         state = b == (byte)':' ? BetweenNodes : InPlain;
+                        plainStart = i;
                         continue;
                 }
 
@@ -428,6 +432,7 @@ namespace System.Text.Yaml
                     case (byte)'*':
                         // An alias runs to a blank or a flow indicator, like a plain scalar for this purpose.
                         state = InPlain;
+                        plainStart = i;
                         continue;
 
                     case (byte)'?':
@@ -436,10 +441,12 @@ namespace System.Text.Yaml
                         // An indicator when followed by a blank, a flow indicator or the end; otherwise the first
                         // character of a plain scalar.
                         state = YamlProbeEndsPlainAt(i + 1) ? BetweenNodes : InPlain;
+                        plainStart = i;
                         continue;
 
                     default:
                         state = InPlain;
+                        plainStart = i;
                         continue;
                 }
             }

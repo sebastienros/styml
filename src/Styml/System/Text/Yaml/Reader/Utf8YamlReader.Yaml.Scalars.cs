@@ -337,9 +337,7 @@ namespace System.Text.Yaml
                 return false;
             }
 
-            ReadOnlySpan<byte> literal = text.Slice(0, slash);
-            if (!literal.SequenceEqual("true"u8) && !literal.SequenceEqual("false"u8) && !literal.SequenceEqual("null"u8)
-                && !YamlIsJsonNumber(literal))
+            if (!YamlIsJsonLiteral(text.Slice(0, slash)))
             {
                 return false;
             }
@@ -351,58 +349,9 @@ namespace System.Text.Yaml
             return true;
         }
 
-        /// <summary>The JSON number grammar: <c>-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?</c>.</summary>
-        private static bool YamlIsJsonNumber(ReadOnlySpan<byte> text)
-        {
-            int i = 0;
-            if (i < text.Length && text[i] == (byte)'-')
-            {
-                i++;
-            }
-
-            int digits = i;
-            while (i < text.Length && text[i] is >= (byte)'0' and <= (byte)'9')
-            {
-                i++;
-            }
-            if (i == digits || (text[digits] == (byte)'0' && i - digits > 1))
-            {
-                return false;
-            }
-
-            if (i < text.Length && text[i] == (byte)'.')
-            {
-                int fraction = ++i;
-                while (i < text.Length && text[i] is >= (byte)'0' and <= (byte)'9')
-                {
-                    i++;
-                }
-                if (i == fraction)
-                {
-                    return false;
-                }
-            }
-
-            if (i < text.Length && text[i] is (byte)'e' or (byte)'E')
-            {
-                i++;
-                if (i < text.Length && text[i] is (byte)'+' or (byte)'-')
-                {
-                    i++;
-                }
-                int exponent = i;
-                while (i < text.Length && text[i] is >= (byte)'0' and <= (byte)'9')
-                {
-                    i++;
-                }
-                if (i == exponent)
-                {
-                    return false;
-                }
-            }
-
-            return i == text.Length;
-        }
+        /// <summary>A JSON number, <c>true</c>, <c>false</c> or <c>null</c>: what a comment may follow directly.</summary>
+        private static bool YamlIsJsonLiteral(ReadOnlySpan<byte> text) =>
+            text.SequenceEqual("true"u8) || text.SequenceEqual("false"u8) || text.SequenceEqual("null"u8) || YamlReaderHelper.IsJsonNumber(text);
 
         // ---------------------------------------------------------------------------------------------------------
         // Quoted scalars

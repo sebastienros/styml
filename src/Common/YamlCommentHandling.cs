@@ -16,8 +16,9 @@ namespace System.Text.Yaml
     /// <see cref="Skip"/> and <see cref="Allow"/>, as System.Text.Json reads them under the same values, in a JSON
     /// payload: inside flow collections (<c>[ ]</c> and <c>{ }</c>) and at the document level, before and after
     /// the root node. They are never read inside a block collection, where <c>url: http://x // y</c> keeps its text.
-    /// A comment starts where a token may start, or after white space: <c>[http://x, a//b]</c> holds two scalars,
-    /// and <c>[1//c]</c> holds the scalar <c>1//c</c>, as <c>1#c</c> is a scalar in YAML.
+    /// A comment starts where a token may start, after white space, or directly after a JSON number,
+    /// <c>true</c>, <c>false</c> or <c>null</c> (<c>[1//c</c>), as in JSON. Other text keeps its slashes:
+    /// <c>[http://x, a//b]</c> holds two scalars, as <c>a#b</c> is a scalar in YAML.
     /// </para>
     /// </remarks>
     public enum YamlCommentHandling : byte

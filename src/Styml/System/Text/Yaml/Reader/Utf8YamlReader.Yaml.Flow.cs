@@ -18,7 +18,7 @@ namespace System.Text.Yaml
 
             if (s.IsComment)
             {
-                return YamlEmitComment(ref c);
+                return YamlEmitComment(ref c, s.LineStart);
             }
 
             if (s.AtEnd)
@@ -67,7 +67,7 @@ namespace System.Text.Yaml
                     }
                     if (s.IsComment)
                     {
-                        return YamlEmitComment(ref c);
+                        return YamlEmitComment(ref c, s.LineStart);
                     }
                     if (s.AtEnd)
                     {
@@ -116,7 +116,7 @@ namespace System.Text.Yaml
                     if (s.IsComment)
                     {
                         _yaml.Set(YamlParseFlags.FlowSeparatorConsumed, true);
-                        return YamlEmitComment(ref c);
+                        return YamlEmitComment(ref c, s.LineStart);
                     }
                     if (s.AtEnd)
                     {
@@ -170,7 +170,7 @@ namespace System.Text.Yaml
                 if (s.IsComment)
                 {
                     _yaml.Set(YamlParseFlags.FlowSeparatorConsumed, true);
-                    return YamlEmitComment(ref c);
+                    return YamlEmitComment(ref c, s.LineStart);
                 }
                 if (s.AtEnd)
                 {
@@ -220,8 +220,9 @@ namespace System.Text.Yaml
         {
             int startLine = (int)c.Line;
 
-            // The token of a '//' comment consumed its line break, so the scan after it starts on the new line.
-            bool startsLine = c.Column == 0;
+            // The scan after a comment token starts on the line it checks: the token of a '//' comment consumed its
+            // line break, and that of a '/* */' that started its line left the line's first content next.
+            bool startsLine = c.Column == 0 || (c.Pos == _consumed && _yaml.Has(YamlParseFlags.ContentAtLineStart));
             if (!YamlScanToContent(ref c, out s, stopAtComment, jsonComments: YamlJsonComments))
             {
                 return false;
