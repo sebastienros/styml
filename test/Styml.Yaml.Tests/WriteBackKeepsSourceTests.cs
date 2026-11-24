@@ -17,6 +17,7 @@ namespace System.Text.Yaml.Tests
     public class WriteBackKeepsSourceTests
     {
         private static readonly YamlWriterOptions s_block = new() { Style = YamlWriterStyle.Block, NewLine = "\n" };
+        private static readonly YamlSerializerOptions s_blockSerializer = new() { WriteStyle = YamlWriterStyle.Block, NewLine = "\n" };
         private static readonly YamlWriterOptions s_canonical = new() { Style = YamlWriterStyle.Block, NewLine = "\n", IgnoreSourceStyles = true };
 
         private static string Write(Action<Utf8YamlWriter> write, YamlWriterOptions? options = null)
@@ -180,13 +181,13 @@ namespace System.Text.Yaml.Tests
             AssertFixedPoint(Write(document.RootElement));
 
             // Under YAML 1.1 these are booleans: quoted.
-            string yaml11 = YamlSerializer.Serialize(document, new YamlSerializerOptions { Schema = YamlSchemaKind.Yaml11 });
+            string yaml11 = YamlSerializer.Serialize(document, new YamlSerializerOptions { Schema = YamlSchemaKind.Yaml11, WriteStyle = YamlWriterStyle.Block, NewLine = "\n" });
             Assert.Equal("\"y\": \"on\"\n\"n\": \"off\"\nv: {x: 0, \"y\": 1, \"n\": [\"y\", \"n\", \"yes\", \"no\"]}\nlist:\n- \"y\"\n- \"On\"\n", yaml11);
 
             // IgnoreSourceStyles, created values and typed graphs: quoted, as before.
             Assert.Equal("\"y\": \"on\"\n", Write(YamlDocument.Parse("y: on\n").RootElement, s_canonical));
             Assert.Equal("\"y\": \"on\"\n", Write(new YamlObject { ["y"] = "on" }));
-            Assert.Equal("\"y\": \"on\"\n", YamlSerializer.Serialize(new Dictionary<string, string> { ["y"] = "on" }));
+            Assert.Equal("\"y\": \"on\"\n", YamlSerializer.Serialize(new Dictionary<string, string> { ["y"] = "on" }, s_blockSerializer));
         }
 
         // ------------------------------------------------------------------------------------------------------------
@@ -207,7 +208,7 @@ namespace System.Text.Yaml.Tests
             // IgnoreSourceStyles, a created null and a typed null: null.
             Assert.Equal("a: null\nb: null\nc:\n- null\n- null\n- x\nd: &x null\ne:\n  f: null\n  g: null\nh:\n  i: null\n", Write(document.RootElement, s_canonical));
             Assert.Equal("a: null\n", Write(new YamlObject { ["a"] = null }));
-            Assert.Equal("a: null\n", YamlSerializer.Serialize(new Dictionary<string, string?> { ["a"] = null }));
+            Assert.Equal("a: null\n", YamlSerializer.Serialize(new Dictionary<string, string?> { ["a"] = null }, s_blockSerializer));
 
             // An empty root is written null: written empty, there would be no document to read.
             Assert.Equal("null\n", Write(YamlDocument.Parse("--- \n").RootElement));

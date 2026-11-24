@@ -160,8 +160,8 @@ namespace System.Text.Yaml.Tests
         {
             // 012 is 10 under YAML 1.1 and 12 under the core schema: a core writer gets the value, a YAML 1.1 one the text.
             using YamlDocument document = YamlDocument.Parse("a: 012\n", new YamlDocumentOptions { Schema = YamlSchemaKind.Yaml11 });
-            Assert.Equal("a: 10", YamlSerializer.Serialize(document).TrimEnd());
-            Assert.Equal("a: 012", YamlSerializer.Serialize(document, new YamlSerializerOptions { Schema = YamlSchemaKind.Yaml11 }).TrimEnd());
+            Assert.Equal("a: 10", YamlSerializer.Serialize(document, new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block }).TrimEnd());
+            Assert.Equal("a: 012", YamlSerializer.Serialize(document, new YamlSerializerOptions { Schema = YamlSchemaKind.Yaml11, WriteStyle = YamlWriterStyle.Block }).TrimEnd());
         }
 
         [Theory]
