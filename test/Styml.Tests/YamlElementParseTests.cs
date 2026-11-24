@@ -54,6 +54,32 @@ namespace System.Text.Yaml.Tests
             }
         }
 
+        [Fact]
+        public static void Parse_RespectsOptions()
+        {
+            const string Yaml = """
+                {
+                    /* comment */
+                    "someProp": "value"
+                }
+                """;
+
+            YamlDocumentOptions options = new()
+            {
+                CommentHandling = YamlCommentHandling.Skip,
+            };
+
+            Validate(YamlElement.Parse(Yaml, options));
+            Validate(YamlElement.Parse(Yaml.AsSpan(), options));
+            Validate(YamlElement.Parse(Encoding.UTF8.GetBytes(Yaml).AsSpan(), options));
+
+            void Validate(YamlElement element)
+            {
+                Assert.Equal(YamlValueKind.Object, element.ValueKind);
+                Assert.Equal(YamlValueKind.String, element.GetProperty("someProp").ValueKind);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(ElementParseCases))]
         public static void TryParseValue(string yaml, YamlValueKind kind)
@@ -183,6 +209,16 @@ namespace System.Text.Yaml.Tests
         [InlineData(" [     ]")]
         [InlineData(" [null, true, 42.0, \"str\", [], {}, ]")]
         [InlineData(" {  } ")]
+        [InlineData("""
+
+            {
+                /* I am a comment */
+                "key1" : 1,
+                "key2" : null,
+                "key3" : true,
+            }
+
+            """)]
         public static void YamlMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue(string yaml)
         {
             YamlDocumentOptions options = new YamlDocumentOptions { AllowTrailingCommas = true, CommentHandling = YamlCommentHandling.Skip };
@@ -191,6 +227,94 @@ namespace System.Text.Yaml.Tests
 
             ReadOnlySpan<byte> rawValue = YamlMarshal.GetRawUtf8Value(element);
             Assert.Equal(yaml.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
+        }
+
+        [Fact]
+        public static void YamlMarshal_GetRawUtf8Value_NestedValues_ReturnsExpectedValue()
+        {
+            const string yaml = """
+                {
+                    "date": "2021-06-01T00:00:00Z",
+                    "temperatureC": 25,
+                    "summary": "Hot",
+
+                    /* The next property is a JSON object */
+
+                    "nested": {
+                        /* This is a nested JSON object */
+
+                        "nestedDate": "2021-06-01T00:00:00Z",
+                        "nestedTemperatureC": 25,
+                        "nestedSummary": "Hot"
+                    },
+
+                    /* The next property is a JSON array */
+
+                    "nestedArray": [
+                        /* This is a JSON array */
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        },
+                    ]
+                }
+                """;
+
+            YamlDocumentOptions options = new YamlDocumentOptions { AllowTrailingCommas = true, CommentHandling = YamlCommentHandling.Skip };
+            using YamlDocument jDoc = YamlDocument.Parse(yaml, options);
+            YamlElement element = jDoc.RootElement;
+
+            AssertGetRawValue(yaml, element);
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", element.GetProperty("date"));
+            AssertGetRawValue("25", element.GetProperty("temperatureC"));
+            AssertGetRawValue("\"Hot\"", element.GetProperty("summary"));
+
+            YamlElement nested = element.GetProperty("nested");
+            AssertGetRawValue("""
+                    {
+                        /* This is a nested JSON object */
+
+                        "nestedDate": "2021-06-01T00:00:00Z",
+                        "nestedTemperatureC": 25,
+                        "nestedSummary": "Hot"
+                    }
+                """, nested);
+
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", nested.GetProperty("nestedDate"));
+            AssertGetRawValue("25", nested.GetProperty("nestedTemperatureC"));
+            AssertGetRawValue("\"Hot\"", nested.GetProperty("nestedSummary"));
+
+            YamlElement nestedArray = element.GetProperty("nestedArray");
+            AssertGetRawValue("""
+                    [
+                        /* This is a JSON array */
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        },
+                    ]
+                """, nestedArray);
+
+            YamlElement nestedArrayElement = nestedArray[0];
+            AssertGetRawValue("""
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        }
+                """, nestedArrayElement);
+
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", nestedArrayElement.GetProperty("nestedDate"));
+            AssertGetRawValue("25", nestedArrayElement.GetProperty("nestedTemperatureC"));
+            AssertGetRawValue("\"Hot\"", nestedArrayElement.GetProperty("nestedSummary"));
+
+            static void AssertGetRawValue(string expectedYaml, YamlElement element)
+            {
+                ReadOnlySpan<byte> rawValue = YamlMarshal.GetRawUtf8Value(element);
+                Assert.Equal(expectedYaml.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
+            }
         }
 
         [Fact]

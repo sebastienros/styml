@@ -1637,6 +1637,69 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
+        public static void ReadArrayWithComments()
+        {
+            var options = new YamlDocumentOptions
+            {
+                CommentHandling = YamlCommentHandling.Skip,
+            };
+
+            using (YamlDocument doc = YamlDocument.Parse(
+                "[ 0, 1, 2, 3/*.14159*/           , /* 42, 11, hut, hut, hike! */ 4 ]",
+                options))
+            {
+                YamlElement root = doc.RootElement;
+
+                Assert.Equal(YamlValueKind.Array, root.ValueKind);
+                Assert.Equal(5, root.GetArrayLength());
+
+                for (int i = root.GetArrayLength() - 1; i >= 0; i--)
+                {
+                    Assert.Equal(i, root[i].GetInt32());
+                }
+
+                int val = 0;
+
+                foreach (YamlElement element in root.EnumerateArray())
+                {
+                    Assert.Equal(val, element.GetInt32());
+                    val++;
+                }
+
+                Assert.Throws<InvalidOperationException>(() => root.GetDouble());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetDouble(out double _));
+                Assert.Throws<InvalidOperationException>(() => root.GetSByte());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetSByte(out sbyte _));
+                Assert.Throws<InvalidOperationException>(() => root.GetByte());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetByte(out byte _));
+                Assert.Throws<InvalidOperationException>(() => root.GetInt16());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetInt16(out short _));
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt16());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetUInt16(out ushort _));
+                Assert.Throws<InvalidOperationException>(() => root.GetInt32());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetInt32(out int _));
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetUInt32(out uint _));
+                Assert.Throws<InvalidOperationException>(() => root.GetInt64());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetInt64(out long _));
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetUInt64(out ulong _));
+                Assert.Throws<InvalidOperationException>(() => root.GetString());
+                const string ThrowsAnyway = "throws-anyway";
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+                Assert.Throws<InvalidOperationException>(() => root.GetBytesFromBase64());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetBytesFromBase64(out byte[] _));
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
+                Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
+                Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
+                Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
+            }
+        }
+
+        [Fact]
         public static void CheckUseAfterDispose()
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
@@ -2120,6 +2183,21 @@ namespace System.Text.Yaml.Tests
             {
                 CommentHandling = (YamlCommentHandling)enumValue
             });
+        }
+
+        [Fact]
+        public static void ReadCommentHandlingWorksForNegativeOverflow()
+        {
+            var options = new YamlDocumentOptions
+            {
+                CommentHandling = unchecked((YamlCommentHandling)(-255))
+            };
+            Assert.Equal(YamlCommentHandling.Skip, options.CommentHandling);
+
+            using (YamlDocument doc = YamlDocument.Parse("/* some comment */{ }", options))
+            {
+                Assert.Equal(YamlValueKind.Object, doc.RootElement.ValueKind);
+            }
         }
 
         [Theory]

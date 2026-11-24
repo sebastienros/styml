@@ -328,6 +328,16 @@ namespace System.Text.Yaml.Serialization.Tests
             }
         }
 
+        [Fact]
+        public static void ReadCommentHandling()
+        {
+            var options = new YamlSerializerOptions();
+            options.ReadCommentHandling = YamlCommentHandling.Skip;
+
+            int value = YamlSerializer.Deserialize<int>("1 /* comment */", options);
+            Assert.Equal(1, value);
+        }
+
         [Theory]
         [InlineData(-1)]
         [InlineData((int)YamlCommentHandling.Allow)]

@@ -56,6 +56,40 @@ Conditional `[ActiveIssue]`/`ConditionalFact` conditions evaluate through `test/
 whose members are copied from upstream. On macOS arm64, `[ActiveIssue(..., IsOSX, IsX64Process)]`
 (`Stream.Collections.cs`) is inactive, so that test runs.
 
+## JSON comment tests restored
+
+`//` and `/* */` are read again, as comments, when `CommentHandling` (`ReadCommentHandling` on the serializer's options)
+is `Skip` or `Allow`: inside flow collections and at the document level, never inside a block collection, and never
+with `Disallow`, the default, which stays standard YAML. Of the 74 methods retired as "JSON comment syntax", 63 run
+again. They were taken from System.Text.Json's test sources at the import tag, renamed as the import is, and put back
+where upstream has them. 41 are unchanged. The others, each named in the Note column of the table "JSON comment syntax"
+below:
+
+- 6 theories lost rows that hold for another retired category: `InvalidYamlWithComments` and its single-segment twin
+  (6 rows each, invalid JSON that is valid YAML), and the four `ReadYamlTokenWithExtraValueAndComments*` theories
+  (5 of 37 rows, partial data: YAML token boundaries), which take their rows from
+  `YamlTokenWithExtraValueAndCommentsAfterAQuotedScalarOrACollection`.
+- 4 methods lost what they assert about `Disallow`: `ReadCommentHandling`, `Parse_RespectsOptions`, and the two
+  `YamlWithSingleLineCommentEndingWithNonStandardLineEnding*` theories, whose loop over the three values leaves it out.
+- `ReadSimpleObjectWithTrailingTriviaAsync` (constructor tests) sets `DuplicateKeyHandling = LastWins`, as the
+  duplicate-key methods retargeted in M7a.
+- The 11 `YamlElementWriteTests` methods (also run by `YamlDocumentWriteTests`) are in category `jsonoutput`, as their
+  siblings: they assert JSON output, and run in leg YJ.
+
+The comment rows of three split theories are back in their original methods (`ReadSimpleClassIgnoresLeadingOrTrailingTrivia`
+and `ReadComplexClassIgnoresLeadingOrTrailingTrivia`, 6 rows each; `YamlMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue`,
+1 row).
+
+11 methods stay retired: 3 expect `Disallow` to reject a comment or to end a value at one
+(`CommentsAreInvalidByDefault` and its single-segment twin, `TooMuchYamlWithComments`); 1 expects comment-only input to
+be an error (`YamlContainingOnlyCommentsIsInvalid`, D4); 4 expect a strict token-type exception (D2); 2 read several values on one
+line (D3); 1 has mostly rows that are valid YAML. The comment tests retired under other categories (the trailing-comma
+option, multiple values with partial data) stay retired for those categories' reasons.
+
+One difference from System.Text.Json is by design and has no retired test: inside a plain scalar that is not a JSON
+number, `true`, `false` or `null`, a comment needs white space before it (`[a//b]` is the scalar `a//b`, where
+System.Text.Json reports invalid JSON). `Styml.Yaml.Tests/JsonCommentTests.cs` covers that rule and the YAML edges.
+
 ## Tests retired with the JSON grammar (M7a, decision D8; category `jsongrammar` from M3b to M7a)
 
 From M3b to M7a the imported projects ran the YAML grammar by default (decision D1),
@@ -66,7 +100,7 @@ M7a deleted it with leg J and the category:
 | Category | Methods | M7a |
 |---|---:|---|
 | Duplicate keys | 112 | **106 retargeted**: they failed only on the YAML grammar's duplicate-key error, and now set `DuplicateKeyHandling = LastWins` (System.Text.Json's default) and run in legs Y and YJ. **6 retired**: the 3 with no success expected, and the 3 `YamlObject_DuplicatePropertyThrows*` methods, which assert System.Text.Json's deferred throw on a node read lazily, a path that only the JSON grammar's default reached. |
-| JSON comment syntax | 74 | Retired: `//` and `/* */` are not YAML; `#` comments are covered by Styml.Yaml.Tests and the yaml-test-suite. |
+| JSON comment syntax | 74 | Retired in M7a: `//` and `/* */` are not YAML. **63 restored** since, when the reader learned JSON comments under `CommentHandling` `Skip` and `Allow` ("JSON comment tests restored", below); 11 still retired. |
 | Invalid JSON that is valid YAML | 33 | Retired: the error they expect does not exist in YAML. |
 | Error text, type or position on invalid JSON | 20 | Retired: the JSON lexer's messages and positions; the YAML reader's are covered by the yaml-test-suite's error cases. |
 | Trailing-comma option | 19 | Retired: YAML flow collections always allow one (D3); the option is a documented no-op (owner question 5). |
@@ -76,7 +110,7 @@ M7a deleted it with leg J and the category:
 | JSON Lines output (M4 decision 1) | 15 | Retired: the JSON Lines separator went with the grammar; top-level values are YAML documents. |
 | Empty input (D4) | 8 | Retired: D4, empty input is zero tokens. |
 | Object keys read as text (M5e) | 3 | Retired: M5e reads a scalar key into an `object` key as its text. |
-| **Total** | **336** | **106 retargeted, 230 retired** |
+| **Total** | **336** | **106 retargeted, 230 retired** (63 of them restored since) |
 
 Also retired: the four `_JsonComments` twins of the split theories (below), and the 3 methods of the Styml-authored
 `Styml.Tests/Serialization/LenientScalarsJsonGrammarTests.cs`, deleted whole (they checked that the lenient-scalar
@@ -158,9 +192,9 @@ rows, so they still run under YAML. Under the JSON grammar the two methods toget
 
 | File | Original method | Tagged twin | Rows moved |
 |---|---|---|---:|
-| `Styml.Tests/Serialization/Object.ReadTests.cs` | `ReadSimpleClassIgnoresLeadingOrTrailingTrivia` | `..._JsonComments` | 6 of 11 |
-| `Styml.Tests/Serialization/Object.ReadTests.cs` | `ReadComplexClassIgnoresLeadingOrTrailingTrivia` | `..._JsonComments` | 6 of 11 |
-| `Styml.Tests/YamlElementParseTests.cs` | `YamlMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue` | `..._JsonComments` | 1 of 11 |
+| `Styml.Tests/Serialization/Object.ReadTests.cs` | `ReadSimpleClassIgnoresLeadingOrTrailingTrivia` | `..._JsonComments` (rows back in the original since JSON comments are read) | 6 of 11 |
+| `Styml.Tests/Serialization/Object.ReadTests.cs` | `ReadComplexClassIgnoresLeadingOrTrailingTrivia` | `..._JsonComments` (rows back in the original since JSON comments are read) | 6 of 11 |
+| `Styml.Tests/YamlElementParseTests.cs` | `YamlMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue` | `..._JsonComments` (row back in the original since JSON comments are read) | 1 of 11 |
 | `Common/YamlSchemaExporterTests.cs` | `TestTypes_GeneratesExpectedYamlSchema` | `..._JsonComments` (rows whose expected schema contains `/*`) | 2 of 236 |
 | `Common/AsyncEnumerableTests.cs` | `SerializeAsyncEnumerable_FlushesStreamAsValuesAreProduced` | `..._JsonLines` (M4a: the JSON Lines row) | 1 of 2 |
 
@@ -229,84 +263,87 @@ boundaries" (below), and these 55 lost their tag and run in the default run:
 | `Styml.Tests/Utf8YamlReaderTests.cs` | `ValueIsEscaped_IsTrueOnEscapedStrings` | yes |
 | `Styml.Tests/YamlNode/YamlValueTests.cs` | `PrimitiveTypes_ReadOnlySequence` | yes |
 
-### JSON comment syntax (74 methods)
+### JSON comment syntax (74 methods: 63 restored, 11 still retired)
+
+The Note column says what became of each method when JSON comments came back under `CommentHandling`
+(`Skip` and `Allow`); "JSON comment tests restored", above, has the rules.
 
 | File | Test method | Valid JSON, success expected | Note |
 |---|---|---|---|
-| `Common/ConstructorTests/ConstructorTests.Stream.cs` | `ReadSimpleObjectWithTrailingTriviaAsync` |  |  |
-| `Styml.Tests/NewtonsoftTests/YamlSerializerTests.cs` | `DeserializeCommentTestObjectWithComments` |  |  |
-| `Styml.Tests/Serialization/Array.ReadTests.cs` | `ReadArrayWithInterleavedComments` |  |  |
-| `Styml.Tests/Serialization/CustomConverterTests/CustomConverterTests.cs` | `VerifyConverterWithTrailingComments` |  |  |
-| `Styml.Tests/Serialization/Object.ReadTests.cs` | `ReadClassWithNestedComments` |  |  |
-| `Styml.Tests/Serialization/OptionsTests.cs` | `ReadCommentHandling` |  |  |
-| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderOptionsWinComments` |  |  |
-| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderPreservesPositionInfoPropertyNameWithSkippedComments` |  |  |
-| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderPreservesPositionInfoWithCommentBeforeNoneToken` |  |  |
-| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderPreservesPositionInfoWithSkippedComments` |  |  |
-| `Styml.Tests/Serialization/ReadValueTests.cs` | `TooMuchYamlWithComments` |  |  |
-| `Styml.Tests/Serialization/Stream.ReadTests.cs` | `ReadPrimitivesWithTrailingTriviaAsync` |  |  |
-| `Styml.Tests/Serialization/Stream.ReadTests.cs` | `ReadSimpleObjectWithTrailingTriviaAsync` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `AllowCommentStackMismatchMultiSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `AllowMultipleValues_CommentSeparated_MultiSegment` |  | ; sibling `AllowMultipleValues_CommentSeparated` |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `CheckOnlyOneOfValueSpanOrSequenceIsSet` |  | ; row 2 has `//` comments, rows 0 and 1 need only M3c |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ConsumeSingleLineCommentMultiSpanTest` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadCommentsAcrossSegments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadInvalidYamlStringsWithComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadYamlStringsWithComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadYamlTokenWithExtraValueAndCommentsAppendedMultiSegment` |  | ; sibling `ReadYamlTokenWithExtraValueAndCommentsAppended` |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadYamlTokenWithExtraValueAndCommentsMultiSegment` |  | ; sibling `ReadYamlTokenWithExtraValueAndComments` |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `SkipSingleLineCommentMultiSpanTest` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `TestTokenStartIndexMultiSegment_SingleValueWithComments` |  | ; sibling `TestTokenStartIndex_SingleValueWithComments` |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `TestTrySkipWithCommentsMultiSegment` |  | ; sibling `TestTrySkipWithComments` |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithMultiLineCommentWithNoLineEndingsFinalBlockMultiSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithSingleLineCommentEndingWithNonStandardLineEndingMultiSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithSingleLineCommentWithNoLineEndingsFinalBlockMultiSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithSingleLineCommentWithRegularLineEndingMultiSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.TryGet.cs` | `TestGetCommentUnescape` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.TryGet.cs` | `TestingGetComment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.ValueTextEquals.cs` | `TestTextEqualsInvalid` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `Allow` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowCommentStackMismatch` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowComment_ReadsCommentToken` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowMultipleValues_CommentSeparated` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowSingleSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `CommentsAreInvalidByDefault` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `CommentsAreInvalidByDefaultSingleSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `ConsumeLotsOfComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `ConsumeSingleLineCommentSingleSpanTest` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `InvalidYamlWithComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `InvalidYamlWithCommentsSingleSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `ReadYamlTokenWithExtraValueAndComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `ReadYamlTokenWithExtraValueAndCommentsAppended` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `Skip` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipAtCommentDoesNothing` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipComment_MultiLineComment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipComment_SingleLineComment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipLotsOfComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipSingleLineCommentSingleSpanTest` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipSingleSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `TestTokenStartIndex_SingleValueWithComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `TestTrySkipWithComments` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlContainingOnlyCommentsIsInvalid` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlWithASingleCommentEndingWithLineEndingSingleSegment` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlWithSingleCorrectLineCommentWithPartialNonStandardLineEnding` |  |  |
-| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlWithSingleLineCommentEndingWithNonStandardLineEnding` |  |  |
-| `Styml.Tests/YamlDocumentTests.cs` | `ReadArrayWithComments` |  |  |
-| `Styml.Tests/YamlDocumentTests.cs` | `ReadCommentHandlingWorksForNegativeOverflow` |  |  |
-| `Styml.Tests/YamlElementParseTests.cs` | `Parse_RespectsOptions` |  |  |
-| `Styml.Tests/YamlElementParseTests.cs` | `YamlMarshal_GetRawUtf8Value_NestedValues_ReturnsExpectedValue` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedArray` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedArrayAsProperty` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedObject` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedObjectAsProperty` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingArray` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingArrayAsProperty` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingObject` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingObjectAsProperty` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleArrayAsProperty` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleObject` |  |  |
-| `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleObjectAsProperty` |  |  |
-| `Styml.Tests/YamlNode/ParseTests.cs` | `ReadSimpleObjectWithTrailingTrivia` |  |  |
+| `Common/ConstructorTests/ConstructorTests.Stream.cs` | `ReadSimpleObjectWithTrailingTriviaAsync` |  | Restored, with `DuplicateKeyHandling = LastWins` as its sibling `ReadSimpleObjectAsync` |
+| `Styml.Tests/NewtonsoftTests/YamlSerializerTests.cs` | `DeserializeCommentTestObjectWithComments` |  | Restored |
+| `Styml.Tests/Serialization/Array.ReadTests.cs` | `ReadArrayWithInterleavedComments` |  | Restored |
+| `Styml.Tests/Serialization/CustomConverterTests/CustomConverterTests.cs` | `VerifyConverterWithTrailingComments` |  | Restored |
+| `Styml.Tests/Serialization/Object.ReadTests.cs` | `ReadClassWithNestedComments` |  | Restored |
+| `Styml.Tests/Serialization/OptionsTests.cs` | `ReadCommentHandling` |  | Restored without its two assertions that `Disallow` rejects `/* comment */` (it is text in YAML) |
+| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderOptionsWinComments` |  | Restored |
+| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderPreservesPositionInfoPropertyNameWithSkippedComments` |  | Still retired. Strict token-type exceptions (D2): it expects a number read into a string, or compared as text, to throw. |
+| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderPreservesPositionInfoWithCommentBeforeNoneToken` |  | Still retired. Strict token-type exceptions (D2): it expects a number read into a string, or compared as text, to throw. |
+| `Styml.Tests/Serialization/ReadValueTests.cs` | `ReaderPreservesPositionInfoWithSkippedComments` |  | Still retired. Strict token-type exceptions (D2): it expects a number read into a string, or compared as text, to throw. |
+| `Styml.Tests/Serialization/ReadValueTests.cs` | `TooMuchYamlWithComments` |  | Still retired. It expects `Disallow`, the default, to reject a comment. In Styml `Disallow` is standard YAML, where `//` and `/* */` are text. It reads `0/**/` with a default reader and expects the number 0. |
+| `Styml.Tests/Serialization/Stream.ReadTests.cs` | `ReadPrimitivesWithTrailingTriviaAsync` |  | Restored |
+| `Styml.Tests/Serialization/Stream.ReadTests.cs` | `ReadSimpleObjectWithTrailingTriviaAsync` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `AllowCommentStackMismatchMultiSegment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `AllowMultipleValues_CommentSeparated_MultiSegment` |  | Still retired. Multiple top-level JSON values (D3): values separated by a comment on one line; under YAML the option means documents. ; sibling `AllowMultipleValues_CommentSeparated` |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `CheckOnlyOneOfValueSpanOrSequenceIsSet` |  | Restored ; row 2 has `//` comments, rows 0 and 1 need only M3c |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ConsumeSingleLineCommentMultiSpanTest` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadCommentsAcrossSegments` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadInvalidYamlStringsWithComments` |  | Still retired. Invalid JSON that is valid YAML: 17 of its 29 rows expect an error for text that YAML reads (a plain scalar after a comment). |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadYamlStringsWithComments` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadYamlTokenWithExtraValueAndCommentsAppendedMultiSegment` |  | Restored, 32 of 37 rows: in the 5 rows that start with a plain scalar the YAML reader, given partial data, waits for the end of the line ; sibling `ReadYamlTokenWithExtraValueAndCommentsAppended` |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `ReadYamlTokenWithExtraValueAndCommentsMultiSegment` |  | Restored, 32 of 37 rows: in the 5 rows that start with a plain scalar the YAML reader, given partial data, waits for the end of the line ; sibling `ReadYamlTokenWithExtraValueAndComments` |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `SkipSingleLineCommentMultiSpanTest` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `TestTokenStartIndexMultiSegment_SingleValueWithComments` |  | Restored ; sibling `TestTokenStartIndex_SingleValueWithComments` |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `TestTrySkipWithCommentsMultiSegment` |  | Restored ; sibling `TestTrySkipWithComments` |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithMultiLineCommentWithNoLineEndingsFinalBlockMultiSegment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithSingleLineCommentEndingWithNonStandardLineEndingMultiSegment` |  | Restored for `Skip` and `Allow`; the loop leaves `Disallow` out |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithSingleLineCommentWithNoLineEndingsFinalBlockMultiSegment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.MultiSegment.cs` | `YamlWithSingleLineCommentWithRegularLineEndingMultiSegment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.TryGet.cs` | `TestGetCommentUnescape` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.TryGet.cs` | `TestingGetComment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.ValueTextEquals.cs` | `TestTextEqualsInvalid` |  | Still retired. Strict token-type exceptions (D2): it expects a number read into a string, or compared as text, to throw. |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `Allow` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowCommentStackMismatch` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowComment_ReadsCommentToken` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowMultipleValues_CommentSeparated` |  | Still retired. Multiple top-level JSON values (D3): values separated by a comment on one line; under YAML the option means documents. |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `AllowSingleSegment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `CommentsAreInvalidByDefault` |  | Still retired. It expects `Disallow`, the default, to reject a comment. In Styml `Disallow` is standard YAML, where `//` and `/* */` are text. |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `CommentsAreInvalidByDefaultSingleSegment` |  | Still retired. It expects `Disallow`, the default, to reject a comment. In Styml `Disallow` is standard YAML, where `//` and `/* */` are text. |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `ConsumeLotsOfComments` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `ConsumeSingleLineCommentSingleSpanTest` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `InvalidYamlWithComments` |  | Restored, 48 of 54 rows: the 6 rows whose text after the comment is `漢字}` are valid YAML (a plain scalar) |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `InvalidYamlWithCommentsSingleSegment` |  | Restored, 44 of 50 rows: the 6 rows whose text after the comment is `漢字}` are valid YAML (a plain scalar) |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `ReadYamlTokenWithExtraValueAndComments` |  | Restored, 32 of 37 rows: in the 5 rows that start with a plain scalar the YAML reader, given partial data, waits for the end of the line |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `ReadYamlTokenWithExtraValueAndCommentsAppended` |  | Restored, 32 of 37 rows: in the 5 rows that start with a plain scalar the YAML reader, given partial data, waits for the end of the line |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `Skip` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipAtCommentDoesNothing` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipComment_MultiLineComment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipComment_SingleLineComment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipLotsOfComments` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipSingleLineCommentSingleSpanTest` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `SkipSingleSegment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `TestTokenStartIndex_SingleValueWithComments` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `TestTrySkipWithComments` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlContainingOnlyCommentsIsInvalid` |  | Still retired. Empty input (D4): comment-only input is zero tokens, not an error. |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlWithASingleCommentEndingWithLineEndingSingleSegment` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlWithSingleCorrectLineCommentWithPartialNonStandardLineEnding` |  | Restored |
+| `Styml.Tests/Utf8YamlReaderTests.cs` | `YamlWithSingleLineCommentEndingWithNonStandardLineEnding` |  | Restored for `Skip` and `Allow`; the loop leaves `Disallow` out |
+| `Styml.Tests/YamlDocumentTests.cs` | `ReadArrayWithComments` |  | Restored |
+| `Styml.Tests/YamlDocumentTests.cs` | `ReadCommentHandlingWorksForNegativeOverflow` |  | Restored |
+| `Styml.Tests/YamlElementParseTests.cs` | `Parse_RespectsOptions` |  | Restored without its three assertions that the default rejects a comment (it is text in YAML) |
+| `Styml.Tests/YamlElementParseTests.cs` | `YamlMarshal_GetRawUtf8Value_NestedValues_ReturnsExpectedValue` |  | Restored |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedArray` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedArrayAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedObject` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEmptyCommentedObjectAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingArray` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingArrayAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingObject` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteEverythingObjectAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleArrayAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleObject` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlElementWriteTests.cs` | `WriteSimpleObjectAsProperty` |  | Restored, in category `jsonoutput` as its siblings: it asserts JSON output |
+| `Styml.Tests/YamlNode/ParseTests.cs` | `ReadSimpleObjectWithTrailingTrivia` |  | Restored |
 
 ### Trailing-comma option (19 methods)
 

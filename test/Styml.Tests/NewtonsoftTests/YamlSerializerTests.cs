@@ -86,6 +86,16 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
+        public void DeserializeCommentTestObjectWithComments()
+        {
+            CommentTestObject o = YamlSerializer.Deserialize<CommentTestObject>("{/* Test */}", new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip });
+            Assert.False(o.A);
+
+            o = YamlSerializer.Deserialize<CommentTestObject>("""{"A": true/* Test */}""", new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Skip });
+            Assert.True(o.A);
+        }
+
+        [Fact]
         public void PreserveReferencesCallbackTest()
         {
             PersonReference p1 = new PersonReference
