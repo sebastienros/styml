@@ -327,6 +327,37 @@ namespace System.Text.Yaml
                     lineEnded = true;
                     goto Done;
                 }
+
+                if (b == (byte)'/' && (afterBlank || state is BetweenNodes or AfterNode) && i + 1 < buffer.Length && YamlJsonComments)
+                {
+                    // A JSON comment, where the reader starts one (YamlScanToContent, YamlScanPlain): '//' ends the
+                    // line; a '/* */' closed on the line is white space, and one that is not ends the line too.
+                    if (buffer[i + 1] == (byte)'/')
+                    {
+                        lineEnded = true;
+                        goto Done;
+                    }
+                    if (buffer[i + 1] == (byte)'*')
+                    {
+                        ReadOnlySpan<byte> rest = buffer.Slice(i + 2);
+                        int close = rest.IndexOf("*/"u8);
+                        if (close < 0 ? YamlReaderHelper.IndexOfLineBreak(rest) >= 0 || IsLastSpan : YamlReaderHelper.IndexOfLineBreak(rest.Slice(0, close)) >= 0)
+                        {
+                            lineEnded = true;
+                            goto Done;
+                        }
+                        if (close < 0)
+                        {
+                            // Not closed in the data so far: undecided.
+                            i = buffer.Length;
+                            break;
+                        }
+                        characters += YamlReaderHelper.CountCharacters(rest.Slice(0, close + 2)) + 1;
+                        i += close + 3;
+                        afterBlank = true;
+                        continue;
+                    }
+                }
                 afterBlank = false;
 
                 // Flow indicators end a plain scalar or a property, and are structural in every state.

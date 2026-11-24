@@ -57,7 +57,7 @@ namespace System.Text.Yaml
         {
             BaseIndentPlusOne = parentIndent + 1,
             BlockIndentPlusOne = parentIndent + 1,
-            Flags = YamlParseFlags.ContentAtLineStart,
+            Flags = YamlParseFlags.ContentAtLineStart | YamlParseFlags.ScopedValue,
             TagDirectives = tagDirectives,
             AnchorContext = anchorContext,
         };
@@ -275,5 +275,11 @@ namespace System.Text.Yaml
         /// next content is that ':', which the value's Read consumes.
         /// </summary>
         FlowColonPending = 1 << 9,
+
+        /// <summary>
+        /// The reader reads one value sliced out of a larger document (ForScopedValue): its depth 0 is not the
+        /// document level, so JSON comments are not looked for around its root node.
+        /// </summary>
+        ScopedValue = 1 << 10,
     }
 }

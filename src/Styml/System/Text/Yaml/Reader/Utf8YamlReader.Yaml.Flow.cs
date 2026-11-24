@@ -219,12 +219,14 @@ namespace System.Text.Yaml
         private readonly bool YamlScanToFlowContent(ref YamlCursor c, out YamlScan s, bool stopAtComment)
         {
             int startLine = (int)c.Line;
-            if (!YamlScanToContent(ref c, out s, stopAtComment))
+            if (!YamlScanToContent(ref c, out s, stopAtComment, jsonComments: YamlJsonComments))
             {
                 return false;
             }
 
-            if (!s.AtEnd && c.Line != startLine)
+            // A comment token is not content: what follows it is checked by the next read. After a '/* */' that
+            // crossed lines the content is not at the start of its line, and is not checked.
+            if (!s.AtEnd && !s.IsComment && s.LineStart && c.Line != startLine)
             {
                 int marker = YamlDocumentMarker(c, s.LineStart);
                 if (marker < 0)
@@ -266,7 +268,7 @@ namespace System.Text.Yaml
                     explicitKey = true;
                     c.Pos++;
                     c.Column++;
-                    if (!YamlScanToFlowContent(ref c, out YamlScan s))
+                    if (!YamlScanToFlowContent(ref c, out YamlScan s, stopAtComment: false))
                     {
                         return YamlStep.NeedMoreData;
                     }
@@ -287,7 +289,7 @@ namespace System.Text.Yaml
                 {
                     return YamlStep.NeedMoreData;
                 }
-                if (!YamlScanToFlowContent(ref c, out YamlScan s))
+                if (!YamlScanToFlowContent(ref c, out YamlScan s, stopAtComment: false))
                 {
                     return YamlStep.NeedMoreData;
                 }
@@ -377,7 +379,7 @@ namespace System.Text.Yaml
                     }
                     YamlThrow(b is (byte)'@' or (byte)'`' or (byte)'%' ? YamlGrammarError.ReservedIndicator : YamlGrammarError.UnexpectedCharacter, c, ThrowHelper.GetPrintableString(b));
                 }
-                if (!YamlScanPlain(ref c, _yaml.BlockIndent, flow: true, singleLine: inPair && !explicitKey, out start, out length, out multiLine, out _))
+                if (!YamlScanPlain(ref c, _yaml.BlockIndent, flow: true, singleLine: inPair && !explicitKey, YamlJsonComments, out start, out length, out multiLine, out _))
                 {
                     return YamlStep.NeedMoreData;
                 }
@@ -589,7 +591,7 @@ namespace System.Text.Yaml
                 {
                     return YamlStep.NeedMoreData;
                 }
-                if (!YamlScanToFlowContent(ref c, out YamlScan s))
+                if (!YamlScanToFlowContent(ref c, out YamlScan s, stopAtComment: false))
                 {
                     return YamlStep.NeedMoreData;
                 }
@@ -718,7 +720,7 @@ namespace System.Text.Yaml
             if (entryOfSequence)
             {
                 YamlCursor probe = c;
-                if (!YamlScanPlain(ref probe, _yaml.BlockIndent, flow: true, singleLine: true, out _, out _, out _, out YamlPlainEnd lineEnd))
+                if (!YamlScanPlain(ref probe, _yaml.BlockIndent, flow: true, singleLine: true, YamlJsonComments, out _, out _, out _, out YamlPlainEnd lineEnd))
                 {
                     return YamlStep.NeedMoreData;
                 }
@@ -728,7 +730,7 @@ namespace System.Text.Yaml
                 }
             }
 
-            if (!YamlScanPlain(ref c, _yaml.BlockIndent, flow: true, singleLine: false, out int start, out int length, out bool multiLine, out YamlPlainEnd end))
+            if (!YamlScanPlain(ref c, _yaml.BlockIndent, flow: true, singleLine: false, YamlJsonComments, out int start, out int length, out bool multiLine, out YamlPlainEnd end))
             {
                 return YamlStep.NeedMoreData;
             }

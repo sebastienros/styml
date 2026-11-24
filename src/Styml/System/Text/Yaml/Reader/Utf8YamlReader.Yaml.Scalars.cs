@@ -80,7 +80,7 @@ namespace System.Text.Yaml
         /// scalar's last non-blank byte, and <paramref name="end"/> says what stopped it.
         /// </summary>
         /// <returns>False when the buffer ends before the end of the scalar is known.</returns>
-        private readonly bool YamlScanPlain(ref YamlCursor c, int parentIndent, bool flow, bool singleLine, out int start, out int length, out bool multiLine, out YamlPlainEnd end)
+        private readonly bool YamlScanPlain(ref YamlCursor c, int parentIndent, bool flow, bool singleLine, bool jsonComments, out int start, out int length, out bool multiLine, out YamlPlainEnd end)
         {
             ReadOnlySpan<byte> buffer = _buffer;
             start = c.Pos;
@@ -130,10 +130,31 @@ namespace System.Text.Yaml
                     {
                         p.Pos++;
                         p.Column++;
-                        if (p.Pos < buffer.Length && buffer[p.Pos] == (byte)'#')
+                        if (p.Pos < buffer.Length)
                         {
-                            end = YamlPlainEnd.Comment;
-                            goto Done;
+                            byte afterBlank = buffer[p.Pos];
+                            if (afterBlank == (byte)'#')
+                            {
+                                end = YamlPlainEnd.Comment;
+                                goto Done;
+                            }
+
+                            if (afterBlank == (byte)'/' && jsonComments)
+                            {
+                                // As '#': after white space, '//' or '/*' starts a comment and ends the scalar.
+                                int kind = YamlJsonCommentAt(p.Pos);
+                                if (kind == -2)
+                                {
+                                    length = 0;
+                                    end = default;
+                                    return false;
+                                }
+                                if (kind != 0)
+                                {
+                                    end = YamlPlainEnd.Comment;
+                                    goto Done;
+                                }
+                            }
                         }
                         continue;
                     }
@@ -216,6 +237,22 @@ namespace System.Text.Yaml
                 {
                     end = YamlPlainEnd.Comment;
                     goto Done;
+                }
+
+                if (first == (byte)'/' && jsonComments)
+                {
+                    int kind = YamlJsonCommentAt(q.Pos);
+                    if (kind == -2)
+                    {
+                        length = 0;
+                        end = default;
+                        return false;
+                    }
+                    if (kind != 0)
+                    {
+                        end = YamlPlainEnd.Comment;
+                        goto Done;
+                    }
                 }
 
                 int marker = q.Column == 0 ? YamlDocumentMarker(q, lineStart: true) : 0;

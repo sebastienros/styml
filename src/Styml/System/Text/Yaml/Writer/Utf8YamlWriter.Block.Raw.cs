@@ -174,7 +174,7 @@ namespace System.Text.Yaml
                 rest = rest.Slice(next + 1);
             }
 
-            var reader = new Utf8YamlReader(utf8Yaml, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var reader = new Utf8YamlReader(utf8Yaml, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow, YamlCommentsOnly = true });
             RawNodeKind kind = RawNodeKind.Inline;
             int nodes = 0;
             int depth = 0;
