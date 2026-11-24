@@ -199,8 +199,9 @@ namespace System.Text.Yaml.Tests
         [Theory]
         [InlineData("!\n&\u001D")]
         [InlineData("&\u0007 a")]
-        [InlineData("&\u0085 a")]
-        [InlineData("&\u2028 a")]
+        [InlineData("&\u0086 a")]
+        [InlineData("&a\ufeffb a")]
+        [InlineData("&a\ufffe a")]
         [InlineData("*\u001D")]
         public void InvalidAnchorCharactersAreRejected(string yaml)
         {
@@ -225,6 +226,10 @@ namespace System.Text.Yaml.Tests
         [InlineData("\u00E9t\u00E9")]
         [InlineData("\u65E5\u672C")]
         [InlineData("\U0001F600")]
+        [InlineData("\u0085")]
+        [InlineData("a\u0085b")]
+        [InlineData("a\u2028b")]
+        [InlineData("a\u2029")]
         public void ValidAnchorNamesAreAccepted(string name)
         {
             string yaml = $"- &{name} x\n- *{name}\n";
