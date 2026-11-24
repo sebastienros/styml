@@ -5,49 +5,78 @@ using System.Diagnostics;
 namespace System.Text.Yaml
 {
     /// <summary>
-    /// The <c>%TAG</c> handles of one YAML document and their prefixes.
-    /// Immutable: a directive creates a new table, so copies of the reader state (resumed readers, readers scoped to one
-    /// value, the constructor replay path) can share one safely. Allocated only for documents that declare handles.
+    /// The <c>%TAG</c> handles of one YAML document and their prefixes, in a hash table so that a header with many
+    /// directives reads in linear time. Mutable: each directive header starts from no table (the reader drops the
+    /// previous document's before its first directive) and adds to it in place, and the table is read-only once the
+    /// document starts. Copies of the reader state (resumed readers, readers scoped to one value, the constructor
+    /// replay path) can share one: a state copied or restored inside the header can see handles from directive lines it
+    /// has not consumed yet, but it reads those same lines again and adds the same handles in the same order.
+    /// Allocated only for documents that declare handles.
     /// </summary>
     internal sealed class YamlTagDirectives
     {
         internal static ReadOnlySpan<byte> SecondaryPrefix => "tag:yaml.org,2002:"u8;
 
-        private readonly byte[][] _handles;
-        private readonly byte[][] _prefixes;
-
-        private YamlTagDirectives(byte[][] handles, byte[][] prefixes)
+        private struct Entry
         {
-            _handles = handles;
-            _prefixes = prefixes;
+            public int HashCode;
+            public int Next;
+            public byte[] Handle;
+            public byte[] Prefix;
         }
 
-        /// <summary>A table with <paramref name="handle"/> added, or redefined when it is already there.</summary>
+        private int[] _buckets;
+        private Entry[] _entries;
+        private int _count;
+
+        private YamlTagDirectives()
+        {
+            _buckets = new int[4];
+            _entries = new Entry[4];
+        }
+
+        /// <summary>
+        /// Adds <paramref name="handle"/> to <paramref name="table"/> in place, or redefines it when it is already there;
+        /// a new table when <paramref name="table"/> is null. Called only while reading a directive header.
+        /// </summary>
         internal static YamlTagDirectives With(YamlTagDirectives? table, ReadOnlySpan<byte> handle, ReadOnlySpan<byte> prefix)
         {
-            int count = table?._handles.Length ?? 0;
-            int index = table?.IndexOf(handle) ?? -1;
-            byte[][] handles = new byte[index >= 0 ? count : count + 1][];
-            byte[][] prefixes = new byte[handles.Length][];
-            if (table is not null)
-            {
-                Array.Copy(table._handles, handles, count);
-                Array.Copy(table._prefixes, prefixes, count);
-            }
-            if (index < 0)
-            {
-                index = count;
-            }
-            handles[index] = handle.ToArray();
-            prefixes[index] = prefix.ToArray();
-            return new YamlTagDirectives(handles, prefixes);
+            table ??= new YamlTagDirectives();
+            table.AddOrUpdate(handle, prefix);
+            return table;
         }
 
-        private int IndexOf(ReadOnlySpan<byte> handle)
+        private void AddOrUpdate(ReadOnlySpan<byte> handle, ReadOnlySpan<byte> prefix)
         {
-            for (int i = 0; i < _handles.Length; i++)
+            int hashCode = Marvin.ComputeHash32(handle, Marvin.DefaultSeed);
+            int existing = FindEntry(handle, hashCode);
+            if (existing >= 0)
             {
-                if (handle.SequenceEqual(_handles[i]))
+                _entries[existing].Prefix = prefix.ToArray();
+                return;
+            }
+
+            if (_count == _entries.Length)
+            {
+                Resize();
+            }
+
+            int bucketIndex = hashCode & (_buckets.Length - 1);
+            int index = _count++;
+            ref Entry entry = ref _entries[index];
+            entry.HashCode = hashCode;
+            entry.Next = _buckets[bucketIndex] - 1;
+            entry.Handle = handle.ToArray();
+            entry.Prefix = prefix.ToArray();
+            _buckets[bucketIndex] = index + 1;
+        }
+
+        /// <summary>The index of the entry for <paramref name="handle"/>, or -1.</summary>
+        private int FindEntry(ReadOnlySpan<byte> handle, int hashCode)
+        {
+            for (int i = _buckets[hashCode & (_buckets.Length - 1)] - 1; i >= 0; i = _entries[i].Next)
+            {
+                if (_entries[i].HashCode == hashCode && handle.SequenceEqual(_entries[i].Handle))
                 {
                     return i;
                 }
@@ -55,10 +84,29 @@ namespace System.Text.Yaml
             return -1;
         }
 
+        private void Resize()
+        {
+            int newSize = _entries.Length * 2;
+            int[] newBuckets = new int[newSize];
+            Entry[] newEntries = new Entry[newSize];
+            Array.Copy(_entries, newEntries, _count);
+
+            int mask = newSize - 1;
+            for (int i = 0; i < _count; i++)
+            {
+                int bucketIndex = newEntries[i].HashCode & mask;
+                newEntries[i].Next = newBuckets[bucketIndex] - 1;
+                newBuckets[bucketIndex] = i + 1;
+            }
+
+            _buckets = newBuckets;
+            _entries = newEntries;
+        }
+
         internal bool TryGetPrefix(ReadOnlySpan<byte> handle, out ReadOnlySpan<byte> prefix)
         {
-            int index = IndexOf(handle);
-            prefix = index >= 0 ? _prefixes[index] : default;
+            int index = FindEntry(handle, Marvin.ComputeHash32(handle, Marvin.DefaultSeed));
+            prefix = index >= 0 ? _entries[index].Prefix : default;
             return index >= 0;
         }
 
