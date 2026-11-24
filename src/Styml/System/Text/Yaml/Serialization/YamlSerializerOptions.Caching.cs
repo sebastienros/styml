@@ -528,6 +528,7 @@ namespace System.Text.Yaml
                     left._yamlPropertyNamingPolicy == right._yamlPropertyNamingPolicy &&
                     left._readCommentHandling == right._readCommentHandling &&
                     left._disallowImplicitCollectionKeys == right._disallowImplicitCollectionKeys &&
+                    left._inheritTagDirectives == right._inheritTagDirectives &&
                     left._acceptLenientScalars == right._acceptLenientScalars &&
                     left._maxAliasExpansion == right._maxAliasExpansion &&
                     left._resolveMergeKeys == right._resolveMergeKeys &&
@@ -605,6 +606,7 @@ namespace System.Text.Yaml
                 AddHashCode(ref hc, options._yamlPropertyNamingPolicy);
                 AddHashCode(ref hc, options._readCommentHandling);
                 AddHashCode(ref hc, options._disallowImplicitCollectionKeys);
+                AddHashCode(ref hc, options._inheritTagDirectives);
                 AddHashCode(ref hc, options._acceptLenientScalars);
                 AddHashCode(ref hc, options._maxAliasExpansion);
                 AddHashCode(ref hc, options._resolveMergeKeys);

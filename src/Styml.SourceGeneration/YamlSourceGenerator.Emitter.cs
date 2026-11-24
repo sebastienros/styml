@@ -2302,6 +2302,9 @@ namespace System.Text.Yaml.SourceGeneration
                 if (optionsSpec.DisallowImplicitCollectionKeys is bool disallowImplicitCollectionKeys)
                     writer.WriteLine($"DisallowImplicitCollectionKeys = {FormatBoolLiteral(disallowImplicitCollectionKeys)},");
 
+                if (optionsSpec.InheritTagDirectives is bool inheritTagDirectives)
+                    writer.WriteLine($"InheritTagDirectives = {FormatBoolLiteral(inheritTagDirectives)},");
+
                 WriteTagMappings(writer, tagMappings);
 
                 writer.Indentation--;

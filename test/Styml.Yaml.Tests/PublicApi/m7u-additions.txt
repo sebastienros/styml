@@ -1,0 +1,6 @@
+# Unity's YAML: InheritTagDirectives (YAML 1.1's directive scope) on the reader, document, serializer options and the
+# source-generation attribute.
+System.Text.Yaml.Serialization.YamlSourceGenerationOptionsAttribute.InheritTagDirectives property System.Boolean { get; set; }
+System.Text.Yaml.YamlDocumentOptions.InheritTagDirectives property System.Boolean { get; set; }
+System.Text.Yaml.YamlReaderOptions.InheritTagDirectives property System.Boolean { get; set; }
+System.Text.Yaml.YamlSerializerOptions.InheritTagDirectives property System.Boolean { get; set; }

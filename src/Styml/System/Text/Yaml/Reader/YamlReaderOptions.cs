@@ -82,6 +82,15 @@ namespace System.Text.Yaml
         public bool AllowMultipleValues { get; set; }
 
         /// <summary>
+        /// Gets or sets whether a document with no directives keeps the previous document's <c>%TAG</c> handles, as YAML 1.1
+        /// reads a stream (section 7.4): a document that declares any directive starts from its own. <see langword="false"/>
+        /// by default: YAML 1.2 makes each document independent (section 9.1), so a later document sees only the default
+        /// handles. Unity's files declare <c>%TAG !u! tag:unity3d.com,2011:</c> once, at the top. The <c>%YAML</c> directive
+        /// does not turn it on.
+        /// </summary>
+        public bool InheritTagDirectives { get; set; }
+
+        /// <summary>
         /// Gets or sets whether a flow collection may <em>not</em> be an implicit mapping key (<c>[a, b]: v</c>,
         /// <c>{a: b}: v</c>, <c>[[a]: b]</c>, <c>{[a]: b}</c>). <see langword="false"/> by default: YAML allows such keys, and
         /// deciding whether a <c>[</c> or <c>{</c> at the root or in a flow sequence starts one needs the rest of its line

@@ -79,8 +79,10 @@ namespace System.Text.Yaml
                             YamlThrow(YamlGrammarError.MultipleDocuments, c);
                         }
 
-                        if (!_yaml.Has(YamlParseFlags.DirectivesSeen))
+                        if (!_yaml.Has(YamlParseFlags.DirectivesSeen) && !_readerOptions.InheritTagDirectives)
                         {
+                            // YAML 1.2: a document without directives has only the default handles. Under
+                            // InheritTagDirectives (YAML 1.1) it keeps the previous document's.
                             _yaml.TagDirectives = null;
                         }
 
@@ -139,8 +141,13 @@ namespace System.Text.Yaml
                     if (_yaml.Has(YamlParseFlags.AnyDocument))
                     {
                         // A later bare document has no directives. The first one keeps the table it starts with:
-                        // empty, or the parent's for a reader scoped to one value.
-                        _yaml.TagDirectives = null;
+                        // empty, or the parent's for a reader scoped to one value. Under InheritTagDirectives a later
+                        // one keeps the previous document's.
+                        if (!_readerOptions.InheritTagDirectives)
+                        {
+                            _yaml.TagDirectives = null;
+                        }
+
                         YamlStartAnchorDocument(c.Pos);
                     }
                     _yaml.Set(YamlParseFlags.AnyDocument, true);
@@ -161,6 +168,8 @@ namespace System.Text.Yaml
             Debug.Assert(_buffer[c.Pos] == (byte)'%');
             if (!_yaml.Has(YamlParseFlags.DirectivesSeen))
             {
+                // A document's first directive starts its own table, under InheritTagDirectives too (YAML 1.1 section 7.4:
+                // "all directives of previous documents, if any, are ignored").
                 _yaml.TagDirectives = null;
             }
             ReadOnlySpan<byte> rest = _buffer.Slice(c.Pos);

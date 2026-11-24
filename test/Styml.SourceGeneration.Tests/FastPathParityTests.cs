@@ -111,6 +111,7 @@ namespace System.Text.Yaml.SourceGeneration.Tests
             // Read only: nothing written depends on them.
             ["AcceptLenientScalars"] = (o => o.AcceptLenientScalars = true, true),
             ["DisallowImplicitCollectionKeys"] = (o => o.DisallowImplicitCollectionKeys = true, true),
+            ["InheritTagDirectives"] = (o => o.InheritTagDirectives = true, true),
             ["DuplicateKeyHandling"] = (o => o.DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins, true),
             ["MaxAliasExpansion"] = (o => o.MaxAliasExpansion = 5, true),
             ["ResolveMergeKeys"] = (o => o.ResolveMergeKeys = true, true),
@@ -147,7 +148,7 @@ namespace System.Text.Yaml.SourceGeneration.Tests
 
             // The sample exercises the option: a writer option or a term changes the output, a read-only one does not.
             string plain = YamlSerializer.Serialize(value, new FastPathOptionsContext(new YamlSerializerOptions { WriteStyle = YamlWriterStyle.Block, NewLine = "\n" }).FastPathOptionsSample);
-            bool readOnly = option is "AcceptLenientScalars" or "DisallowImplicitCollectionKeys" or "DuplicateKeyHandling" or "MaxAliasExpansion" or "ResolveMergeKeys" or "Schema"
+            bool readOnly = option is "AcceptLenientScalars" or "DisallowImplicitCollectionKeys" or "InheritTagDirectives" or "DuplicateKeyHandling" or "MaxAliasExpansion" or "ResolveMergeKeys" or "Schema"
                 or "IgnoreSourceStyles";
             if (readOnly)
             {

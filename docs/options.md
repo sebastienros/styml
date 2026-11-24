@@ -25,6 +25,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `MaxAliasExpansion` | `0` | The most nodes aliases may copy in one deserialization; 0 allows 10,000 nodes, or as many as the bytes read when that is more. |
 | `ResolveMergeKeys` | `false` | Merges a `<<` key's mappings into the mapping that holds it. |
 | `DisallowImplicitCollectionKeys` | `false` | Refuses a flow collection as an implicit key, so a stream yields each element as soon as it is complete. |
+| `InheritTagDirectives` | `false` | A document with no directives keeps the previous document's `%TAG` handles, as YAML 1.1 reads a stream (section 7.4); for Unity's files. |
 | `TagMappings` | empty | The tags that select a type when reading, and that the type writes: an explicit allow-list. |
 
 ### `YamlWriterOptions`
@@ -47,6 +48,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `Schema` | `Core` | How plain scalars resolve into token types. |
 | `AcceptLenientScalars` | `false` | As on `YamlSerializerOptions`, for the typed `Get` and `TryGet` methods. |
 | `DisallowImplicitCollectionKeys` | `false` | As on `YamlSerializerOptions`. |
+| `InheritTagDirectives` | `false` | As on `YamlSerializerOptions`. |
 
 ### `YamlDocumentOptions`
 
@@ -56,13 +58,15 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `DuplicateKeyHandling` | `Error` | Under `LastWins` and `FirstWins` the document keeps every entry, and a lookup returns the last or the first match. |
 | `MaxAliasExpansion` | `0` | The most nodes copying aliases may add when the document's nodes are copied; 0 allows ten times the document's own node count, or 10,000, whichever is larger. |
 | `ResolveMergeKeys` | `false` | As on `YamlSerializerOptions`. |
+| `InheritTagDirectives` | `false` | As on `YamlSerializerOptions`. |
 
 ### `YamlSourceGenerationOptionsAttribute`
 
 The defaults of a source-generated context's options, as on `YamlSerializerOptions`: `WriteStyle`, `IndentSequences`,
 `ExpandSequenceItems`, `MaxLineWidth`, `MultiLineStringStyle`, `DefaultScalarStyle`, `QuoteForLenientReaders`,
 `MappingOrder`, `IgnoreSourceStyles`, `Schema`, `AcceptLenientScalars`, `DuplicateKeyHandling`, `MaxAliasExpansion`,
-`ResolveMergeKeys` and `DisallowImplicitCollectionKeys`. `[YamlTagMapping]` on the context fills `TagMappings`.
+`ResolveMergeKeys`, `DisallowImplicitCollectionKeys` and `InheritTagDirectives`. `[YamlTagMapping]` on the context fills
+`TagMappings`.
 
 ### `YamlPolymorphismOptions`
 
