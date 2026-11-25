@@ -115,7 +115,9 @@ namespace System.Text.Yaml
         {
             if (_style == WriterStyleBlock)
             {
-                WriteScalarStyle(style);
+                // A string with no recorded style is written double-quoted, as a row without one reads.
+                WriteScalarStyle(style is YamlScalarStyle.SingleQuoted or YamlScalarStyle.DoubleQuoted or YamlScalarStyle.Literal or YamlScalarStyle.Folded
+                    ? style : YamlScalarStyle.DoubleQuoted);
                 _quotedFallback = true;
             }
         }
