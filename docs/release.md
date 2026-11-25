@@ -4,7 +4,7 @@
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `build.yml` | push and pull request on `main` (not for `docs/**` or `README.md` alone), or on demand | ubuntu and windows: restore, build every target, leg Y and leg YJ of the five test projects on net11.0, leg Y of `Styml.Yaml.Tests` on net481 (windows), pack, the consumer sample from the packed package (net11.0, net10.0), and a preview package from `main` on Feedz |
+| `build.yml` | push and pull request on `main` (not for `docs/**` or `README.md` alone), or on demand | parallel jobs, NuGet on the runner's local disk: on ubuntu, a build of every target, pack and the consumer sample from the packed package (net11.0, net10.0); one job per leg on ubuntu and windows, leg Y and leg YJ of the five test projects on net11.0, and leg Y of `Styml.Yaml.Tests` on net481 (windows); then, from `main`, a preview package on Feedz once every job passed |
 | `publish.yml` | a tag `v*.*.*` | `aot.yml`, then tag validation, build, leg Y, pack, provenance attestation, and the push to nuget.org |
 | `aot.yml` | called by `publish.yml`, or on demand | `samples/AotSmoke` published trimmed and as Native AOT on linux-x64, warnings as errors, and run |
 
