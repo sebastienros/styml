@@ -337,6 +337,7 @@ namespace System.Text.Yaml.Nodes
             }
             else
             {
+                EnsureCollectionComments(); // the element's start and end, before they are written
                 WritePropertiesTo(writer);
                 WriteCollectionStyleTo(writer);
                 writer.WriteStartArray();

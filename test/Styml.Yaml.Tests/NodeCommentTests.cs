@@ -190,6 +190,40 @@ namespace System.Text.Yaml.Tests
             Assert.Equal("base: &b\n  x: 1 # x\n  inner:\n    # in\n    \"y\": 2\ncopy:\n  x: 1\n  inner:\n    \"y\": 2\n  z: 3\n", Write(root));
         }
 
+        [Fact]
+        public void AliasCopy_UntouchedUnderAnEditedParent_WritesNoCommentsOfTheAnchoredNode()
+        {
+            YamlObject root = YamlNode.Parse("base: &b\n  x: 1 # x\ncopy: *b\n", documentOptions: s_allow)!.AsObject();
+            root["k"] = 1;
+            Assert.Equal("base: &b\n  x: 1 # x\ncopy:\n  x: 1\nk: 1\n", Write(root));
+        }
+
+        [Fact]
+        public void UntouchedCollection_WithItsOwnProperties_WritesItsStartAndEnd()
+        {
+            YamlObject mapping = YamlNode.Parse("# h\na: 1 # one\n# f\n", documentOptions: s_allow)!.AsObject();
+            mapping.Tag = "!t";
+            Assert.Equal("!t\n# h\na: 1 # one\n# f\n", Write(mapping));
+
+            YamlArray sequence = YamlNode.Parse("# h\n- 1 # one\n# f\n", documentOptions: s_allow)!.AsArray();
+            sequence.Anchor = "s";
+            Assert.Equal("&s\n# h\n- 1 # one\n# f\n", Write(sequence));
+        }
+
+        [Fact]
+        public void KeyAndValueComments_TheKeysIsKept()
+        {
+            // The document writes both; a slot has one trailing comment, and the key's wins.
+            string yaml = "key: # on key\n  value # on value\n";
+            using YamlDocument document = YamlDocument.Parse(yaml, s_allow);
+            Assert.Equal("key:\n  # on key\n  value # on value\n", Write(document.RootElement));
+
+            YamlObject root = YamlNode.Parse(yaml, documentOptions: s_allow)!.AsObject();
+            Assert.Equal("on key", root.GetComment("key", YamlCommentPosition.Trailing));
+            Materialize(root);
+            Assert.Equal("key:\n  # on key\n  value\n", Write(root));
+        }
+
         [Theory]
         [InlineData(YamlDuplicateKeyHandling.FirstWins, "a: 1 # first\n")]
         [InlineData(YamlDuplicateKeyHandling.LastWins, "a: 2 # second\n")]

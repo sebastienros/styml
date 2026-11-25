@@ -134,6 +134,14 @@ public class PlaygroundTests
         Assert.Equal("a: 1\n---\n[2, 3]\n", PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Skip }, PlaygroundView.Yaml).Output);
     }
 
+    [Fact]
+    public void YamlViewKeepsTheCommentsAfterAFlowRoot()
+    {
+        var result = PlaygroundEngine.Run("[1, 2]\n# tail\n", new() { CommentHandling = YamlCommentHandling.Allow }, PlaygroundView.Yaml);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal("[1, 2]\n# tail\n", result.Output);
+    }
+
     [Theory]
     [InlineData(PlaygroundView.Json, true)]
     [InlineData(PlaygroundView.Tree, false)]

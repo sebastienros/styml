@@ -171,10 +171,16 @@ public static class PlaygroundEngine
             start = end;
         }
 
-        // An empty stream, or one with only comments, is one empty document.
+        // An empty stream, or one with only comments, is one empty document. The last document takes what follows its
+        // root value, so that the comments at the end of the input are its own.
         if (ranges.Count == 0)
         {
             ranges.Add((0, utf8.Length));
+        }
+        else
+        {
+            var (lastStart, _) = ranges[^1];
+            ranges[^1] = (lastStart, utf8.Length - lastStart);
         }
 
         return ranges;

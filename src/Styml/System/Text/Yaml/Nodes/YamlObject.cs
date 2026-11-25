@@ -478,6 +478,7 @@ namespace System.Text.Yaml.Nodes
             }
             else
             {
+                EnsureCollectionComments(); // the element's start and end, before they are written
                 WritePropertiesTo(writer);
                 WriteCollectionStyleTo(writer);
                 writer.WriteStartObject();
@@ -497,9 +498,10 @@ namespace System.Text.Yaml.Nodes
         {
             GetUnderlyingRepresentation(out OrderedDictionary<string, YamlNode?>? dictionary, out YamlElement? yamlElement);
 
-            if (dictionary is null && yamlElement.HasValue)
+            if (dictionary is null && yamlElement.HasValue && !NoComments)
             {
-                // Write properties from the underlying YamlElement without converting to nodes.
+                // Write properties from the underlying YamlElement without converting to nodes (a copy made through an
+                // alias materializes instead, so that it writes none of the anchored node's comments).
                 foreach (YamlProperty property in yamlElement.Value.EnumerateObject())
                 {
                     property.WriteTo(writer);

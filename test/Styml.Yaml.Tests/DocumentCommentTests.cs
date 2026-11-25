@@ -162,6 +162,29 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
+        public void EmptyValue_WithAComment_StaysNull()
+        {
+            using YamlDocument document = YamlDocument.Parse("key: # c\nnext: 1\n", s_allow);
+            Assert.Equal(YamlValueKind.Null, document.RootElement.GetProperty("key").ValueKind);
+            string written = Write(document.RootElement);
+            AssertFixedPoint(written);
+            using YamlDocument again = YamlDocument.Parse(written, s_allow);
+            Assert.Equal(YamlValueKind.Null, again.RootElement.GetProperty("key").ValueKind);
+            Assert.Contains("# c", written);
+        }
+
+        [Fact]
+        public void MergeKeys_TheMergeEntrysOwnCommentsAreDropped()
+        {
+            // The '<<' entry is replaced by the merged entries, and its comments go with it.
+            string yaml = "base: &b\n  x: 1\nderived:\n  # above merge\n  <<: *b # on merge\n  z: 2\n";
+            using YamlDocument document = YamlDocument.Parse(yaml, new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Allow, ResolveMergeKeys = true });
+            string written = Write(document.RootElement);
+            Assert.DoesNotContain("on merge", written);
+            AssertFixedPoint(written);
+        }
+
+        [Fact]
         public void CommentsOnly_IsStillNoValue()
         {
             Assert.ThrowsAny<YamlException>(() => YamlDocument.Parse("# nothing\n", s_allow));
