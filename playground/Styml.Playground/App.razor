@@ -57,6 +57,11 @@
                 <button type="button" class="tab tab-copy" @onclick="CopyOutputAsync" disabled="@(_result is null || _result.Error is not null || _view is PlaygroundView.Tree or PlaygroundView.Tokens)">@_copyLabel</button>
             </div>
 
+            @if (_result?.Note is { } note && _view != PlaygroundView.Tokens)
+            {
+                <p class="notice" role="note">@note</p>
+            }
+
             @if (_result?.Error is { } error)
             {
                 <div class="error" role="alert">
@@ -167,7 +172,13 @@
                     </select>
                 </label>
                 <label class="check" title="YamlDocumentOptions.ResolveMergeKeys"><input type="checkbox" checked="@_options.ResolveMergeKeys" @onchange="e => Set(_options with { ResolveMergeKeys = IsChecked(e) })" /> Merge keys (<code>&lt;&lt;</code>)</label>
-                <label class="check" title="YamlDocumentOptions.CommentHandling = Skip"><input type="checkbox" checked="@_options.SkipJsonComments" @onchange="e => Set(_options with { SkipJsonComments = IsChecked(e) })" /> JSON comments (<code>//</code>, <code>/* */</code>)</label>
+                <label class="select" title="YamlReaderOptions.CommentHandling: Skip and Allow read JSON's // and /* */ comments; Allow returns every comment as a token. A YamlDocument keeps no comments, so the YAML, JSON and Tree views read Allow as Skip.">Comments
+                    <select value="@_options.CommentHandling" @onchange="e => Set(_options with { CommentHandling = Parse<YamlCommentHandling>(e) })">
+                        <option value="@YamlCommentHandling.Disallow">Disallow (YAML only)</option>
+                        <option value="@YamlCommentHandling.Skip">Skip (also // and /* */)</option>
+                        <option value="@YamlCommentHandling.Allow">Allow (as tokens)</option>
+                    </select>
+                </label>
                 <label class="number" title="YamlDocumentOptions.MaxDepth, 0 for 64">Max depth <input type="number" min="0" max="@PlaygroundOptions.MaxDepthLimit" value="@_options.MaxDepth" @onchange="e => Set(_options with { MaxDepth = Math.Min(ToInt(e, _options.MaxDepth), PlaygroundOptions.MaxDepthLimit) })" /></label>
                 <label class="number" title="YamlDocumentOptions.MaxAliasExpansion, 0 for the default">Max alias expansion <input type="number" min="0" step="100" value="@_options.MaxAliasExpansion" @onchange="e => Set(_options with { MaxAliasExpansion = ToInt(e, _options.MaxAliasExpansion) })" /></label>
             </fieldset>

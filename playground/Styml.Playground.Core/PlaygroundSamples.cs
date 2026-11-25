@@ -1,3 +1,5 @@
+using System.Text.Yaml;
+
 namespace Styml.Playground;
 
 /// <summary>A sample of the playground: a name and the state it loads.</summary>
@@ -140,7 +142,19 @@ public static class PlaygroundSamples
                   "tls": { "enabled": true, "cert": null }
                 }
                 """,
-            Options = new() { SkipJsonComments = true, IgnoreSourceStyles = true },
+            Options = new() { CommentHandling = YamlCommentHandling.Skip, IgnoreSourceStyles = true },
+        }),
+        new("comments", "Comments", new PlaygroundState
+        {
+            Yaml = """
+                # The reader returns comments as tokens under CommentHandling = Allow.
+                server:
+                  host: example.com  # where it listens
+                  ports: [80, 443] # both
+                # A YamlDocument keeps no comments: the YAML view drops them.
+                """,
+            View = PlaygroundView.Tokens,
+            Options = new() { CommentHandling = YamlCommentHandling.Allow },
         }),
         new("errors", "An error", new PlaygroundState
         {

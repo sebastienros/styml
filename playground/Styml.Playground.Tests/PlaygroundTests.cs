@@ -112,6 +112,56 @@ public class PlaygroundTests
     }
 
     [Theory]
+    [InlineData(YamlCommentHandling.Disallow, 0)]
+    [InlineData(YamlCommentHandling.Skip, 0)]
+    [InlineData(YamlCommentHandling.Allow, 3)]
+    public void TokensFollowCommentHandling(YamlCommentHandling handling, int comments)
+    {
+        var result = PlaygroundEngine.Run("# head\na: 1 # one\nb: [2, /* two */ 3]\n", new() { CommentHandling = handling }, PlaygroundView.Tokens);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal(comments, result.Tokens.Count(t => t.Type == YamlTokenType.Comment));
+    }
+
+    [Theory]
+    [InlineData(PlaygroundView.Yaml)]
+    [InlineData(PlaygroundView.Json)]
+    [InlineData(PlaygroundView.Tree)]
+    public void DocumentViewsReadAllowAsSkip(PlaygroundView view)
+    {
+        var yaml = "# head\na: 1 # one\n---\n[2, /* two */ 3]\n";
+        var result = PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Allow }, view);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal(2, result.DocumentCount);
+        Assert.NotNull(result.Note);
+        var skip = PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Skip }, view);
+        Assert.Null(skip.Note);
+        Assert.Equal(skip.Output, result.Output);
+        Assert.Equal(skip.Trees.Count, result.Trees.Count);
+    }
+
+    [Fact]
+    public void CommentHandlingRoundTripsThroughTheHash()
+    {
+        var state = new PlaygroundState { Yaml = "a: 1\n", Options = new() { CommentHandling = YamlCommentHandling.Allow } };
+        Assert.Equal(YamlCommentHandling.Allow, PlaygroundState.FromHash(state.ToHash())!.Options.CommentHandling);
+
+        // A link written when the option was a JSON comments checkbox.
+        Assert.Equal(YamlCommentHandling.Skip, PlaygroundState.FromHash(Hash("""{"y": "a: 1\n", "o": {"jc": true}}"""))!.Options.CommentHandling);
+        Assert.Equal(YamlCommentHandling.Disallow, PlaygroundState.FromHash(Hash("""{"y": "a: 1\n", "o": {"jc": false}}"""))!.Options.CommentHandling);
+    }
+
+    private static string Hash(string yaml)
+    {
+        using var buffer = new MemoryStream();
+        using (var deflate = new System.IO.Compression.DeflateStream(buffer, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            deflate.Write(System.Text.Encoding.UTF8.GetBytes(yaml));
+        }
+
+        return Convert.ToBase64String(buffer.ToArray()).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    [Theory]
     [InlineData(PlaygroundLanguage.Yaml)]
     [InlineData(PlaygroundLanguage.Json)]
     public void HighlighterHasEveryGrammar(PlaygroundLanguage language)

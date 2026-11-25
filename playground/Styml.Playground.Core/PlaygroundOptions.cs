@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Yaml;
 using System.Text.Yaml.Serialization;
 
@@ -20,8 +21,32 @@ public sealed record PlaygroundOptions
     /// <summary><see cref="YamlDocumentOptions.ResolveMergeKeys"/>: <c>&lt;&lt;</c> merges mappings.</summary>
     [YamlPropertyName("mk")] public bool ResolveMergeKeys { get; init; }
 
-    /// <summary><see cref="YamlDocumentOptions.CommentHandling"/> set to <see cref="YamlCommentHandling.Skip"/>: JSON's <c>//</c> and <c>/* */</c> comments.</summary>
-    [YamlPropertyName("jc")] public bool SkipJsonComments { get; init; }
+    /// <summary>
+    /// <see cref="YamlReaderOptions.CommentHandling"/>: <see cref="YamlCommentHandling.Skip"/> and
+    /// <see cref="YamlCommentHandling.Allow"/> read JSON's <c>//</c> and <c>/* */</c> comments, and
+    /// <see cref="YamlCommentHandling.Allow"/> returns every comment as a token. A <see cref="YamlDocument"/> stores no
+    /// comments and refuses <see cref="YamlCommentHandling.Allow"/>, so the views that parse documents read with
+    /// <see cref="YamlCommentHandling.Skip"/> instead (<see cref="ToDocumentOptions"/>).
+    /// </summary>
+    [YamlPropertyName("cm")] public YamlCommentHandling CommentHandling { get; init; }
+
+    /// <summary>
+    /// Reads the links written before <see cref="CommentHandling"/>, which stored a JSON comments checkbox: true selects
+    /// <see cref="YamlCommentHandling.Skip"/>. It is never written.
+    /// </summary>
+    [YamlPropertyName("jc")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public bool LegacySkipJsonComments
+    {
+        get => false;
+        init
+        {
+            if (value)
+            {
+                CommentHandling = YamlCommentHandling.Skip;
+            }
+        }
+    }
 
     /// <summary><see cref="YamlDocumentOptions.MaxDepth"/>, 0 for the default (64), at most <see cref="MaxDepthLimit"/>.</summary>
     [YamlPropertyName("md")] public int MaxDepth { get; init; }
@@ -68,13 +93,22 @@ public sealed record PlaygroundOptions
     /// </summary>
     public const int MaxDepthLimit = 1_000;
 
+    /// <summary>
+    /// The comment handling of a <see cref="YamlDocument"/>: <see cref="CommentHandling"/>, with
+    /// <see cref="YamlCommentHandling.Allow"/> read as <see cref="YamlCommentHandling.Skip"/>, since a document has no
+    /// place for comments.
+    /// </summary>
+    [YamlIgnore]
+    public YamlCommentHandling DocumentCommentHandling =>
+        CommentHandling == YamlCommentHandling.Allow ? YamlCommentHandling.Skip : CommentHandling;
+
     /// <summary>The options of <see cref="YamlDocument.Parse(ReadOnlyMemory{byte}, YamlDocumentOptions)"/>.</summary>
     public YamlDocumentOptions ToDocumentOptions() => new()
     {
         Schema = Schema,
         DuplicateKeyHandling = DuplicateKeyHandling,
         ResolveMergeKeys = ResolveMergeKeys,
-        CommentHandling = SkipJsonComments ? YamlCommentHandling.Skip : YamlCommentHandling.Disallow,
+        CommentHandling = DocumentCommentHandling,
         MaxDepth = Math.Min(MaxDepth, MaxDepthLimit),
         MaxAliasExpansion = MaxAliasExpansion,
     };
@@ -83,7 +117,7 @@ public sealed record PlaygroundOptions
     public YamlReaderOptions ToReaderOptions() => new()
     {
         Schema = Schema,
-        CommentHandling = SkipJsonComments ? YamlCommentHandling.Skip : YamlCommentHandling.Disallow,
+        CommentHandling = CommentHandling,
         MaxDepth = Math.Min(MaxDepth, MaxDepthLimit),
         AllowMultipleValues = true,
     };
