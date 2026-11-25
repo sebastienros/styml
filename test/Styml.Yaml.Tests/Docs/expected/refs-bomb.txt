@@ -1,0 +1,1 @@
+YamlException: Reading YAML aliases would copy more than 10000 nodes (YamlSerializerOptions.MaxAliasExpansion).

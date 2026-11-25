@@ -1,0 +1,8 @@
+# [0, 0] -> origin
+# Array Complex, Array Complex, Object Complex
+? - 0
+  - 0
+: origin
+? - 1
+  - 0
+: east

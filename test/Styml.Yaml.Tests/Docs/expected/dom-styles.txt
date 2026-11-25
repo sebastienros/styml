@@ -1,0 +1,7 @@
+{"name": "web", "ports": [80, 443], "note": "kept as written"}
+---
+name: web
+ports:
+- 80
+- 443
+note: kept as written

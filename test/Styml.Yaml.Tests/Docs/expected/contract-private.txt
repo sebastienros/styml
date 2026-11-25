@@ -1,0 +1,4 @@
+user: ada
+attempts: 3
+
+# bob, 1 attempts

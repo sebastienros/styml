@@ -1,0 +1,14 @@
+%YAML 1.2
+---
+# generated, do not edit
+defaults: &defaults
+  image: nginx:1.27
+web: !service
+  base: *defaults
+  ports: [80, 443]
+  script: |
+    nginx -t
+    nginx -s reload
+? [eu, us]
+: two regions
+...

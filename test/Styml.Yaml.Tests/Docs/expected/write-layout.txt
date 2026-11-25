@@ -1,0 +1,11 @@
+Name: ci
+Branches:
+    - main
+    - release/*
+Steps:
+    -
+        Name: restore
+        Run: dotnet restore
+    -
+        Name: test
+        Run: dotnet test --no-build

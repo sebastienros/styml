@@ -1,0 +1,7 @@
+liveness: !http
+  Path: /health
+  Port: 8080
+readiness: !command
+  Command:
+  - cat
+  - /tmp/ready

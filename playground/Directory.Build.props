@@ -1,0 +1,14 @@
+<Project>
+  <!-- The playground (https://sebastienros.github.io/styml/playground/) is an application, not a library carried over from
+       dotnet/runtime: it keeps the repository's settings but uses the SDK's default items and implicit usings, which
+       Razor components and wwwroot need. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <PropertyGroup>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- Blazor WebAssembly runs net10.0: Styml's net11.0 build uses runtime async, which WebAssembly does not support. -->
+    <TargetFramework>$(NetCoreAppPrevious)</TargetFramework>
+  </PropertyGroup>
+</Project>

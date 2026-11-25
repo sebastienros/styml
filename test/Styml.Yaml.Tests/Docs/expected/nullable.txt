@@ -1,0 +1,2 @@
+lax: Volume { Name = data, Path = , Description =  }
+strict: YamlException: The constructor parameter 'Path' on type 'System.Text.Yaml.Tests.Docs.ContractSamples+Volume' doesn't allow null values. Consider updating its nullability annotation. Path: $.Path | LineNumber: 1 | BytePositionInLine: 10.

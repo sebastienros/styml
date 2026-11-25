@@ -1,0 +1,44 @@
+# The navigation of the site: one top-level item per section (header tabs), its items are the sidebar.
+# A bare url is labeled with the title of its page.
+
+- label: Guide
+  href: /styml/guide/getting-started/
+  items:
+    - label: Introduction
+      items:
+        - /styml/guide/getting-started/
+        - /styml/guide/system-text-json/
+    - label: Serialization
+      items:
+        - /styml/guide/serialization/
+        - /styml/guide/properties/
+        - /styml/guide/deserialization/
+        - /styml/guide/polymorphism/
+        - /styml/guide/references/
+        - /styml/guide/source-generation/
+    - label: Customization
+      items:
+        - /styml/guide/converters/
+        - /styml/guide/contracts/
+    - label: YAML
+      items:
+        - /styml/guide/writing-yaml/
+        - /styml/guide/scalar-styles/
+        - /styml/guide/schemas/
+        - /styml/guide/reading-yaml/
+    - label: Without types
+      items:
+        - /styml/guide/dom/
+        - /styml/guide/reader-writer/
+    - label: Reference
+      items:
+        - /styml/guide/options/
+        - /styml/guide/security/
+        - /styml/guide/performance/
+        - /styml/playground/
+
+# The API pages have their own navigation (api_nav, in the api.yml that eng/docs/ApiDocs writes).
+- label: API
+  href: /styml/api/
+  items:
+    - /styml/api/

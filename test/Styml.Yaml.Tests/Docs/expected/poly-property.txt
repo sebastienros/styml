@@ -1,0 +1,8 @@
+- $type: email
+  Subject: Build passed
+  To: ada@example.org
+- $type: sms
+  Flash: true
+  To: "+15550100"
+
+# Email, Sms

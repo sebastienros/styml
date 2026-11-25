@@ -1,0 +1,13 @@
+Summary: Restores the packages, builds the
+  solution in Release, and runs every test project
+  in parallel.
+Tags:
+- dotnet
+- yaml
+- serializer
+- source-generator
+- aot
+- trimming
+---
+tags: [dotnet, yaml, serializer, source-generator, aot,
+  trimming]

@@ -1,0 +1,2 @@
+default: [localhost] {cpu: 1, memory: 512}
+populate: [localhost, a.example] {cpu: 1, memory: 512}

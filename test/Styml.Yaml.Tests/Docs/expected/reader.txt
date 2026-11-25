@@ -1,0 +1,13 @@
+StartObject (block)
+  PropertyName base (Plain)
+  StartObject &b !point (flow)
+    PropertyName x (Plain)
+    Number 1
+    PropertyName y (Plain)
+    Number 2
+  EndObject
+  PropertyName copy (Plain)
+  Alias *b
+  PropertyName note (Plain)
+  String folded text\n (Folded)
+EndObject

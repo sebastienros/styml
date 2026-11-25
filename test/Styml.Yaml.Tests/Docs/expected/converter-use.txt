@@ -1,0 +1,4 @@
+kitchen: 21.5C
+attic: -3C
+
+# YamlException: 'hot' is not a temperature such as 21.5C.

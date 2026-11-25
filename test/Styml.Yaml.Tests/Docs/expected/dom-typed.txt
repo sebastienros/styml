@@ -1,0 +1,1 @@
+3, 0.75, enabled is String, name '3', Service { Replicas = 3, Name = 3 }

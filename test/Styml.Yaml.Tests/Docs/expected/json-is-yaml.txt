@@ -1,0 +1,9 @@
+Name: web
+Image: nginx:1.27
+Ports:
+- 80
+- 443
+Environment:
+  TIER: front
+---
+{"Name":"web","Image":"nginx:1.27","Ports":[80,443],"Environment":{"TIER":"front"}}

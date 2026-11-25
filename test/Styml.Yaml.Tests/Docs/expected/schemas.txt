@@ -1,0 +1,4 @@
+Core: a=Number, b=Number, c=Number, d=String, e=null, f=String, g=Number, h=String
+Yaml11: a=Number, b=Number, c=Number, d=True, e=null, f=Number, g=Number, h=String
+Json: YamlException: The plain scalar '0o14' is not null, a boolean or a number of the JSON schema (YamlSchemaKind.Json); quote it to read a string. Path: $.b | LineNumber: 1 | BytePositionInLine: 7.
+Failsafe: a=String, b=String, c=String, d=String, e=String, f=String, g=String, h=String

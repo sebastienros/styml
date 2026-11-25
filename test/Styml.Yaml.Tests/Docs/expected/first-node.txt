@@ -1,0 +1,3 @@
+server:
+  port: 9090
+  hosts: [a.example, b.example, c.example]

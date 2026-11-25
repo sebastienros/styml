@@ -1,0 +1,84 @@
+# The documentation site of Styml, built by Douze (https://sebastienros.github.io/douze/). docs/README.md describes it.
+#
+#   douze serve -s docs        http://localhost:8080/styml/
+#   douze -s docs              writes docs/_site; the site is docs/_site/styml
+#
+# GitHub Pages serves the project at /styml/, so the pages live in _content/styml/: their urls, and the urls of the
+# .md links between them, start with /styml/ without any rewriting. The API reference (_content/styml/api/) is
+# generated from the built assembly by eng/docs/ApiDocs before the build. The deploy (.github/workflows/docs.yml)
+# copies the playground into _site/styml/playground/ and uploads _site/styml.
+
+site:
+  url: https://sebastienros.github.io
+  output: _site # relative to this folder, whatever the current folder is
+
+markdown:
+  extensions: [pipetables, footnotes, tasklists, definitionlists, attributes, autolinks, alerts, customcontainers]
+  aside:
+    kinds: [note, tip, caution, danger]
+
+steps:
+  site-data:
+    inputs: "_data/**/*.{yml,yaml,json}"
+    uses: data
+    with:
+      scope: site
+  folder-data:
+    inputs: "_content/**/*.{yml,yaml,json}"
+    uses: data
+    with:
+      scope: folder
+      root: _content
+  pages:
+    inputs: ["_content/**", "!_content/**/*.{yml,yaml,json}"]
+    needs: [site-data, folder-data]
+    uses: frontmatter
+    with:
+      require: [title]
+  permalink:
+    needs: pages
+    uses: permalink
+    with:
+      root: _content
+  collections:
+    needs: permalink
+    uses: collect
+  render:
+    needs: [permalink, collections]
+    uses: liquid
+  markdown:
+    needs: render
+    uses: markdown
+  headings:
+    needs: markdown
+    uses: headings
+    match: ["**/*.html", "!styml/index.html"]
+    with:
+      anchors: true
+      levels: [2, 3]
+  # The YAML and JSON samples are well formed (C# samples are compiled and run by test/Styml.Yaml.Tests/Docs).
+  check-code:
+    needs: headings
+    uses: check-code
+  highlight:
+    needs: check-code
+    uses: highlight
+    with:
+      themes: [github-light, github-dark]
+      stylesheet: styml/assets/code.css
+  layout:
+    needs: highlight
+    uses: layout
+  links:
+    needs: layout
+    uses: links
+  check-links:
+    needs: links
+    uses: check-links
+  write:
+    needs: links
+    uses: write
+  search:
+    needs: write
+    tool: pagefind
+    run: "{{ tool }} --site {{ site }}/styml --glob \"**/*.html\" --quiet"

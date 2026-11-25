@@ -1,0 +1,6 @@
+# read: Service, Deployment, Ingress
+kind: ConfigMap
+name: settings
+---
+kind: Secret
+name: tokens

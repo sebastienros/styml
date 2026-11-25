@@ -1,0 +1,6 @@
+title: Styml
+tagline: the System.Text.Json API, for YAML
+base: /styml/
+repo: https://github.com/sebastienros/styml
+edit: https://github.com/sebastienros/styml/edit/main/docs/
+nuget: https://www.nuget.org/packages/Styml

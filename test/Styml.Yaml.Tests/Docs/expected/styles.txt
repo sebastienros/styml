@@ -1,0 +1,17 @@
+Version: 2.1.0
+Summary: >-
+  A release that fixes
+
+  the merge of anchors.
+Notes: |
+  - Faster reads
+  - Smaller writes
+Codename: 'it''s alive'
+---
+Version: "2.1.0"
+Summary: >-
+  A release that fixes
+
+  the merge of anchors.
+Notes: "- Faster reads\n- Smaller writes\n"
+Codename: 'it''s alive'

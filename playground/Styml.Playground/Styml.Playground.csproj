@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <!-- The Styml playground, published to https://sebastienros.github.io/styml/playground/ by .github/workflows/docs.yml.
+       The logic is in Styml.Playground.Core, tested by Styml.Playground.Tests. -->
+  <PropertyGroup>
+    <RootNamespace>Styml.Playground</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <BlazorEnableCompression>true</BlazorEnableCompression>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishTrimmed>true</PublishTrimmed>
+    <!-- The playground only uses source-generated contracts: reflection-based serialization is off, as in a trimmed
+         consumer of the package, and the trimmer removes it. -->
+    <YamlSerializerIsReflectionEnabledByDefault>false</YamlSerializerIsReflectionEnabledByDefault>
+    <!-- -p:StymlPlaygroundAot=true compiles to WebAssembly ahead of time on publish. It needs
+         `dotnet workload install wasm-tools`. -->
+    <RunAOTCompilation Condition="'$(StymlPlaygroundAot)' == 'true'">true</RunAOTCompilation>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+    <ProjectReference Include="..\Styml.Playground.Core\Styml.Playground.Core.csproj" />
+  </ItemGroup>
+  <!-- The package brings this file through buildTransitive; a ProjectReference imports it. -->
+  <Import Project="$(RepoRoot)src\Styml\buildTransitive\Styml.targets" />
+  <!-- The logo is served from wwwroot/logo.svg: it is copied there instead of being committed twice (the copy is
+       git-ignored), before static web assets are resolved so that the development server serves it too. -->
+  <ItemGroup>
+    <PlaygroundAsset Include="$(RepoRoot)assets\logo.svg" Destination="wwwroot\logo.svg" />
+  </ItemGroup>
+  <Target Name="CopyPlaygroundAssets" BeforeTargets="AssignTargetPaths;ResolveProjectStaticWebAssets" Inputs="@(PlaygroundAsset)" Outputs="@(PlaygroundAsset->'%(Destination)')">
+    <Copy SourceFiles="@(PlaygroundAsset)" DestinationFiles="@(PlaygroundAsset->'%(Destination)')" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <Content Remove="@(PlaygroundAsset->'%(Destination)')" />
+      <Content Include="@(PlaygroundAsset->'%(Destination)')" />
+    </ItemGroup>
+  </Target>
+</Project>

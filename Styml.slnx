@@ -22,6 +22,19 @@
       <Build Project="false" />
     </Project>
   </Folder>
+  <!-- The playground of the documentation site: listed for the IDE, built, tested and published by
+       .github/workflows/docs.yml (docs/README.md). -->
+  <Folder Name="/playground/">
+    <Project Path="playground/Styml.Playground.Core/Styml.Playground.Core.csproj">
+      <Build Project="false" />
+    </Project>
+    <Project Path="playground/Styml.Playground/Styml.Playground.csproj">
+      <Build Project="false" />
+    </Project>
+    <Project Path="playground/Styml.Playground.Tests/Styml.Playground.Tests.csproj">
+      <Build Project="false" />
+    </Project>
+  </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/RoundTrip/RoundTrip.csproj" />
   </Folder>

@@ -1,0 +1,120 @@
+name: Documentation
+
+# Builds the documentation site (docs/, with Douze), its API reference (eng/docs/ApiDocs) and the playground
+# (playground/Styml.Playground, Blazor WebAssembly), and deploys them to GitHub Pages from main:
+# https://sebastienros.github.io/styml/ and /styml/playground/. Pull requests build and check the site without deploying
+# it. Pages must use the "GitHub Actions" source in the repository settings. docs/README.md describes the site.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+    - 'docs/**'
+    - 'src/Styml/**'
+    - 'playground/**'
+    - 'eng/docs/**'
+    - 'test/Styml.Yaml.Tests/Docs/**'
+    - 'README.md'
+    - 'assets/logo.svg'
+    - 'Directory.*'
+    - 'global.json'
+    - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+    - 'docs/**'
+    - 'playground/**'
+    - 'eng/docs/**'
+    - 'test/Styml.Yaml.Tests/Docs/**'
+    - 'README.md'
+    - '.github/workflows/docs.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+      with:
+        dotnet-version: |
+          10.0.x
+        global-json-file: global.json
+
+    # The samples of the guide are compiled and run by test/Styml.Yaml.Tests/Docs (build.yml); here the pages must show
+    # them as they are, and the options reference and the benchmark panels as docs/options.md and the README have them.
+    - name: Check the samples of the pages
+      run: python3 -I eng/docs/site.py --check
+
+    - name: Install Douze
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/sebastienros/douze/main/install.sh | sh -s -- --preview --no-modify-path
+        echo "$HOME/.douze/bin" >> "$GITHUB_PATH"
+
+    # Pagefind, downloaded by the search step, is kept between runs.
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: docs/.douze/tools
+        key: douze-tools-${{ hashFiles('docs/douze.yml') }}
+
+    - name: Write the API reference
+      run: dotnet run --project eng/docs/ApiDocs -c Release -- docs/_content/styml/api
+
+    - name: Build the site
+      run: douze -s docs --no-cache --plain
+
+    - name: Test the playground
+      run: dotnet test playground/Styml.Playground.Tests -c Release
+
+    - name: Publish the playground
+      run: dotnet publish playground/Styml.Playground -c Release -o artifacts/playground
+
+    - name: Add the playground to the site
+      shell: bash
+      run: |
+        set -euo pipefail
+        site=docs/_site/styml
+        rm -rf "$site/playground"
+        cp -R artifacts/playground/wwwroot "$site/playground"
+        # The playground is served from /styml/playground/.
+        sed -i 's|<base href="/" />|<base href="/styml/playground/" />|' "$site/playground/index.html"
+        grep -q '<base href="/styml/playground/" />' "$site/playground/index.html"
+        # Serve _framework as is.
+        touch "$site/.nojekyll"
+        echo "### Site" >> "$GITHUB_STEP_SUMMARY"
+        echo "Pages: $(find "$site" -name index.html | wc -l)" >> "$GITHUB_STEP_SUMMARY"
+        echo "Playground _framework: $(du -cb "$site"/playground/_framework/*.br | tail -1 | cut -f1) bytes (Brotli)" >> "$GITHUB_STEP_SUMMARY"
+
+    - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      with:
+        path: docs/_site/styml
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.repository == 'sebastienros/styml'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+    - id: deployment
+      uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
