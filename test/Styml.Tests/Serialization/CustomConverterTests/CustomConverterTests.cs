@@ -108,6 +108,25 @@ namespace System.Text.Yaml.Serialization.Tests
             Assert.Null(c);
         }
 
+        [Fact]
+        public static void VerifyConverterWithTrailingComments()
+        {
+            string yaml = "{}  //";
+            byte[] utf8 = Encoding.UTF8.GetBytes(yaml);
+
+            // Disallow comments
+            var options = new YamlSerializerOptions();
+            options.Converters.Add(new ConverterReturningNull());
+            Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Customer>(utf8, options));
+
+            // Skip comments
+            options = new YamlSerializerOptions();
+            options.Converters.Add(new ConverterReturningNull());
+            options.ReadCommentHandling = YamlCommentHandling.Skip;
+            Customer c = YamlSerializer.Deserialize<Customer>(utf8, options);
+            Assert.Null(c);
+        }
+
         public class ObjectBoolConverter : YamlConverter<object>
         {
             public override object Read(ref Utf8YamlReader reader, Type typeToConvert, YamlSerializerOptions options)

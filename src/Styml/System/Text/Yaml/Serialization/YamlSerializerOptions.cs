@@ -623,7 +623,11 @@ namespace System.Text.Yaml
         /// Thrown when the comment handling enum is set to a value that is not supported (or not within the <see cref="YamlCommentHandling"/> enum range).
         /// </exception>
         /// <remarks>
-        /// By default comments are skipped (<see cref="YamlCommentHandling.Disallow"/> behaves as <see cref="YamlCommentHandling.Skip"/>, decision D3).
+        /// By default (<see cref="YamlCommentHandling.Disallow"/>) <c>#</c> comments are skipped and <c>//</c> and
+        /// <c>/* */</c> are not comments, as in standard YAML. With <see cref="YamlCommentHandling.Skip"/> the JSON
+        /// comments of a JSON payload are skipped too, as System.Text.Json skips them; see
+        /// <see cref="YamlCommentHandling"/> for where they are read. <see cref="YamlCommentHandling.Allow"/> is not
+        /// supported here.
         /// </remarks>
         public YamlCommentHandling ReadCommentHandling
         {

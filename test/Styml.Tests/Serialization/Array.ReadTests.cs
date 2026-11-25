@@ -156,6 +156,19 @@ namespace System.Text.Yaml.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadArrayWithInterleavedComments()
+        {
+            var options = new YamlSerializerOptions();
+            options.ReadCommentHandling = YamlCommentHandling.Skip;
+
+            int[][] i = YamlSerializer.Deserialize<int[][]>("[[1,2] // Inline [\n,[3, /* Multi\n]] Line*/4]]"u8, options);
+            Assert.Equal(1, i[0][0]);
+            Assert.Equal(2, i[0][1]);
+            Assert.Equal(3, i[1][0]);
+            Assert.Equal(4, i[1][1]);
+        }
+
+        [Fact]
         public static void ReadEmpty()
         {
             SimpleTestClass[] arr = YamlSerializer.Deserialize<SimpleTestClass[]>("[]");

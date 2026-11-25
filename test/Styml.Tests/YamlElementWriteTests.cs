@@ -440,6 +440,32 @@ namespace System.Text.Yaml.Tests
         [InlineData(false)]
         [InlineData(true)]
         [Trait("category", "jsonoutput")]
+        public void WriteEmptyCommentedArray(bool indented)
+        {
+            WriteComplexValue(
+                indented,
+                "[ /* \"No values here\" */    ]",
+                "[]",
+                "[]");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteEmptyCommentedObject(bool indented)
+        {
+            WriteComplexValue(
+                indented,
+                "{ /* Technically empty */ }",
+                "{}",
+                "{}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
         public void WriteSimpleArray(bool indented)
         {
             WriteComplexValue(
@@ -467,6 +493,30 @@ namespace System.Text.Yaml.Tests
         [InlineData(false)]
         [InlineData(true)]
         [Trait("category", "jsonoutput")]
+        public void WriteSimpleObject(bool indented)
+        {
+            WriteComplexValue(
+                indented,
+                """
+                        { "r"   : 2,
+                        // Comments make everything more interesting.
+                                    "d":
+                        2
+                        }
+                    """.NormalizeLineEndings(),
+                """
+                    {
+                      "r": 2,
+                      "d": 2
+                    }
+                    """.NormalizeLineEndings(),
+                "{\"r\":2,\"d\":2}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
         public void WriteSimpleObjectNeedsEscaping(bool indented)
         {
             WriteComplexValue(
@@ -484,6 +534,149 @@ namespace System.Text.Yaml.Tests
                     }
                     """,
                 "{\"prop\\u003E\\u003Certy\":3,\"\\u003E This is one long \\u0026 unusual property name. \\u003C\":4}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteEverythingArray(bool indented)
+        {
+            WriteComplexValue(
+                indented,
+                (@"
+
+[
+        ""Once upon a midnight dreary"",
+        42, /* Yep */ 1e400,
+        3.141592653589793238462643383279,
+false,
+true,
+null,
+  ""Escaping is not requ\u0069red"",
+// More comments, more problems?
+ ""Some th\u0069ngs get lost in the " + "m\u00EAl\u00E9e" + @""",
+// Array with an array (primes)
+[ 2, 3, 5, 7, /*9,*/ 11],
+{ ""obj"": [ 21, { ""deep obj"": [
+        ""Once upon a midnight dreary"",
+        42, /* Yep */ 1e400,
+        3.141592653589793238462643383279,
+false,
+true,
+null,
+  ""Escaping is not requ\u0069red"",
+// More comments, more problems?
+ ""Some th\u0069ngs get lost in the " + "m\u00EAl\u00E9e" + @"""
+
+], ""more deep"": false },
+12 ], ""second property"": null }]
+").NormalizeLineEndings(),
+                """
+                    [
+                      "Once upon a midnight dreary",
+                      42,
+                      1e400,
+                      3.141592653589793238462643383279,
+                      false,
+                      true,
+                      null,
+                      "Escaping is not required",
+                      "Some things get lost in the m\u00EAl\u00E9e",
+                      [
+                        2,
+                        3,
+                        5,
+                        7,
+                        11
+                      ],
+                      {
+                        "obj": [
+                          21,
+                          {
+                            "deep obj": [
+                              "Once upon a midnight dreary",
+                              42,
+                              1e400,
+                              3.141592653589793238462643383279,
+                              false,
+                              true,
+                              null,
+                              "Escaping is not required",
+                              "Some things get lost in the m\u00EAl\u00E9e"
+                            ],
+                            "more deep": false
+                          },
+                          12
+                        ],
+                        "second property": null
+                      }
+                    ]
+                    """.NormalizeLineEndings(),
+                "[\"Once upon a midnight dreary\",42,1e400,3.141592653589793238462643383279," +
+                    "false,true,null,\"Escaping is not required\"," +
+                    "\"Some things get lost in the m\\u00EAl\\u00E9e\",[2,3,5,7,11]," +
+                    "{\"obj\":[21,{\"deep obj\":[\"Once upon a midnight dreary\",42,1e400," +
+                    "3.141592653589793238462643383279,false,true,null,\"Escaping is not required\"," +
+                    "\"Some things get lost in the m\\u00EAl\\u00E9e\"],\"more deep\":false},12]," +
+                    "\"second property\":null}]");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteEverythingObject(bool indented)
+        {
+            WriteComplexValue(
+                indented,
+                "{" +
+                    "\"int\": 42," +
+                    "\"quadratic googol\": 1e400," +
+                    "\"precisePi\": 3.141592653589793238462643383279," +
+                    "\"lit0\": null,\"lit1\":  false,/*guess next*/\"lit2\": true," +
+                    "\"ascii\": \"pizza\"," +
+                    "\"escaped\": \"p\\u0069zza\"," +
+                    "\"utf8\": \"p\u00CDzza\"," +
+                    "\"utf8ExtraEscape\": \"p\u00CDz\\u007Aa\"," +
+                    "\"arr\": [\"hello\", \"sa\\u0069lor\", 21, \"blackjack!\" ]," +
+                    "\"obj\": {" +
+                        "\"arr\": [ 1, 3, 5, 7, /*9,*/ 11] " +
+                    "}}",
+                """
+                    {
+                      "int": 42,
+                      "quadratic googol": 1e400,
+                      "precisePi": 3.141592653589793238462643383279,
+                      "lit0": null,
+                      "lit1": false,
+                      "lit2": true,
+                      "ascii": "pizza",
+                      "escaped": "pizza",
+                      "utf8": "p\u00CDzza",
+                      "utf8ExtraEscape": "p\u00CDzza",
+                      "arr": [
+                        "hello",
+                        "sailor",
+                        21,
+                        "blackjack!"
+                      ],
+                      "obj": {
+                        "arr": [
+                          1,
+                          3,
+                          5,
+                          7,
+                          11
+                        ]
+                      }
+                    }
+                    """.NormalizeLineEndings(),
+                "{\"int\":42,\"quadratic googol\":1e400,\"precisePi\":3.141592653589793238462643383279," +
+                    "\"lit0\":null,\"lit1\":false,\"lit2\":true,\"ascii\":\"pizza\",\"escaped\":\"pizza\"," +
+                    "\"utf8\":\"p\\u00CDzza\",\"utf8ExtraEscape\":\"p\\u00CDzza\"," +
+                    "\"arr\":[\"hello\",\"sailor\",21,\"blackjack!\"]," +
+                    "\"obj\":{\"arr\":[1,3,5,7,11]}}");
         }
 
         [Theory]
@@ -781,6 +974,244 @@ namespace System.Text.Yaml.Tests
                     }
                     """.NormalizeLineEndings(),
                 "{\"obj\":{}}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteEmptyCommentedArrayAsProperty(bool indented)
+        {
+            WritePropertyValueBothForms(
+                indented,
+                "arr",
+                "[   /* 5 */     ]",
+                """
+                    {
+                      "arr": []
+                    }
+                    """.NormalizeLineEndings(),
+                "{\"arr\":[]}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteEmptyCommentedObjectAsProperty(bool indented)
+        {
+            WritePropertyValueBothForms(
+                indented,
+                "obj",
+                "{ /* Technically empty */ }",
+                """
+                    {
+                      "obj": {}
+                    }
+                    """.NormalizeLineEndings(),
+                "{\"obj\":{}}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteSimpleArrayAsProperty(bool indented)
+        {
+            WritePropertyValueBothForms(
+                indented,
+                "valjean",
+                "[ 2, 4, 6, 0, 1 /* Did you know that there's an asteroid: 24601 Valjean? */ ]",
+                """
+                    {
+                      "valjean": [
+                        2,
+                        4,
+                        6,
+                        0,
+                        1
+                      ]
+                    }
+                    """.NormalizeLineEndings(),
+                "{\"valjean\":[2,4,6,0,1]}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteSimpleObjectAsProperty(bool indented)
+        {
+            WritePropertyValueBothForms(
+                indented,
+                "bestMinorCharacter",
+                """
+                        { "r"   : 2,
+                        // Comments make everything more interesting.
+                                    "d":
+                        2
+                        }
+                    """.NormalizeLineEndings(),
+                """
+                    {
+                      "bestMinorCharacter": {
+                        "r": 2,
+                        "d": 2
+                      }
+                    }
+                    """.NormalizeLineEndings(),
+                "{\"bestMinorCharacter\":{\"r\":2,\"d\":2}}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteEverythingArrayAsProperty(bool indented)
+        {
+            WritePropertyValueBothForms(
+                indented,
+                "data",
+                @"
+
+[
+        ""Once upon a midnight dreary"",
+        42, /* Yep */ 1e400,
+        3.141592653589793238462643383279,
+false,
+true,
+null,
+  ""Escaping is not requ\u0069red"",
+// More comments, more problems?
+ ""Some th\u0069ngs get lost in the " + "m\u00EAl\u00E9e" + @""",
+// Array with an array (primes)
+[ 2, 3, 5, 7, /*9,*/ 11],
+{ ""obj"": [ 21, { ""deep obj"": [
+        ""Once upon a midnight dreary"",
+        42, /* Yep */ 1e400,
+        3.141592653589793238462643383279,
+false,
+true,
+null,
+  ""Escaping is not requ\u0069red"",
+// More comments, more problems?
+ ""Some th\u0069ngs get lost in the " + "m\u00EAl\u00E9e" + @"""
+
+], ""more deep"": false },
+12 ], ""second property"": null }]
+",
+                """
+                    {
+                      "data": [
+                        "Once upon a midnight dreary",
+                        42,
+                        1e400,
+                        3.141592653589793238462643383279,
+                        false,
+                        true,
+                        null,
+                        "Escaping is not required",
+                        "Some things get lost in the m\u00EAl\u00E9e",
+                        [
+                          2,
+                          3,
+                          5,
+                          7,
+                          11
+                        ],
+                        {
+                          "obj": [
+                            21,
+                            {
+                              "deep obj": [
+                                "Once upon a midnight dreary",
+                                42,
+                                1e400,
+                                3.141592653589793238462643383279,
+                                false,
+                                true,
+                                null,
+                                "Escaping is not required",
+                                "Some things get lost in the m\u00EAl\u00E9e"
+                              ],
+                              "more deep": false
+                            },
+                            12
+                          ],
+                          "second property": null
+                        }
+                      ]
+                    }
+                    """.NormalizeLineEndings(),
+
+                "{\"data\":[\"Once upon a midnight dreary\",42,1e400,3.141592653589793238462643383279," +
+                    "false,true,null,\"Escaping is not required\"," +
+                    "\"Some things get lost in the m\\u00EAl\\u00E9e\",[2,3,5,7,11]," +
+                    "{\"obj\":[21,{\"deep obj\":[\"Once upon a midnight dreary\",42,1e400," +
+                    "3.141592653589793238462643383279,false,true,null,\"Escaping is not required\"," +
+                    "\"Some things get lost in the m\\u00EAl\\u00E9e\"],\"more deep\":false},12]," +
+                    "\"second property\":null}]}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("category", "jsonoutput")]
+        public void WriteEverythingObjectAsProperty(bool indented)
+        {
+            WritePropertyValueBothForms(
+                indented,
+                "data",
+                "{" +
+                    "\"int\": 42," +
+                    "\"quadratic googol\": 1e400," +
+                    "\"precisePi\": 3.141592653589793238462643383279," +
+                    "\"lit0\": null,\"lit1\":  false,/*guess next*/\"lit2\": true," +
+                    "\"ascii\": \"pizza\"," +
+                    "\"escaped\": \"p\\u0069zza\"," +
+                    "\"utf8\": \"p\u00CDzza\"," +
+                    "\"utf8ExtraEscape\": \"p\u00CDz\\u007Aa\"," +
+                    "\"arr\": [\"hello\", \"sa\\u0069lor\", 21, \"blackjack!\" ]," +
+                    "\"obj\": {" +
+                        "\"arr\": [ 1, 3, 5, 7, /*9,*/ 11] " +
+                    "}}",
+                """
+                    {
+                      "data": {
+                        "int": 42,
+                        "quadratic googol": 1e400,
+                        "precisePi": 3.141592653589793238462643383279,
+                        "lit0": null,
+                        "lit1": false,
+                        "lit2": true,
+                        "ascii": "pizza",
+                        "escaped": "pizza",
+                        "utf8": "p\u00CDzza",
+                        "utf8ExtraEscape": "p\u00CDzza",
+                        "arr": [
+                          "hello",
+                          "sailor",
+                          21,
+                          "blackjack!"
+                        ],
+                        "obj": {
+                          "arr": [
+                            1,
+                            3,
+                            5,
+                            7,
+                            11
+                          ]
+                        }
+                      }
+                    }
+                    """.NormalizeLineEndings(),
+                "{\"data\":" +
+                    "{\"int\":42,\"quadratic googol\":1e400,\"precisePi\":3.141592653589793238462643383279," +
+                    "\"lit0\":null,\"lit1\":false,\"lit2\":true,\"ascii\":\"pizza\",\"escaped\":\"pizza\"," +
+                    "\"utf8\":\"p\\u00CDzza\",\"utf8ExtraEscape\":\"p\\u00CDzza\"," +
+                    "\"arr\":[\"hello\",\"sailor\",21,\"blackjack!\"]," +
+                    "\"obj\":{\"arr\":[1,3,5,7,11]}}}");
         }
 
         [Fact]

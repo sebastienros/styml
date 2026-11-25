@@ -278,7 +278,7 @@ namespace System.Text.Yaml
                     YamlThrow(YamlGrammarError.UnexpectedCharacter, c, ThrowHelper.GetPrintableString(b));
                 }
 
-                if (!YamlScanPlain(ref c, indent, flow, singleLine: true, out start, out length, out _, out YamlPlainEnd end))
+                if (!YamlScanPlain(ref c, indent, flow, singleLine: true, flow && YamlJsonComments, out start, out length, out _, out YamlPlainEnd end))
                 {
                     return YamlStep.NeedMoreData;
                 }
@@ -824,7 +824,7 @@ namespace System.Text.Yaml
             // A plain scalar, or the first key of an implicit block mapping.
             YamlCursor scalarStart = c;
             YamlCursor probe = c;
-            if (!YamlScanPlain(ref probe, parentIndent, flow: false, singleLine: true, out _, out _, out _, out YamlPlainEnd firstLineEnd))
+            if (!YamlScanPlain(ref probe, parentIndent, flow: false, singleLine: true, jsonComments: false, out _, out _, out _, out YamlPlainEnd firstLineEnd))
             {
                 return YamlStep.NeedMoreData;
             }
@@ -839,7 +839,9 @@ namespace System.Text.Yaml
                 return YamlEmitImplicitMappingStart(propsOnOwnLine ? scalarStart : new YamlCursor { Pos = rawStart, Line = rawLine, Column = rawColumn }, s.LineStart || propsOnOwnLine, parentIndent, propsOnOwnLine ? props : default, rawStart, rawLine, rawColumn, s.TabInIndent);
             }
 
-            if (!YamlScanPlain(ref c, parentIndent, flow: false, singleLine: false, out int start, out int length, out bool multiLine, out YamlPlainEnd end))
+            // The root node of a document is not inside a block collection: a JSON comment ends its plain scalar.
+            bool jsonComments = _bitStack.CurrentDepth == 0 && YamlJsonCommentsAtDocumentLevel;
+            if (!YamlScanPlain(ref c, parentIndent, flow: false, singleLine: false, jsonComments, out int start, out int length, out bool multiLine, out YamlPlainEnd end))
             {
                 return YamlStep.NeedMoreData;
             }
@@ -930,7 +932,7 @@ namespace System.Text.Yaml
                 }
                 else if (YamlCanStartPlain(probe, flow: false, out bool needMore))
                 {
-                    if (!YamlScanPlain(ref probe, parentIndent, flow: false, singleLine: true, out _, out _, out _, out YamlPlainEnd end))
+                    if (!YamlScanPlain(ref probe, parentIndent, flow: false, singleLine: true, jsonComments: false, out _, out _, out _, out YamlPlainEnd end))
                     {
                         return YamlStep.NeedMoreData;
                     }

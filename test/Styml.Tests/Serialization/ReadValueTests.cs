@@ -113,6 +113,48 @@ namespace System.Text.Yaml.Serialization.Tests
         }
 
         [Fact]
+        public static void ReaderOptionsWinComments()
+        {
+            byte[] utf8 = "[1, 2, /* some comment */ 3]"u8.ToArray();
+
+            var serializerOptions = new YamlSerializerOptions
+            {
+                ReadCommentHandling = YamlCommentHandling.Skip,
+            };
+
+            Assert.Throws<YamlException>(() =>
+            {
+                var reader = new Utf8YamlReader(utf8);
+                YamlSerializer.Deserialize(ref reader, typeof(int[]), serializerOptions);
+            });
+
+            Assert.Throws<YamlException>(() =>
+            {
+                var reader = new Utf8YamlReader(utf8, isFinalBlock: false, state: default);
+                YamlSerializer.Deserialize(ref reader, typeof(int[]), serializerOptions);
+            });
+
+            var readerOptions = new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip };
+
+            ReadAndVerify(utf8, serializerOptions: null, readerOptions, utf8.Length);
+            ReadAndVerify(utf8, serializerOptions, readerOptions, utf8.Length);
+
+            byte[] utf8_CommentsAfter = "[1, 2, 3]/* some comment */"u8.ToArray();
+
+            ReadAndVerify(utf8_CommentsAfter, serializerOptions, readerOptions: default, expectedLength: "[1, 2, 3]".Length);
+            ReadAndVerify(utf8_CommentsAfter, serializerOptions, readerOptions, expectedLength: "[1, 2, 3]".Length);
+
+            static void ReadAndVerify(byte[] utf8, YamlSerializerOptions serializerOptions, YamlReaderOptions readerOptions, int expectedLength)
+            {
+                var reader = new Utf8YamlReader(utf8, readerOptions);
+                int[] result = YamlSerializer.Deserialize<int[]>(ref reader, serializerOptions);
+                Assert.Equal(3, result.Length);
+                Assert.Equal(YamlTokenType.EndArray, reader.TokenType);
+                Assert.Equal(expectedLength, reader.BytesConsumed);
+            }
+        }
+
+        [Fact]
         public static void OnInvalidReaderIsRestored()
         {
             byte[] utf8 = "[1, 2, 3}"u8.ToArray();

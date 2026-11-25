@@ -35,6 +35,23 @@ namespace System.Text.Yaml.Serialization.Tests
         }
 
         [Fact]
+        public async Task ReadSimpleObjectWithTrailingTriviaAsync()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(SimpleTestClass.s_yaml + " /* Multi\r\nLine Comment */\t");
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                YamlSerializerOptions options = new YamlSerializerOptions
+                {
+                    DefaultBufferSize = 1,
+                    ReadCommentHandling = YamlCommentHandling.Skip,
+                };
+
+                SimpleTestClass obj = await Serializer.DeserializeWrapper<SimpleTestClass>(stream, options);
+                obj.Verify();
+            }
+        }
+
+        [Fact]
         public async Task ReadPrimitivesAsync()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1")))
@@ -42,6 +59,22 @@ namespace System.Text.Yaml.Serialization.Tests
                 YamlSerializerOptions options = new YamlSerializerOptions
                 {
                     DefaultBufferSize = 1
+                };
+
+                int i = await Serializer.DeserializeWrapper<int>(stream, options);
+                Assert.Equal(1, i);
+            }
+        }
+
+        [Fact]
+        public async Task ReadPrimitivesWithTrailingTriviaAsync()
+        {
+            using (MemoryStream stream = new MemoryStream(" 1\t// Comment\r\n/* Multi\r\nLine */"u8.ToArray()))
+            {
+                YamlSerializerOptions options = new YamlSerializerOptions
+                {
+                    DefaultBufferSize = 1,
+                    ReadCommentHandling = YamlCommentHandling.Skip,
                 };
 
                 int i = await Serializer.DeserializeWrapper<int>(stream, options);

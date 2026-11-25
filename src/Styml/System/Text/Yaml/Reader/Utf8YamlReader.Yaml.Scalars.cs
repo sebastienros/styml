@@ -1,6 +1,7 @@
 // Copyright (c) Sébastien Ros. Licensed under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Yaml
 {
@@ -80,7 +81,7 @@ namespace System.Text.Yaml
         /// scalar's last non-blank byte, and <paramref name="end"/> says what stopped it.
         /// </summary>
         /// <returns>False when the buffer ends before the end of the scalar is known.</returns>
-        private readonly bool YamlScanPlain(ref YamlCursor c, int parentIndent, bool flow, bool singleLine, out int start, out int length, out bool multiLine, out YamlPlainEnd end)
+        private readonly bool YamlScanPlain(ref YamlCursor c, int parentIndent, bool flow, bool singleLine, bool jsonComments, out int start, out int length, out bool multiLine, out YamlPlainEnd end)
         {
             ReadOnlySpan<byte> buffer = _buffer;
             start = c.Pos;
@@ -130,10 +131,31 @@ namespace System.Text.Yaml
                     {
                         p.Pos++;
                         p.Column++;
-                        if (p.Pos < buffer.Length && buffer[p.Pos] == (byte)'#')
+                        if (p.Pos < buffer.Length)
                         {
-                            end = YamlPlainEnd.Comment;
-                            goto Done;
+                            byte afterBlank = buffer[p.Pos];
+                            if (afterBlank == (byte)'#')
+                            {
+                                end = YamlPlainEnd.Comment;
+                                goto Done;
+                            }
+
+                            if (afterBlank == (byte)'/' && jsonComments)
+                            {
+                                // As '#': after white space, '//' or '/*' starts a comment and ends the scalar.
+                                int kind = YamlJsonCommentAt(p.Pos);
+                                if (kind == -2)
+                                {
+                                    length = 0;
+                                    end = default;
+                                    return false;
+                                }
+                                if (kind != 0)
+                                {
+                                    end = YamlPlainEnd.Comment;
+                                    goto Done;
+                                }
+                            }
                         }
                         continue;
                     }
@@ -218,6 +240,22 @@ namespace System.Text.Yaml
                     goto Done;
                 }
 
+                if (first == (byte)'/' && jsonComments)
+                {
+                    int kind = YamlJsonCommentAt(q.Pos);
+                    if (kind == -2)
+                    {
+                        length = 0;
+                        end = default;
+                        return false;
+                    }
+                    if (kind != 0)
+                    {
+                        end = YamlPlainEnd.Comment;
+                        goto Done;
+                    }
+                }
+
                 int marker = q.Column == 0 ? YamlDocumentMarker(q, lineStart: true) : 0;
                 if (marker < 0)
                 {
@@ -270,9 +308,50 @@ namespace System.Text.Yaml
 
         Done:
             length = last.Pos - start;
+            if (jsonComments && length > 2 && YamlCutJsonLiteralAtComment(ref c, start, ref length))
+            {
+                // 'c' was still the scalar's first byte: it is now after the literal.
+                multiLine = false;
+                end = YamlPlainEnd.Comment;
+                return true;
+            }
+
             c = last;
             return true;
         }
+
+        /// <summary>
+        /// With JSON comments read: a plain scalar that starts with a JSON number, <c>true</c>, <c>false</c> or
+        /// <c>null</c> directly followed by '//' or '/*' ends there, as the literal does in JSON (<c>[1//c</c>,
+        /// <c>{"a": true/* c */}</c>). Any other text keeps its slashes (<c>a//b</c>, <c>http://x</c>): only white
+        /// space starts a comment inside it. Looked for once per scalar, after the scan, so the scan itself has no
+        /// check for it.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private readonly bool YamlCutJsonLiteralAtComment(ref YamlCursor c, int start, ref int length)
+        {
+            ReadOnlySpan<byte> text = _buffer.Slice(start, length);
+            int slash = text.IndexOf((byte)'/');
+            if (slash <= 0 || slash + 1 >= text.Length || text[slash + 1] is not ((byte)'/' or (byte)'*'))
+            {
+                return false;
+            }
+
+            if (!YamlIsJsonLiteral(text.Slice(0, slash)))
+            {
+                return false;
+            }
+
+            Debug.Assert(c.Pos == start);
+            c.Pos += slash;
+            c.Column += slash;
+            length = slash;
+            return true;
+        }
+
+        /// <summary>A JSON number, <c>true</c>, <c>false</c> or <c>null</c>: what a comment may follow directly.</summary>
+        private static bool YamlIsJsonLiteral(ReadOnlySpan<byte> text) =>
+            text.SequenceEqual("true"u8) || text.SequenceEqual("false"u8) || text.SequenceEqual("null"u8) || YamlReaderHelper.IsJsonNumber(text);
 
         // ---------------------------------------------------------------------------------------------------------
         // Quoted scalars

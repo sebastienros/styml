@@ -57,6 +57,26 @@ namespace System.Text.Yaml.Serialization.Tests
         }
 
         [Theory]
+        [MemberData(nameof(ReadSimpleObjectAsync_TestData))]
+        public async Task ReadSimpleObjectWithTrailingTriviaAsync(Type type, string yaml)
+        {
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            using MemoryStream stream = new Utf8MemoryStream(yaml + " /* Multi\r\nLine Comment */\t");
+            YamlSerializerOptions options = new YamlSerializerOptions
+            { DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins,
+                DefaultBufferSize = 1,
+                ReadCommentHandling = YamlCommentHandling.Skip,
+            };
+
+            object obj = await StreamingSerializer.DeserializeWrapper(stream, type, options);
+            ((ITestClass)obj).Verify();
+        }
+
+        [Theory]
         [InlineData(typeof(Class_With_Ctor_With_65_Params))]
         [InlineData(typeof(Struct_With_Ctor_With_65_Params))]
         public async Task Can_DeserializeAsync_ObjectWith_Ctor_With_65_Params(Type type)

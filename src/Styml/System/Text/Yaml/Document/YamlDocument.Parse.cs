@@ -889,6 +889,7 @@ namespace System.Text.Yaml
 
                 document.ParsedDuplicateKeyHandling = duplicateKeyHandling;
                 document.ParsedSchema = readerOptions.Schema;
+                document.ParsedJsonComments = ReadsJsonComments(readerOptions);
                 if (duplicateKeyHandling == YamlDuplicateKeyHandling.Error)
                 {
                     ValidateNoDuplicateProperties(document);
@@ -957,6 +958,7 @@ namespace System.Text.Yaml
 
             document.ParsedDuplicateKeyHandling = duplicateKeyHandling;
             document.ParsedSchema = readerOptions.Schema;
+            document.ParsedJsonComments = ReadsJsonComments(readerOptions);
             if (duplicateKeyHandling == YamlDuplicateKeyHandling.Error)
             {
                 ValidateNoDuplicateProperties(document);

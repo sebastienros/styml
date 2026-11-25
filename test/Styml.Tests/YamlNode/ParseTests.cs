@@ -274,6 +274,40 @@ namespace System.Text.Yaml.Nodes.Tests
         }
 
         [Fact]
+        [Trait("category", "jsonoutput")]
+        public static async Task ReadSimpleObjectWithTrailingTrivia()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(SimpleTestClass.s_yaml + " /* Multi\r\nLine Comment */\t");
+
+            var options = new YamlDocumentOptions
+            {
+                CommentHandling = YamlCommentHandling.Skip
+            };
+
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                YamlNode node = YamlNode.Parse(stream, nodeOptions: null, options);
+
+                string actual = node.ToYamlString();
+                // Replace the escaped "+" sign used with DateTimeOffset.
+                actual = actual.Replace("\\u002B", "+");
+
+                Assert.Equal(SimpleTestClass.s_yaml.StripWhitespace(), actual);
+            }
+
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                YamlNode node = await YamlNode.ParseAsync(stream, nodeOptions: null, options);
+
+                string actual = node.ToYamlString();
+                // Replace the escaped "+" sign used with DateTimeOffset.
+                actual = actual.Replace("\\u002B", "+");
+
+                Assert.Equal(SimpleTestClass.s_yaml.StripWhitespace(), actual);
+            }
+        }
+
+        [Fact]
         public static async Task ReadPrimitives()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1")))

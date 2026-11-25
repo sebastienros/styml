@@ -29,9 +29,15 @@ namespace System.Text.Yaml.Serialization.Tests
         [Theory]
         [InlineData("", " ")]
         [InlineData("", "\t ")]
+        [InlineData("", "//Single Line Comment\r\n")]
+        [InlineData("", "/* Multi\nLine Comment */")]
+        [InlineData("", "\t\t\t\n// Both\n/* Comments */")]
         [InlineData(" ", "")]
         [InlineData("\t ", "")]
         [InlineData(" \t", " \n")]
+        [InlineData("// Leading Comment\n", "")]
+        [InlineData("/* Multi\nLine\nComment */ ", "")]
+        [InlineData("/* Multi\nLine\nComment */ ", "\t// trailing comment\n ")]
         public static void ReadSimpleClassIgnoresLeadingOrTrailingTrivia(string leadingTrivia, string trailingTrivia)
         {
             var options = new YamlSerializerOptions();
@@ -145,15 +151,31 @@ namespace System.Text.Yaml.Serialization.Tests
         [Theory]
         [InlineData("", " ")]
         [InlineData("", "\t ")]
+        [InlineData("", "//Single Line Comment\r\n")]
+        [InlineData("", "/* Multi\nLine Comment */")]
+        [InlineData("", "\t\t\t\n// Both\n/* Comments */")]
         [InlineData(" ", "")]
         [InlineData("\t ", "")]
         [InlineData(" \t", " \n")]
+        [InlineData("// Leading Comment\n", "")]
+        [InlineData("/* Multi\nLine\nComment */ ", "")]
+        [InlineData("/* Multi\nLine\nComment */ ", "\t// trailing comment\n ")]
         public static void ReadComplexClassIgnoresLeadingOrTrailingTrivia(string leadingTrivia, string trailingTrivia)
         {
             var options = new YamlSerializerOptions();
             options.ReadCommentHandling = YamlCommentHandling.Skip;
 
             ClassWithComplexObjects obj = YamlSerializer.Deserialize<ClassWithComplexObjects>(leadingTrivia + ClassWithComplexObjects.s_yaml + trailingTrivia, options);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadClassWithNestedComments()
+        {
+            var options = new YamlSerializerOptions();
+            options.ReadCommentHandling = YamlCommentHandling.Skip;
+
+            TestClassWithNestedObjectCommentsOuter obj = YamlSerializer.Deserialize<TestClassWithNestedObjectCommentsOuter>(TestClassWithNestedObjectCommentsOuter.s_data, options);
             obj.Verify();
         }
 

@@ -13,14 +13,14 @@ namespace System.Text.Yaml
         {
             while (true)
             {
-                if (!YamlScanToContent(ref c, out YamlScan s, stopAtComment: YamlAllowComments))
+                if (!YamlScanToContent(ref c, out YamlScan s, stopAtComment: YamlAllowComments, jsonComments: YamlJsonCommentsAtDocumentLevel))
                 {
                     return YamlStep.NeedMoreData;
                 }
 
                 if (s.IsComment)
                 {
-                    return YamlEmitComment(ref c);
+                    return YamlEmitComment(ref c, s.LineStart);
                 }
 
                 if (s.AtEnd)

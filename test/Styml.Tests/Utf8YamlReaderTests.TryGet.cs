@@ -1088,6 +1088,53 @@ namespace System.Text.Yaml.Tests
         }
 
         [Theory]
+        [MemberData(nameof(GetCommentTestData))]
+        public static void TestingGetComment(string yamlData, string expected)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlData);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var reader = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            Assert.True(reader.Read());
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
+
+            Assert.True(reader.Read());
+            Assert.Equal(YamlTokenType.Comment, reader.TokenType);
+            Assert.Equal(expected, reader.GetComment());
+
+            Assert.True(reader.Read());
+            Assert.Equal(YamlTokenType.EndObject, reader.TokenType);
+
+            Assert.False(reader.Read());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCommentUnescapeData))]
+        public static void TestGetCommentUnescape(string yamlData, string expected)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlData);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var reader = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+            bool commentFound = false;
+            while (reader.Read())
+            {
+                switch (reader.TokenType)
+                {
+                    case YamlTokenType.Comment:
+                        commentFound = true;
+                        string comment = reader.GetComment();
+                        Assert.Equal(expected, comment);
+                        Assert.NotEqual(Regex.Unescape(expected), comment);
+                        break;
+                    default:
+                        Assert.Fail();
+                        break;
+                }
+            }
+            Assert.True(commentFound);
+        }
+
+        [Theory]
         [MemberData(nameof(YamlGuidTestData.ValidGuidTests), MemberType = typeof(YamlGuidTestData))]
         [MemberData(nameof(YamlGuidTestData.ValidHexGuidTests), MemberType = typeof(YamlGuidTestData))]
         public static void TestingStringsConversionToGuid(string testString, string expectedString)

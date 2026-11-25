@@ -17,13 +17,17 @@ namespace System.Text.Yaml
         private YamlSchemaKind _schema;
 
         /// <summary>
-        /// Defines how the <see cref="Utf8YamlReader"/> handles <c>#</c> comments.
+        /// Defines how the <see cref="Utf8YamlReader"/> handles comments: YAML's <c>#</c> comments, and with
+        /// <see cref="YamlCommentHandling.Skip"/> or <see cref="YamlCommentHandling.Allow"/> the JSON comments
+        /// (<c>//</c> and <c>/* */</c>) of a JSON payload.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the comment handling enum is set to a value that is not supported (i.e. not within the <see cref="YamlCommentHandling"/> enum range).
         /// </exception>
         /// <remarks>
-        /// By default comments are skipped (<see cref="YamlCommentHandling.Disallow"/> behaves as <see cref="YamlCommentHandling.Skip"/>, decision D3).
+        /// By default (<see cref="YamlCommentHandling.Disallow"/>) <c>#</c> comments are skipped and <c>//</c> and
+        /// <c>/* */</c> are not comments, as in standard YAML. See <see cref="YamlCommentHandling"/> for where JSON
+        /// comments are read.
         /// </remarks>
         public YamlCommentHandling CommentHandling
         {
@@ -139,6 +143,12 @@ namespace System.Text.Yaml
         /// Readers that users and the DOM create do not.
         /// </summary>
         internal bool RecordAnchors { get; set; }
+
+        /// <summary>
+        /// The reader looks for <c>#</c> comments only, whatever <see cref="CommentHandling"/> says about JSON
+        /// comments: for the library's own readers that ask for comment tokens over YAML text.
+        /// </summary>
+        internal bool YamlCommentsOnly { get; set; }
 
         /// <summary>
         /// Gets or sets the schema that gives plain scalars in value position their token type and that the typed

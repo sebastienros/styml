@@ -503,6 +503,19 @@ namespace System.Text.Yaml.Tests
             TrySkipHelper(yamlString, lastToken, expectedTokenTypes, YamlCommentHandling.Allow);
         }
 
+        [Theory]
+        [MemberData(nameof(TrySkipValues))]
+        public static void TestTrySkipWithComments(string yamlString, YamlTokenType lastToken)
+        {
+            List<YamlTokenType> expectedTokenTypesWithoutComments = YamlTestHelper.GetTokenTypes(yamlString);
+
+            yamlString = YamlTestHelper.InsertCommentsEverywhere(yamlString);
+
+            List<YamlTokenType> expectedTokenTypes = YamlTestHelper.GetTokenTypes(yamlString);
+            TrySkipHelper(yamlString, YamlTokenType.Comment, expectedTokenTypes, YamlCommentHandling.Allow);
+            TrySkipHelper(yamlString, lastToken, expectedTokenTypesWithoutComments, YamlCommentHandling.Skip);
+        }
+
         private static void TrySkipHelper(string yamlString, YamlTokenType lastToken, List<YamlTokenType> expectedTokenTypes, YamlCommentHandling commentHandling)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
@@ -863,6 +876,42 @@ namespace System.Text.Yaml.Tests
                 }
                 Assert.Equal(dataUtf8.Length - consumed, yaml.BytesConsumed);
             }
+        }
+
+        [Fact]
+        public static void SkipAtCommentDoesNothing()
+        {
+            string yamlString = "[//some comment\n 1, 2, 3]";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            var state = new YamlReaderState(new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+            Assert.True(yaml.Read());
+            Assert.True(yaml.Read());
+            Assert.Equal(YamlTokenType.Comment, yaml.TokenType);
+
+            yaml.Skip();
+
+            Assert.Equal(YamlTokenType.Comment, yaml.TokenType);
+            Assert.Equal("some comment", yaml.GetComment());
+
+            Assert.True(yaml.Read());
+            Assert.Equal(YamlTokenType.Number, yaml.TokenType);
+            Assert.Equal(1, yaml.GetInt32());
+
+            yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+            Assert.True(yaml.Read());
+            Assert.True(yaml.Read());
+            Assert.Equal(YamlTokenType.Comment, yaml.TokenType);
+
+            Assert.True(yaml.TrySkip());
+
+            Assert.Equal(YamlTokenType.Comment, yaml.TokenType);
+            Assert.Equal("some comment", yaml.GetComment());
+
+            Assert.True(yaml.Read());
+            Assert.Equal(YamlTokenType.Number, yaml.TokenType);
+            Assert.Equal(1, yaml.GetInt32());
         }
 
         [Fact]
@@ -1396,6 +1445,59 @@ namespace System.Text.Yaml.Tests
         }
 
         [Theory]
+        [InlineData("[123, 456]", "123456", "123456")]
+        [InlineData("/*a*/[{\"testA\":[{\"testB\":[{\"testC\":123}]}]}]", "testAtestBtestC123", "atestAtestBtestC123")]
+        [InlineData("{\"testA\":[1/*hi*//*bye*/, 2, 3], \"testB\": 4}", "testA123testB4", "testA1hibye23testB4")]
+        [InlineData("{\"test\":[[[123,456]]]}", "test123456", "test123456")]
+        [InlineData("/*a*//*z*/[/*b*//*z*/123/*c*//*z*/,/*d*//*z*/456/*e*//*z*/]/*f*//*z*/", "123456", "azbz123czdz456ezfz")]
+        [InlineData("[123,/*hi*/456/*bye*/]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\n456//bye\n]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\r456//bye\r]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\r\n456\r\n]", "123456", "123hi456")]
+        [InlineData("/*a*//*z*/{/*b*//*z*/\"test\":/*c*//*z*/[/*d*//*z*/[/*e*//*z*/[/*f*//*z*/123/*g*//*z*/,/*h*//*z*/456/*i*//*z*/]/*j*//*z*/]/*k*//*z*/]/*l*//*z*/}/*m*//*z*/",
+    "test123456", "azbztestczdzezfz123gzhz456izjzkzlzmz")]
+        [InlineData("//a\n//z\n{//b\n//z\n\"test\"://c\n//z\n[//d\n//z\n[//e\n//z\n[//f\n//z\n123//g\n//z\n,//h\n//z\n456//i\n//z\n]//j\n//z\n]//k\n//z\n]//l\n//z\n}//m\n//z\n",
+    "test123456", "azbztestczdzezfz123gzhz456izjzkzlzmz")]
+        public static void AllowCommentStackMismatch(string yamlString, string expectedWithoutComments, string expectedWithComments)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(yamlString);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = commentHandling });
+                    var yaml = new Utf8YamlReader(data.AsSpan(0, i), false, state);
+
+                    var builder = new StringBuilder();
+                    while (yaml.Read())
+                    {
+                        Assert.True(yaml.ValueSequence.IsEmpty);
+                        if (yaml.TokenType == YamlTokenType.Number || yaml.TokenType == YamlTokenType.Comment || yaml.TokenType == YamlTokenType.PropertyName)
+                            builder.Append(Encoding.UTF8.GetString(yaml.ValueSpan.ToArray()));
+                    }
+
+                    long consumed = yaml.BytesConsumed;
+                    yaml = new Utf8YamlReader(data.AsSpan((int)consumed), true, yaml.CurrentState);
+                    while (yaml.Read())
+                    {
+                        Assert.True(yaml.ValueSequence.IsEmpty);
+                        if (yaml.TokenType == YamlTokenType.Number || yaml.TokenType == YamlTokenType.Comment || yaml.TokenType == YamlTokenType.PropertyName)
+                            builder.Append(Encoding.UTF8.GetString(yaml.ValueSpan.ToArray()));
+                    }
+                    Assert.Equal(data.Length - consumed, yaml.BytesConsumed);
+
+                    Assert.Equal(commentHandling == YamlCommentHandling.Allow ? expectedWithComments : expectedWithoutComments, builder.ToString());
+                }
+            }
+        }
+
+        [Theory]
         [InlineData(2)]
         [InlineData(4)]
         [InlineData(8)]
@@ -1598,6 +1700,731 @@ namespace System.Text.Yaml.Tests
             }
         }
 
+        [Theory]
+        [InlineData("//", "", 2)]
+        [InlineData("//\n", "", 3)]
+        [InlineData("/**/", "", 4)]
+        [InlineData("/*/*/", "/", 5)]
+
+        [InlineData("//T\u6F22\u5B57his is a \u6F22\u5B57comment before json\n\"hello\"", "T\u6F22\u5B57his is a \u6F22\u5B57comment before json", 44)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json", "This is a \u6F22\u5B57comment after json", 49)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json\n", "This is a \u6F22\u5B57comment after json", 50)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment", "This is a \u6F22\u5B57comment after json", 53)]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a \u6F22\u5B57comment after json", 52)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment", "This is a \u6F22\u5B57comment after json", 53)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a \u6F22\u5B57comment after json", 53)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json with new line\n", "This is a \u6F22\u5B57comment after json with new line", 64)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a \u6F22\u5B57comment between key-value pairs\n 30}", "This is a \u6F22\u5B57comment between key-value pairs", 66)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a \u6F22\u5B57comment between key-value pairs on the same line\n}", "This is a \u6F22\u5B57comment between key-value pairs on the same line", 84)]
+
+        [InlineData("/*T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json*/\"hello\"", "T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json", 56)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line \u6F22\u5B57comment after json*/", "This is a multi-line \u6F22\u5B57comment after json", 62)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment", "This is a multi-line \u6F22\u5B57comment after json", 65)]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a multi-line \u6F22\u5B57comment after json", 64)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment", "This is a multi-line \u6F22\u5B57comment after json", 65)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a multi-line \u6F22\u5B57comment after json", 65)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a \u6F22\u5B57comment between key-value pairs*/ 30}", "This is a \u6F22\u5B57comment between key-value pairs", 67)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a \u6F22\u5B57comment between key-value pairs on the same line*/}", "This is a \u6F22\u5B57comment between key-value pairs on the same line", 85)]
+
+        [InlineData("/*T\u6F22\u5B57his is a split multi-line \n\u6F22\u5B57comment before json*/\"hello\"", "T\u6F22\u5B57his is a split multi-line \n\u6F22\u5B57comment before json", 63)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a split multi-line \n\u6F22\u5B57comment after json*/", "This is a split multi-line \n\u6F22\u5B57comment after json", 69)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment", "This is a split multi-line \n\u6F22\u5B57comment after json", 72)]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a split multi-line \n\u6F22\u5B57comment after json", 71)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment", "This is a split multi-line \n\u6F22\u5B57comment after json", 72)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a split multi-line \n\u6F22\u5B57comment after json", 72)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs*/ 30}", "This is a split multi-line \n\u6F22\u5B57comment between key-value pairs", 85)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs on the same line*/}", "This is a split multi-line \n\u6F22\u5B57comment between key-value pairs on the same line", 103)]
+        public static void Allow(string yamlString, string expectedComment, int expectedIndex)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            bool foundComment = false;
+            long indexAfterFirstComment = 0;
+            while (yaml.Read())
+            {
+                Assert.True(yaml.ValueSequence.IsEmpty);
+                YamlTokenType tokenType = yaml.TokenType;
+                switch (tokenType)
+                {
+                    case YamlTokenType.Comment:
+                        if (foundComment)
+                            break;
+                        foundComment = true;
+                        indexAfterFirstComment = yaml.BytesConsumed;
+                        string actualComment = yaml.GetComment();
+                        Assert.Equal(expectedComment, actualComment);
+                        break;
+                }
+            }
+            Assert.True(foundComment);
+            Assert.Equal(expectedIndex, indexAfterFirstComment);
+        }
+
+        [Theory]
+        [InlineData("//", "", 2)]
+        [InlineData("//\n", "", 3)]
+        [InlineData("/**/", "", 4)]
+        [InlineData("/*/*/", "/", 5)]
+
+        [InlineData("//T\u6F22\u5B57his is a \u6F22\u5B57comment before json\n\"hello\"", "T\u6F22\u5B57his is a \u6F22\u5B57comment before json", 44)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json", "This is a \u6F22\u5B57comment after json", 49)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json\n", "This is a \u6F22\u5B57comment after json", 50)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment", "This is a \u6F22\u5B57comment after json", 53)]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a \u6F22\u5B57comment after json", 52)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment", "This is a \u6F22\u5B57comment after json", 53)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a \u6F22\u5B57comment after json", 53)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json with new line\n", "This is a \u6F22\u5B57comment after json with new line", 64)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a \u6F22\u5B57comment between key-value pairs\n 30}", "This is a \u6F22\u5B57comment between key-value pairs", 66)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a \u6F22\u5B57comment between key-value pairs on the same line\n}", "This is a \u6F22\u5B57comment between key-value pairs on the same line", 84)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return\r//Another single-line comment", "This is a comment with a carriage return", 59)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a line break\n//Another single-line comment", "This is a comment with a line break", 54)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return and line break\r\n//Another single-line comment", "This is a comment with a carriage return and line break", 75)]
+
+        [InlineData("/*T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json*/\"hello\"", "T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json", 56)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line \u6F22\u5B57comment after json*/", "This is a multi-line \u6F22\u5B57comment after json", 62)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment", "This is a multi-line \u6F22\u5B57comment after json", 65)]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a multi-line \u6F22\u5B57comment after json", 64)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment", "This is a multi-line \u6F22\u5B57comment after json", 65)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a multi-line \u6F22\u5B57comment after json", 65)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a \u6F22\u5B57comment between key-value pairs*/ 30}", "This is a \u6F22\u5B57comment between key-value pairs", 67)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a \u6F22\u5B57comment between key-value pairs on the same line*/}", "This is a \u6F22\u5B57comment between key-value pairs on the same line", 85)]
+
+        [InlineData("/*T\u6F22\u5B57his is a split multi-line \n\u6F22\u5B57comment before json*/\"hello\"", "T\u6F22\u5B57his is a split multi-line \n\u6F22\u5B57comment before json", 63)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a split multi-line \n\u6F22\u5B57comment after json*/", "This is a split multi-line \n\u6F22\u5B57comment after json", 69)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment", "This is a split multi-line \n\u6F22\u5B57comment after json", 72)]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a split multi-line \n\u6F22\u5B57comment after json", 71)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment", "This is a split multi-line \n\u6F22\u5B57comment after json", 72)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a split multi-line \n\u6F22\u5B57comment after json", 72)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs*/ 30}", "This is a split multi-line \n\u6F22\u5B57comment between key-value pairs", 85)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs on the same line*/}", "This is a split multi-line \n\u6F22\u5B57comment between key-value pairs on the same line", 103)]
+
+        [InlineData("{\r\n   \"value\": 11,\r\n   /* yes, it's mis-spelled */\r\n   \"deelay\": 3\r\n}", " yes, it's mis-spelled ", 50)]
+        [InlineData("[\r\n   12,\r\n   87,\r\n   /* Isn't it \"nice\" that JSON provides no limits on the length of numbers? */\r\n   123456789012345678901234567890123456789.01234567890123456789e+9876543218976543219876543210\r\n]",
+            " Isn't it \"nice\" that JSON provides no limits on the length of numbers? ", 98)]
+        public static void AllowSingleSegment(string yamlString, string expectedComment, int expectedIndex)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            bool foundComment = false;
+            long indexAfterFirstComment = 0;
+            while (yaml.Read())
+            {
+                Assert.True(yaml.ValueSequence.IsEmpty);
+                YamlTokenType tokenType = yaml.TokenType;
+                switch (tokenType)
+                {
+                    case YamlTokenType.Comment:
+                        if (foundComment)
+                            break;
+                        foundComment = true;
+                        indexAfterFirstComment = yaml.BytesConsumed;
+                        string actualComment = yaml.GetComment();
+                        Assert.Equal(expectedComment, actualComment);
+                        break;
+                }
+            }
+            Assert.True(foundComment);
+            Assert.Equal(expectedIndex, indexAfterFirstComment);
+
+            for (int i = 0; i < dataUtf8.Length; i++)
+            {
+                var stateInner = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+                var yamlSlice = new Utf8YamlReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, stateInner);
+
+                foundComment = false;
+                indexAfterFirstComment = 0;
+                while (yamlSlice.Read())
+                {
+                    Assert.True(yaml.ValueSequence.IsEmpty);
+                    YamlTokenType tokenType = yamlSlice.TokenType;
+                    switch (tokenType)
+                    {
+                        case YamlTokenType.Comment:
+                            if (foundComment)
+                                break;
+                            foundComment = true;
+                            indexAfterFirstComment = yamlSlice.BytesConsumed;
+                            string actualComment = yamlSlice.GetComment();
+                            Assert.Equal(expectedComment, actualComment);
+                            break;
+                    }
+                }
+
+                int consumed = (int)yamlSlice.BytesConsumed;
+                yamlSlice = new Utf8YamlReader(dataUtf8.AsSpan(consumed), isFinalBlock: true, yamlSlice.CurrentState);
+
+                if (!foundComment)
+                {
+                    while (yamlSlice.Read())
+                    {
+                        Assert.True(yaml.ValueSequence.IsEmpty);
+                        YamlTokenType tokenType = yamlSlice.TokenType;
+                        switch (tokenType)
+                        {
+                            case YamlTokenType.Comment:
+                                if (foundComment)
+                                    break;
+                                foundComment = true;
+                                indexAfterFirstComment = yamlSlice.BytesConsumed;
+                                string actualComment = yamlSlice.GetComment();
+                                Assert.Equal(expectedComment, actualComment);
+                                break;
+                        }
+                    }
+                    indexAfterFirstComment += consumed;
+                }
+
+                Assert.True(foundComment);
+                Assert.Equal(expectedIndex, indexAfterFirstComment);
+            }
+        }
+
+        [Theory]
+        [InlineData("//T\u6F22\u5B57his is a \u6F22\u5B57comment before json\n\"hello\"")]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json")]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json\n")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json with new line\n")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a \u6F22\u5B57comment between key-value pairs\n 30}")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a \u6F22\u5B57comment between key-value pairs on the same line\n}")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return\r//Another single-line comment")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a line break\n//Another single-line comment")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return and line break\r\n//Another single-line comment")]
+
+        [InlineData("/*T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json*/\"hello\"")]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line \u6F22\u5B57comment after json*/")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a \u6F22\u5B57comment between key-value pairs*/ 30}")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a \u6F22\u5B57comment between key-value pairs on the same line*/}")]
+
+        [InlineData("/*T\u6F22\u5B57his is a split multi-line \n\u6F22\u5B57comment before json*/\"hello\"")]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a split multi-line \n\u6F22\u5B57comment after json*/")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs*/ 30}")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs on the same line*/}")]
+        public static void Skip(string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            YamlTokenType prevTokenType = YamlTokenType.None;
+            while (yaml.Read())
+            {
+                YamlTokenType tokenType = yaml.TokenType;
+                switch (tokenType)
+                {
+                    case YamlTokenType.Comment:
+                        Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
+                        break;
+                }
+                Assert.NotEqual(tokenType, prevTokenType);
+                prevTokenType = tokenType;
+            }
+            Assert.Equal(dataUtf8.Length, yaml.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("//T\u6F22\u5B57his is a \u6F22\u5B57comment before json\n\"hello\"")]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json")]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json\n")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n//This is a \u6F22\u5B57comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json with new line\n")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a \u6F22\u5B57comment between key-value pairs\n 30}")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a \u6F22\u5B57comment between key-value pairs on the same line\n}")]
+
+        [InlineData("/*T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json*/\"hello\"")]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line \u6F22\u5B57comment after json*/")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a \u6F22\u5B57comment between key-value pairs*/ 30}")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a \u6F22\u5B57comment between key-value pairs on the same line*/}")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return\r//Another single-line comment")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a line break\n//Another single-line comment")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return and line break\r\n//Another single-line comment")]
+
+        [InlineData("/*T\u6F22\u5B57his is a split multi-line \n\u6F22\u5B57comment before json*/\"hello\"")]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a split multi-line \n\u6F22\u5B57comment after json*/")]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"b\u6F22\u5B57eta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment")]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a split multi-line \n\u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs*/ 30}")]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a split multi-line \n\u6F22\u5B57comment between key-value pairs on the same line*/}")]
+
+        [InlineData("{\r\n   \"value\": 11,\r\n   /* yes, it's mis-spelled */\r\n   \"deelay\": 3\r\n}")]
+        [InlineData("[\r\n   12,\r\n   87,\r\n   /* Isn't it \"nice\" that JSON provides no limits on the length of numbers? */\r\n   123456789012345678901234567890123456789.01234567890123456789e+9876543218976543219876543210\r\n]")]
+        public static void SkipSingleSegment(string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            while (yaml.Read())
+            {
+                YamlTokenType tokenType = yaml.TokenType;
+                switch (tokenType)
+                {
+                    case YamlTokenType.Comment:
+                        Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
+                        break;
+                }
+            }
+            Assert.Equal(dataUtf8.Length, yaml.BytesConsumed);
+
+            for (int i = 0; i < dataUtf8.Length; i++)
+            {
+                var stateInner = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+                var yamlSlice = new Utf8YamlReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, stateInner);
+
+                while (yamlSlice.Read())
+                {
+                    YamlTokenType tokenType = yamlSlice.TokenType;
+                    switch (tokenType)
+                    {
+                        case YamlTokenType.Comment:
+                            Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
+                            break;
+                    }
+                }
+
+                int prevConsumed = (int)yamlSlice.BytesConsumed;
+                yamlSlice = new Utf8YamlReader(dataUtf8.AsSpan(prevConsumed), isFinalBlock: true, yamlSlice.CurrentState);
+
+                while (yamlSlice.Read())
+                {
+                    YamlTokenType tokenType = yamlSlice.TokenType;
+                    switch (tokenType)
+                    {
+                        case YamlTokenType.Comment:
+                            Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
+                            break;
+                    }
+                }
+
+                Assert.Equal(dataUtf8.Length - prevConsumed, yamlSlice.BytesConsumed);
+            }
+        }
+
+        [Theory]
+        [InlineData("//\n}", 1, 0)]
+        [InlineData("//comment\n}", 1, 0)]
+        [InlineData("/**/}", 0, 4)]
+        [InlineData("/*\n*/}", 1, 2)]
+        [InlineData("/*comment\n*/}", 1, 2)]
+        [InlineData("/*/*/}", 0, 5)]
+        [InlineData("//This is a comment before json\n\"hello\"{", 1, 7)]
+        [InlineData("\"hello\"//This is a comment after json\n{", 1, 0)]
+        [InlineData("\"gamma\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*/{//Another single-line comment", 3, 28)]
+        [InlineData("\"delta\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/{", 4, 18)]
+        [InlineData("\"hello\"//This is a comment after json with new line\n{", 1, 0)]
+        [InlineData("{\"age\" : \n//This is a comment between key-value pairs\n 30}{", 2, 4)]
+        [InlineData("{\"age\" : 30//This is a comment between key-value pairs on the same line\n}{", 1, 1)]
+        [InlineData("/*This is a multi-line comment before json*/\"hello\"{", 0, 51)]
+        [InlineData("\"hello\"/*This is a multi-line comment after json*/{", 0, 50)]
+        [InlineData("\"gamma\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*/{//Another single-line comment", 2, 28)]
+        [InlineData("\"delta\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/{", 3, 18)]
+        [InlineData("{\"age\" : \n/*This is a comment between key-value pairs*/ 30}{", 1, 49)]
+        [InlineData("{\"age\" : 30/*This is a comment between key-value pairs on the same line*/}{", 0, 74)]
+        [InlineData("/*This is a split multi-line \ncomment before json*/\"hello\"{", 1, 28)]
+        [InlineData("\"hello\"/*This is a split multi-line \ncomment after json*/{", 1, 20)]
+        [InlineData("\"gamma\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*/{//Another single-line comment", 3, 28)]
+        [InlineData("\"delta\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/{", 4, 18)]
+        [InlineData("{\"age\" : \n/*This is a split multi-line \ncomment between key-value pairs*/ 30}{", 2, 37)]
+        [InlineData("{\"age\" : 30/*This is a split multi-line \ncomment between key-value pairs on the same line*/}{", 1, 51)]
+
+        [InlineData("//T\u6F22\u5B57his is a comment before json\n\"hello\"\u6F22\u5B57{", 1, 7)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a comment after json\n\u6F22\u5B57{", 1, 0)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*/\u6F22\u5B57{//Another single-line comment", 3, 28)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/\u6F22\u5B57{", 4, 18)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a comment after json with new line\n\u6F22\u5B57{", 1, 0)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a comment between key-value pairs\n 30}\u6F22\u5B57{", 2, 4)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a comment between key-value pairs on the same line\n}\u6F22\u5B57{", 1, 1)]
+        [InlineData("/*T\u6F22\u5B57his is a multi-line comment before json*/\"hello\"\u6F22\u5B57{", 0, 57)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line comment after json*/\u6F22\u5B57{", 0, 56)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*/\u6F22\u5B57{//Another single-line comment", 2, 28)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/\u6F22\u5B57{", 3, 18)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a comment between key-value pairs*/ 30}\u6F22\u5B57{", 1, 49)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a comment between key-value pairs on the same line*/}\u6F22\u5B57{", 0, 80)]
+        [InlineData("/*T\u6F22\u5B57his is a split multi-line \ncomment before json*/\"hello\"\u6F22\u5B57{", 1, 28)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a split multi-line \ncomment after json*/\u6F22\u5B57{", 1, 20)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*/\u6F22\u5B57{//Another single-line comment", 3, 28)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/\u6F22\u5B57{", 4, 18)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a split multi-line \ncomment between key-value pairs*/ 30}\u6F22\u5B57{", 2, 37)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a split multi-line \ncomment between key-value pairs on the same line*/}\u6F22\u5B57{", 1, 51)]
+
+        [InlineData("{   // comment \n   ]", 1, 3)]
+        [InlineData("[   // comment \n   }", 1, 3)]
+        [InlineData("{   /* comment */   ]", 0, 20)]
+        [InlineData("[   /* comment */   }", 0, 20)]
+        public static void InvalidYamlWithComments(string yamlString, int expectedlineNumber, int expectedPosition)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            try
+            {
+                while (yaml.Read())
+                    ;
+                Assert.Fail("Expected YamlException was not thrown with single-segment data.");
+            }
+            catch (YamlException ex)
+            {
+                Assert.Equal(expectedlineNumber, ex.LineNumber);
+                Assert.Equal(expectedPosition, ex.BytePositionInLine);
+            }
+
+            state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            try
+            {
+                while (yaml.Read())
+                    ;
+                Assert.Fail("Expected YamlException was not thrown with single-segment data.");
+            }
+            catch (YamlException ex)
+            {
+                Assert.Equal(expectedlineNumber, ex.LineNumber);
+                Assert.Equal(expectedPosition, ex.BytePositionInLine);
+            }
+        }
+
+        [Theory]
+        [InlineData("//\n}", 1, 0)]
+        [InlineData("//comment\n}", 1, 0)]
+        [InlineData("/**/}", 0, 4)]
+        [InlineData("/*\n*/}", 1, 2)]
+        [InlineData("/*comment\n*/}", 1, 2)]
+        [InlineData("/*/*/}", 0, 5)]
+        [InlineData("//This is a comment before json\n\"hello\"{", 1, 7)]
+        [InlineData("\"hello\"//This is a comment after json\n{", 1, 0)]
+        [InlineData("\"gamma\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*/{//Another single-line comment", 3, 28)]
+        [InlineData("\"delta\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/{", 4, 18)]
+        [InlineData("\"hello\"//This is a comment after json with new line\n{", 1, 0)]
+        [InlineData("{\"age\" : \n//This is a comment between key-value pairs\n 30}{", 2, 4)]
+        [InlineData("{\"age\" : 30//This is a comment between key-value pairs on the same line\n}{", 1, 1)]
+        [InlineData("/*This is a multi-line comment before json*/\"hello\"{", 0, 51)]
+        [InlineData("\"hello\"/*This is a multi-line comment after json*/{", 0, 50)]
+        [InlineData("\"gamma\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*/{//Another single-line comment", 2, 28)]
+        [InlineData("\"delta\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/{", 3, 18)]
+        [InlineData("{\"age\" : \n/*This is a comment between key-value pairs*/ 30}{", 1, 49)]
+        [InlineData("{\"age\" : 30/*This is a comment between key-value pairs on the same line*/}{", 0, 74)]
+        [InlineData("/*This is a split multi-line \ncomment before json*/\"hello\"{", 1, 28)]
+        [InlineData("\"hello\"/*This is a split multi-line \ncomment after json*/{", 1, 20)]
+        [InlineData("\"gamma\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*/{//Another single-line comment", 3, 28)]
+        [InlineData("\"delta\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/{", 4, 18)]
+        [InlineData("{\"age\" : \n/*This is a split multi-line \ncomment between key-value pairs*/ 30}{", 2, 37)]
+        [InlineData("{\"age\" : 30/*This is a split multi-line \ncomment between key-value pairs on the same line*/}{", 1, 51)]
+
+        [InlineData("//T\u6F22\u5B57his is a comment before json\n\"hello\"\u6F22\u5B57{", 1, 7)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a comment after json\n\u6F22\u5B57{", 1, 0)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*/\u6F22\u5B57{//Another single-line comment", 3, 28)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n//This is a comment after json\n//Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/\u6F22\u5B57{", 4, 18)]
+        [InlineData("\"h\u6F22\u5B57ello\"//This is a comment after json with new line\n\u6F22\u5B57{", 1, 0)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a comment between key-value pairs\n 30}\u6F22\u5B57{", 2, 4)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a comment between key-value pairs on the same line\n}\u6F22\u5B57{", 1, 1)]
+        [InlineData("/*T\u6F22\u5B57his is a multi-line comment before json*/\"hello\"\u6F22\u5B57{", 0, 57)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line comment after json*/\u6F22\u5B57{", 0, 56)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*/\u6F22\u5B57{//Another single-line comment", 2, 28)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a multi-line comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/\u6F22\u5B57{", 3, 18)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a comment between key-value pairs*/ 30}\u6F22\u5B57{", 1, 49)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a comment between key-value pairs on the same line*/}\u6F22\u5B57{", 0, 80)]
+        [InlineData("/*T\u6F22\u5B57his is a split multi-line \ncomment before json*/\"hello\"\u6F22\u5B57{", 1, 28)]
+        [InlineData("\"h\u6F22\u5B57ello\"/*This is a split multi-line \ncomment after json*/\u6F22\u5B57{", 1, 20)]
+        [InlineData("\"g\u6F22\u5B57amma\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*/\u6F22\u5B57{//Another single-line comment", 3, 28)]
+        [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a split multi-line \ncomment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/\u6F22\u5B57{", 4, 18)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a split multi-line \ncomment between key-value pairs*/ 30}\u6F22\u5B57{", 2, 37)]
+        [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a split multi-line \ncomment between key-value pairs on the same line*/}\u6F22\u5B57{", 1, 51)]
+        public static void InvalidYamlWithCommentsSingleSegment(string yamlString, int expectedlineNumber, int expectedPosition)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            try
+            {
+                while (yaml.Read())
+                    ;
+                Assert.Fail("Expected YamlException was not thrown with single-segment data.");
+            }
+            catch (YamlException ex)
+            {
+                Assert.Equal(expectedlineNumber, ex.LineNumber);
+                Assert.Equal(expectedPosition, ex.BytePositionInLine);
+            }
+        }
+
+        [Theory]
+        [InlineData("//asd\r", "asd", 6)]
+        [InlineData("//asd\r\n", "asd", 7)]
+        [InlineData("//asd\n", "asd", 6)]
+        public static void YamlWithASingleCommentEndingWithLineEndingSingleSegment(string yamlString, string expectedComment, int expectedBytesConsumed)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            Assert.True(yaml.Read());
+            Assert.Equal(expectedComment, yaml.GetComment());
+            Assert.False(yaml.Read());
+            Assert.Equal(expectedBytesConsumed, yaml.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("//\u2028")]
+        [InlineData("//\u2029")]
+        [InlineData("// \u2028")]
+        [InlineData("//   \u2028")]
+        [InlineData("//  \u2029 ")]
+        [InlineData("//  \u2029  ")]
+        [InlineData("//\u2028\n")]
+        [InlineData("//\u2028 \n")]
+        [InlineData("// \u2028\n")]
+        [InlineData("// \u2028 \n")]
+        [InlineData("//\u2028\r\n")]
+        [InlineData("//\u2028 \r\n")]
+        [InlineData("// \u2028\r\n")]
+        [InlineData("// \u2028 \r\n")]
+        [InlineData("//\u2028\r")]
+        [InlineData("//\u2028 \r")]
+        [InlineData("// \u2028\r")]
+        [InlineData("// \u2028 \r")]
+        public static void YamlWithSingleLineCommentEndingWithNonStandardLineEnding(string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = commentHandling });
+                var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+                try
+                {
+                    yaml.Read();
+                    Assert.Fail($"Expected YamlException was not thrown. CommentHandling = {commentHandling}");
+                }
+                catch (YamlException) { }
+            }
+        }
+
+        [Theory]
+        // Non-standard line-endings are: \u2028 \u2029 (E2, 80, A8/A9)
+        // last byte does not match (E2, 80, AA)
+        [InlineData("//\u2030\n", "\u2030")]
+        [InlineData("//\u2030 \r\n", "\u2030 ")]
+        [InlineData("// \u2030\r", " \u2030")]
+        [InlineData("//\u2030\u2031\n", "\u2030\u2031")]
+        [InlineData("//\u2030 \u2031\r\n", "\u2030 \u2031")]
+        [InlineData("// \u2030 \u2031\n", " \u2030 \u2031")]
+        [InlineData("// \u2030 \u2031 \r", " \u2030 \u2031 ")]
+        // second byte does not match (E2, 81, A8/A9)
+        [InlineData("//\u2069\r\n", "\u2069")]
+        [InlineData("// \u2069\r", " \u2069")]
+        [InlineData("//\u2069 \n", "\u2069 ")]
+        [InlineData("//\u2069\u2068\n", "\u2069\u2068")]
+        [InlineData("//\u2069 \u2068\n", "\u2069 \u2068")]
+        [InlineData("//\u2069 \u2068 \u2068\n", "\u2069 \u2068 \u2068")]
+        [InlineData("// \u2069 \u2068 \u2068 \n", " \u2069 \u2068 \u2068 ")]
+        public static void YamlWithSingleCorrectLineCommentWithPartialNonStandardLineEnding(string yamlString, string expectedComment)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            Assert.True(yaml.Read());
+            Assert.Equal(expectedComment, yaml.GetComment());
+            Assert.False(yaml.Read());
+        }
+
+        [Theory]
+        [MemberData(nameof(LotsOfCommentsTests))]
+        public static void SkipLotsOfComments(string valueString, bool insideArray, string expectedString)
+        {
+            var builder = new StringBuilder(2_000_000);
+            if (insideArray)
+            {
+                builder.Append("[");
+            }
+            for (int i = 0; i < 100_000; i++)
+            {
+                builder.Append("// comment ").Append(i).Append("\n");
+            }
+            builder.Append(valueString);
+            if (insideArray)
+            {
+                builder.Append("]");
+            }
+            string yamlString = builder.ToString();
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            if (insideArray)
+            {
+                Assert.True(yaml.Read());
+                Assert.True(yaml.TokenType == YamlTokenType.StartArray);
+                Assert.Equal(0, yaml.TokenStartIndex);
+            }
+
+            if (yaml.Read())
+            {
+                Assert.True(yaml.ValueSequence.IsEmpty);
+                bool isTokenPrimitive = yaml.TokenType >= YamlTokenType.String && yaml.TokenType <= YamlTokenType.Null;
+                Assert.True(isTokenPrimitive);
+                switch (yaml.TokenType)
+                {
+                    case YamlTokenType.Null:
+                        Assert.Equal(expectedString, Encoding.UTF8.GetString(yaml.ValueSpan.ToArray()));
+                        break;
+                    case YamlTokenType.Number:
+                        if (yaml.ValueSpan.IndexOf((byte)'.') != -1)
+                        {
+                            Assert.True(yaml.TryGetDouble(out double numberValue));
+                            // Use InvariantCulture to format the numbers to make sure they retain the decimal point '.'
+                            Assert.Equal(expectedString, numberValue.ToString(CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            Assert.True(yaml.TryGetInt32(out int numberValue));
+                            Assert.Equal(expectedString, numberValue.ToString(CultureInfo.InvariantCulture));
+                        }
+                        break;
+                    case YamlTokenType.String:
+                        string stringValue = yaml.GetString();
+                        Assert.Equal(expectedString, stringValue);
+                        break;
+                    case YamlTokenType.False:
+                    case YamlTokenType.True:
+                        bool boolValue = yaml.GetBoolean();
+                        Assert.Equal(expectedString, boolValue.ToString(CultureInfo.InvariantCulture));
+                        break;
+                }
+                Assert.Equal(insideArray ? 1688894 : 1688894 - 1, yaml.TokenStartIndex);
+            }
+
+            if (insideArray)
+            {
+                Assert.True(yaml.Read());
+                Assert.True(yaml.TokenType == YamlTokenType.EndArray);
+                Assert.Equal(dataUtf8.Length - 1, yaml.TokenStartIndex);
+            }
+
+            Assert.False(yaml.Read());
+            Assert.Equal(dataUtf8.Length, yaml.BytesConsumed);
+        }
+
+        [Theory]
+        [MemberData(nameof(LotsOfCommentsTests))]
+        public static void ConsumeLotsOfComments(string valueString, bool insideArray, string expectedString)
+        {
+            var builder = new StringBuilder(2_000_000);
+            if (insideArray)
+            {
+                builder.Append("[");
+            }
+            for (int i = 0; i < 100_000; i++)
+            {
+                builder.Append("// comment ").Append(i).Append("\n");
+            }
+            builder.Append(valueString);
+            if (insideArray)
+            {
+                builder.Append("]");
+            }
+            string yamlString = builder.ToString();
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            var yaml = new Utf8YamlReader(dataUtf8, isFinalBlock: true, state);
+
+            bool foundPrimitiveValue = false;
+            while (yaml.Read())
+            {
+                Assert.True(yaml.ValueSequence.IsEmpty);
+                bool isTokenPrimitive = yaml.TokenType >= YamlTokenType.String && yaml.TokenType <= YamlTokenType.Null;
+
+                if (insideArray)
+                {
+                    Assert.True(isTokenPrimitive || yaml.TokenType == YamlTokenType.Comment || yaml.TokenType == YamlTokenType.StartArray || yaml.TokenType == YamlTokenType.EndArray);
+                }
+                else
+                {
+                    Assert.True(isTokenPrimitive || yaml.TokenType == YamlTokenType.Comment);
+                }
+
+                switch (yaml.TokenType)
+                {
+                    case YamlTokenType.Null:
+                        Assert.Equal(expectedString, Encoding.UTF8.GetString(yaml.ValueSpan.ToArray()));
+                        Assert.Null(yaml.GetString());
+                        foundPrimitiveValue = true;
+                        break;
+                    case YamlTokenType.Number:
+                        if (yaml.ValueSpan.IndexOf((byte)'.') != -1)
+                        {
+                            Assert.True(yaml.TryGetDouble(out double numberValue));
+                            Assert.Equal(expectedString, numberValue.ToString(CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            Assert.True(yaml.TryGetInt32(out int numberValue));
+                            Assert.Equal(expectedString, numberValue.ToString(CultureInfo.InvariantCulture));
+                        }
+                        foundPrimitiveValue = true;
+                        break;
+                    case YamlTokenType.String:
+                        string stringValue = yaml.GetString();
+                        Assert.Equal(expectedString, stringValue);
+                        foundPrimitiveValue = true;
+                        break;
+                    case YamlTokenType.False:
+                    case YamlTokenType.True:
+                        bool boolValue = yaml.GetBoolean();
+                        Assert.Equal(expectedString, boolValue.ToString(CultureInfo.InvariantCulture));
+                        foundPrimitiveValue = true;
+                        break;
+                }
+                if (isTokenPrimitive)
+                {
+                    Assert.Equal(insideArray ? 1688894 : 1688894 - 1, yaml.TokenStartIndex);
+                }
+            }
+            Assert.True(foundPrimitiveValue);
+            Assert.Equal(dataUtf8.Length, yaml.BytesConsumed);
+
+            if (insideArray)
+            {
+                Assert.True(yaml.TokenType == YamlTokenType.EndArray);
+                Assert.Equal(dataUtf8.Length - 1, yaml.TokenStartIndex);
+            }
+        }
+
         private static void VerifyReadLoop(ref Utf8YamlReader yaml, string expected)
         {
             while (yaml.Read())
@@ -1622,6 +2449,87 @@ namespace System.Text.Yaml.Tests
                         Assert.Fail();
                         break;
                 }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CommentTestLineSeparators))]
+        public static void ConsumeSingleLineCommentSingleSpanTest(string lineSeparator)
+        {
+            var expected = "Comment";
+            var yamlData = "{//" + expected + lineSeparator + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlData);
+
+            for (int i = 0; i < yamlData.Length; i++)
+            {
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+                var yaml = new Utf8YamlReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref yaml, expected);
+
+                yaml = new Utf8YamlReader(dataUtf8.AsSpan((int)yaml.BytesConsumed), isFinalBlock: true, yaml.CurrentState);
+                VerifyReadLoop(ref yaml, expected);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CommentTestLineSeparators))]
+        public static void SkipSingleLineCommentSingleSpanTest(string lineSeparator)
+        {
+            var expected = "Comment";
+            var yamlData = "{//" + expected + lineSeparator + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlData);
+
+            for (int i = 0; i < yamlData.Length; i++)
+            {
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+                var yaml = new Utf8YamlReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref yaml, null);
+
+                yaml = new Utf8YamlReader(dataUtf8.AsSpan((int)yaml.BytesConsumed), isFinalBlock: true, yaml.CurrentState);
+                VerifyReadLoop(ref yaml, null);
+            }
+        }
+
+        // YamlTokenWithExtraValueAndComments less its first five rows, where a plain scalar starts the line: with
+        // partial data the YAML reader waits for the end of that line before it returns the scalar
+        // (test/EXCLUSIONS.md, "JSON comment syntax").
+        public static IEnumerable<object[]> YamlTokenWithExtraValueAndCommentsAfterAQuotedScalarOrACollection =>
+            YamlTokenWithExtraValueAndComments.Skip(5);
+
+        [Theory]
+        [MemberData(nameof(YamlTokenWithExtraValueAndCommentsAfterAQuotedScalarOrACollection))]
+        public static void ReadYamlTokenWithExtraValueAndComments(string yamlString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlTokenWithExtraValueAndCommentsAfterAQuotedScalarOrACollection))]
+        public static void ReadYamlTokenWithExtraValueAndCommentsAppended(string yamlString)
+        {
+            yamlString = "  /* comment */  /* comment */  " + yamlString;
+            byte[] utf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false, commentsAppended: true);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true, commentsAppended: true);
             }
         }
 
@@ -1745,6 +2653,41 @@ namespace System.Text.Yaml.Tests
             reader = new Utf8YamlReader(utf8, isFinalBlock: true, state);
             Assert.True(reader.Read());
             Assert.Equal(expectedIndex, reader.TokenStartIndex);
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleYamlWithCommentsTokenStartIndex))]
+        public static void TestTokenStartIndex_SingleValueWithComments(string yamlString, int expectedIndex)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = false });
+                var reader = new Utf8YamlReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                if (commentHandling == YamlCommentHandling.Allow)
+                {
+                    Assert.Equal(YamlTokenType.Comment, reader.TokenType);
+                    Assert.True(reader.Read());
+                }
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+
+                state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                reader = new Utf8YamlReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                if (commentHandling == YamlCommentHandling.Allow)
+                {
+                    Assert.Equal(YamlTokenType.Comment, reader.TokenType);
+                    Assert.True(reader.Read());
+                }
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+            }
         }
 
         [Theory]
@@ -2010,6 +2953,40 @@ namespace System.Text.Yaml.Tests
             Assert.True(reader.IsFinalBlock);
             Assert.False(reader.Read());
             Assert.Equal(YamlTokenType.None, reader.TokenType);
+        }
+
+        [Fact]
+        public static void SkipComment_SingleLineComment()
+        {
+            byte[] data = "// This is a comment\n{}"u8.ToArray();
+            var reader = new Utf8YamlReader(data, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            
+            Assert.True(reader.Read());
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
+        }
+
+        [Fact]
+        public static void SkipComment_MultiLineComment()
+        {
+            byte[] data = "/* This is a\nmultiline comment */\n{}"u8.ToArray();
+            var reader = new Utf8YamlReader(data, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+            
+            Assert.True(reader.Read());
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
+        }
+
+        [Fact]
+        public static void AllowComment_ReadsCommentToken()
+        {
+            byte[] data = "// comment\n{}"u8.ToArray();
+            var reader = new Utf8YamlReader(data, new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            
+            Assert.True(reader.Read());
+            Assert.Equal(YamlTokenType.Comment, reader.TokenType);
+            Assert.Equal(" comment", reader.GetComment());
+            
+            Assert.True(reader.Read());
+            Assert.Equal(YamlTokenType.StartObject, reader.TokenType);
         }
 
         public static IEnumerable<object[]> TestCases

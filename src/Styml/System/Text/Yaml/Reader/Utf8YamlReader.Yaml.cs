@@ -280,6 +280,16 @@ namespace System.Text.Yaml
 
         private readonly bool YamlAllowComments => _readerOptions.CommentHandling == YamlCommentHandling.Allow;
 
+        /// <summary>
+        /// JSON comments ('//' to the end of the line, '/* */') are read: <see cref="YamlCommentHandling.Skip"/> or
+        /// <see cref="YamlCommentHandling.Allow"/>. They are looked for in flow collections and at the document level
+        /// only, never inside a block collection.
+        /// </summary>
+        private readonly bool YamlJsonComments => _readerOptions.CommentHandling != YamlCommentHandling.Disallow && !_readerOptions.YamlCommentsOnly;
+
+        /// <summary>JSON comments around the root node: not for a reader over a value sliced out of a document.</summary>
+        private readonly bool YamlJsonCommentsAtDocumentLevel => YamlJsonComments && !_yaml.Has(YamlParseFlags.ScopedValue);
+
         private readonly YamlTokenType YamlEffectiveTokenType => _tokenType == YamlTokenType.Comment ? _previousTokenType : _tokenType;
 
         private enum YamlStep : byte
@@ -613,8 +623,13 @@ namespace System.Text.Yaml
             return YamlStep.Token;
         }
 
-        private YamlStep YamlEmitComment(ref YamlCursor c)
+        private YamlStep YamlEmitComment(ref YamlCursor c, bool lineStart = false)
         {
+            if (_buffer[c.Pos] == (byte)'/')
+            {
+                return YamlEmitJsonComment(ref c, lineStart);
+            }
+
             Debug.Assert(_buffer[c.Pos] == (byte)'#');
             ReadOnlySpan<byte> rest = _buffer.Slice(c.Pos + 1);
             int end = YamlReaderHelper.IndexOfLineBreak(rest);
@@ -636,6 +651,136 @@ namespace System.Text.Yaml
             YamlCommit(c);
             YamlSetTokenType(YamlTokenType.Comment);
             return YamlStep.Token;
+        }
+
+        /// <summary>
+        /// A JSON comment as a token, as System.Text.Json returns it: the value is the text after '//' up to the line
+        /// break, or the text between '/*' and '*/'; the token starts at the first '/' and, for '//', consumes the
+        /// line break.
+        /// </summary>
+        private YamlStep YamlEmitJsonComment(ref YamlCursor c, bool lineStart)
+        {
+            YamlCursor start = c;
+            bool block = _buffer[c.Pos + 1] == (byte)'*';
+            if (!YamlSkipJsonComment(ref c, block))
+            {
+                return YamlStep.NeedMoreData;
+            }
+
+            TokenStartIndex = start.Pos;
+            YamlSetRawStart(start.Pos, start.Line, start.Column);
+            int valueStart = start.Pos + 2;
+            int valueLength = c.Pos - valueStart - (block ? 2 : 0);
+            if (!block && c.Pos < _buffer.Length && !YamlAdvanceBreak(ref c))
+            {
+                // The token of a '//' comment takes its line break, as System.Text.Json's does: a CR at the end of
+                // the data so far may be the first half of a CRLF.
+                return YamlStep.NeedMoreData;
+            }
+
+            ValueSpan = _buffer.Slice(valueStart, valueLength);
+            _yamlValueWindowStart = valueStart;
+
+            // What follows a '/* */' on its line is where the comment started, for the indentation of a block node.
+            YamlCommit(c, contentAtLineStart: block && lineStart && c.Line == start.Line);
+            YamlSetTokenType(YamlTokenType.Comment);
+            return YamlStep.Token;
+        }
+
+        /// <summary>
+        /// Whether a JSON comment starts at the '/' at <paramref name="pos"/>: 1 for '//', 2 for '/*', 0 for neither
+        /// (the '/' is content), -2 when the next byte is not in the buffer yet.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private readonly int YamlJsonCommentAt(int pos)
+        {
+            Debug.Assert(_buffer[pos] == (byte)'/');
+            int next = YamlPeek(pos + 1);
+            return next switch
+            {
+                -2 => -2,
+                (byte)'/' => 1,
+                (byte)'*' => 2,
+                _ => 0,
+            };
+        }
+
+        /// <summary>
+        /// Advances over the JSON comment at <paramref name="c"/>: a '//' comment up to its line break, which is left
+        /// to the caller, or a '/* */' comment through its '*/'. Returns false when more data is needed.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private readonly bool YamlSkipJsonComment(ref YamlCursor c, bool block)
+        {
+            ReadOnlySpan<byte> rest = _buffer.Slice(c.Pos + 2);
+            if (!block)
+            {
+                int end = YamlReaderHelper.IndexOfLineBreak(rest);
+
+                // U+2028 and U+2029 end a line in JavaScript: System.Text.Json refuses them in a '//' comment, and
+                // does so as soon as it sees one, before the line break is known.
+                ReadOnlySpan<byte> text = end < 0 ? rest : rest.Slice(0, end);
+                int separator = text.IndexOf((byte)0xE2);
+                while (separator >= 0)
+                {
+                    if (separator + 2 < text.Length && text[separator + 1] == 0x80 && text[separator + 2] is 0xA8 or 0xA9)
+                    {
+                        c.Pos += 2 + separator;
+                        c.Column += 2 + separator;
+                        YamlThrow(YamlGrammarError.LineSeparatorInComment, c);
+                    }
+                    int more = text.Slice(separator + 1).IndexOf((byte)0xE2);
+                    separator = more < 0 ? -1 : separator + 1 + more;
+                }
+
+                if (end < 0)
+                {
+                    if (!IsLastSpan)
+                    {
+                        return false;
+                    }
+                    end = rest.Length;
+                }
+
+                c.Pos += 2 + end;
+                c.Column += 2 + end;
+                return true;
+            }
+
+            int close = rest.IndexOf("*/"u8);
+            if (close < 0)
+            {
+                if (!IsLastSpan)
+                {
+                    return false;
+                }
+                YamlThrow(YamlGrammarError.UnterminatedComment, c);
+            }
+
+            // Line breaks inside the comment count as anywhere else: LF, CR, or CRLF as one.
+            ReadOnlySpan<byte> body = rest.Slice(0, close);
+            int lastBreakEnd = -1;
+            int offset = 0;
+            while (true)
+            {
+                int k = YamlReaderHelper.IndexOfLineBreak(body.Slice(offset));
+                if (k < 0)
+                {
+                    break;
+                }
+                k += offset;
+                offset = k + 1;
+                if (body[k] == (byte)'\r' && offset < body.Length && body[offset] == (byte)'\n')
+                {
+                    offset++;
+                }
+                c.Line++;
+                lastBreakEnd = offset;
+            }
+
+            c.Pos += 2 + close + 2;
+            c.Column = lastBreakEnd < 0 ? c.Column + 2 + close + 2 : close - lastBreakEnd + 2;
+            return true;
         }
 
         // ---------------------------------------------------------------------------------------------------------
@@ -711,7 +856,7 @@ namespace System.Text.Yaml
         /// Skips spaces, tabs, line breaks and comments up to the next content byte.
         /// </summary>
         /// <returns>False when the buffer ends and more data could follow.</returns>
-        private readonly bool YamlScanToContent(ref YamlCursor c, out YamlScan s, bool stopAtComment)
+        private readonly bool YamlScanToContent(ref YamlCursor c, out YamlScan s, bool stopAtComment, bool jsonComments = false)
         {
             s = default;
             ReadOnlySpan<byte> buffer = _buffer;
@@ -799,6 +944,50 @@ namespace System.Text.Yaml
                     c.Pos += end;
                     c.Column += end;
                     continue;
+                }
+
+                if (b == (byte)'/' && jsonComments)
+                {
+                    // A JSON comment may start wherever a token may: no white space is needed before it.
+                    int kind = YamlJsonCommentAt(c.Pos);
+                    if (kind == -2)
+                    {
+                        return false;
+                    }
+
+                    if (kind != 0)
+                    {
+                        if (stopAtComment)
+                        {
+                            s.IsComment = true;
+                            s.LineStart = lineStart;
+                            s.Indent = indent;
+                            return true;
+                        }
+
+                        long line = c.Line;
+                        if (!YamlSkipJsonComment(ref c, block: kind == 2))
+                        {
+                            return false;
+                        }
+
+                        if (kind == 2)
+                        {
+                            // A '/* */' counts as white space: what follows a comment that starts its line is
+                            // indented at its own column. After a comment that crossed lines, the content is not at
+                            // the start of a line.
+                            if (c.Line != line)
+                            {
+                                lineStart = false;
+                                tab = false;
+                            }
+
+                            inIndent = lineStart;
+                            indent = lineStart ? (int)c.Column : 0;
+                        }
+                        moved = true;
+                        continue;
+                    }
                 }
 
                 s.LineStart = lineStart;

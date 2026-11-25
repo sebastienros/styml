@@ -154,7 +154,7 @@ namespace System.Text.Yaml
                 }
             }
 
-            return ReadFromSpan(output.WrittenSpan, yamlTypeInfo, schema: YamlSchemaKind.Core);
+            return ReadFromSpan(output.WrittenSpan, yamlTypeInfo, schema: YamlSchemaKind.Core, reread: YamlRereadComments.None);
         }
 
         private static object? ReadFromNodeAsObject(YamlNode? node, YamlTypeInfo yamlTypeInfo)
@@ -175,7 +175,7 @@ namespace System.Text.Yaml
                 }
             }
 
-            return ReadFromSpanAsObject(output.WrittenSpan, yamlTypeInfo, schema: YamlSchemaKind.Core);
+            return ReadFromSpanAsObject(output.WrittenSpan, yamlTypeInfo, schema: YamlSchemaKind.Core, reread: YamlRereadComments.None);
         }
     }
 }

@@ -324,6 +324,39 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
+        public static void ReadCommentsAcrossSegments()
+        {
+            string yamlString = """
+            {
+                // single line comment
+                "key": /* multi
+                line
+                comment */ "value"
+            }
+            """;
+            byte[] utf8 = Encoding.UTF8.GetBytes(yamlString);
+            var options = new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip };
+
+            for (int splitLocation = 1; splitLocation < utf8.Length; splitLocation++)
+            {
+                ReadOnlySequence<byte> sequence = YamlTestHelper.CreateSegments(utf8, splitLocation);
+                var yamlReader = new Utf8YamlReader(sequence, options);
+                
+                Assert.True(yamlReader.Read());
+                Assert.Equal(YamlTokenType.StartObject, yamlReader.TokenType);
+                Assert.True(yamlReader.Read());
+                Assert.Equal(YamlTokenType.PropertyName, yamlReader.TokenType);
+                Assert.Equal("key", yamlReader.GetString());
+                Assert.True(yamlReader.Read());
+                Assert.Equal(YamlTokenType.String, yamlReader.TokenType);
+                Assert.Equal("value", yamlReader.GetString());
+                Assert.True(yamlReader.Read());
+                Assert.Equal(YamlTokenType.EndObject, yamlReader.TokenType);
+                Assert.False(yamlReader.Read());
+            }
+        }
+
+        [Fact]
         public static void ReadPropertyNameAcrossSegmentWithEscaping()
         {
             string yamlString = """{"prop\u0065rty":123}""";
@@ -607,6 +640,27 @@ namespace System.Text.Yaml.Tests
             TrySkipHelper(sequence, lastToken, expectedTokenTypes, YamlCommentHandling.Allow);
         }
 
+        [Theory]
+        [MemberData(nameof(TrySkipValues))]
+        public static void TestTrySkipWithCommentsMultiSegment(string yamlString, YamlTokenType lastToken)
+        {
+            List<YamlTokenType> expectedTokenTypesWithoutComments = YamlTestHelper.GetTokenTypes(yamlString);
+
+            yamlString = YamlTestHelper.InsertCommentsEverywhere(yamlString);
+
+            List<YamlTokenType> expectedTokenTypes = YamlTestHelper.GetTokenTypes(yamlString);
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            ReadOnlySequence<byte> sequence = YamlTestHelper.CreateSegments(dataUtf8);
+            TrySkipHelper(sequence, YamlTokenType.Comment, expectedTokenTypes, YamlCommentHandling.Allow);
+            TrySkipHelper(sequence, lastToken, expectedTokenTypesWithoutComments, YamlCommentHandling.Skip);
+
+            sequence = YamlTestHelper.GetSequence(dataUtf8, 1);
+            TrySkipHelper(sequence, YamlTokenType.Comment, expectedTokenTypes, YamlCommentHandling.Allow);
+            TrySkipHelper(sequence, lastToken, expectedTokenTypesWithoutComments, YamlCommentHandling.Skip);
+        }
+
         private static void TrySkipHelper(ReadOnlySequence<byte> dataUtf8, YamlTokenType lastToken, List<YamlTokenType> expectedTokenTypes, YamlCommentHandling commentHandling)
         {
             var state = new YamlReaderState(new YamlReaderOptions { CommentHandling = commentHandling });
@@ -861,6 +915,40 @@ namespace System.Text.Yaml.Tests
             }
         }
 
+        [Theory]
+        [InlineData("[123, 456]", "123456", "123456")]
+        [InlineData("/*a*/[{\"testA\":[{\"testB\":[{\"testC\":123}]}]}]", "testAtestBtestC123", "atestAtestBtestC123")]
+        [InlineData("{\"testA\":[1/*hi*//*bye*/, 2, 3], \"testB\": 4}", "testA123testB4", "testA1hibye23testB4")]
+        [InlineData("{\"test\":[[[123,456]]]}", "test123456", "test123456")]
+        [InlineData("/*a*//*z*/[/*b*//*z*/123/*c*//*z*/,/*d*//*z*/456/*e*//*z*/]/*f*//*z*/", "123456", "azbz123czdz456ezfz")]
+        [InlineData("[123,/*hi*/456/*bye*/]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\n456//bye\n]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\r456//bye\r]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\r\n456]", "123456", "123hi456")]
+        [InlineData("/*a*//*z*/{/*b*//*z*/\"test\":/*c*//*z*/[/*d*//*z*/[/*e*//*z*/[/*f*//*z*/123/*g*//*z*/,/*h*//*z*/456/*i*//*z*/]/*j*//*z*/]/*k*//*z*/]/*l*//*z*/}/*m*//*z*/",
+        "test123456", "azbztestczdzezfz123gzhz456izjzkzlzmz")]
+        [InlineData("//a\n//z\n{//b\n//z\n\"test\"://c\n//z\n[//d\n//z\n[//e\n//z\n[//f\n//z\n123//g\n//z\n,//h\n//z\n456//i\n//z\n]//j\n//z\n]//k\n//z\n]//l\n//z\n}//m\n//z\n",
+        "test123456", "azbztestczdzezfz123gzhz456izjzkzlzmz")]
+        public static void AllowCommentStackMismatchMultiSegment(string yamlString, string expectedWithoutComments, string expectedWithComments)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(yamlString);
+
+            var sequence = new ReadOnlySequence<byte>(data);
+            TestReadingYamlWithComments(data, sequence, expectedWithoutComments, expectedWithComments);
+
+            sequence = YamlTestHelper.GetSequence(data, 1);
+            TestReadingYamlWithComments(data, sequence, expectedWithoutComments, expectedWithComments);
+
+            sequence = YamlTestHelper.GetSequence(data, 6);
+            TestReadingYamlWithComments(data, sequence, expectedWithoutComments, expectedWithComments);
+
+            var firstSegment = new BufferSegment<byte>(ReadOnlyMemory<byte>.Empty);
+            ReadOnlyMemory<byte> secondMem = data;
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+            sequence = new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+            TestReadingYamlWithComments(data, sequence, expectedWithoutComments, expectedWithComments);
+        }
+
         private static void TestReadingYamlWithComments(byte[] inputData, ReadOnlySequence<byte> sequence, string expectedWithoutComments, string expectedWithComments)
         {
             var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
@@ -938,6 +1026,126 @@ namespace System.Text.Yaml.Tests
             }
         }
 
+        // For first line in each case:
+        //     . represents contiguous characters in input.
+        //     | represents end of a segment in the sequence. Character below | is last character of particular segment.
+        //
+        //     Note: \ for escape sequence has neither a . nor a |
+        //
+        // Second line in each case represents whether the resulting token after parsing has a value sequence or not.
+        //     T(rue) indicates presence of value sequence and F(alse) indicates otherwise. T or F is written above first
+        //       character of partiular token.
+        //     - indicates that token that begins at character right below it has been skipped during parsing and hence there
+        //       is no truth value representation of the same in the expectedValueSequence* in each case.
+        [Theory]
+        //              . .........|.... .... ........ ... ........|............... ...............|......................|||
+        //              F T                 F F            T                           F      T           F     F      F   FF
+        [InlineData(0, "{\"property name\": [\"value 1\", \"value 2 across sequence\", 12345, 1234567890, true, false, null]}")]
+
+        //              .. .............. .... ........ ... .......|................ .....|.................|......|......|..||
+        //              FF F                 F F            T                           T      F           T     T      T   FFF
+        [InlineData(1, "[{\"property name\": [\"value 1\", \"value 2 across sequence\", 12345, 1234567890, true, false, null]}]")]
+
+        //              . .............. .................... | . ...........|............ ..................|...... . |..
+        // Skip:        F F                 F-                    T                         -                           FF
+        // Allow:       F F                 FF                    T                         T                           FF
+        [InlineData(2, "{\"property name\": [// comment value\r\n\"value 2 across sequence\"// another comment value\r\n]}")]
+        public static void CheckOnlyOneOfValueSpanOrSequenceIsSet(int testCase, string yamlString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+
+            bool[] expectedHasValueSequence = null;
+            bool[] expectedHasValueSequenceSkip = null;
+            bool[] expectedHasValueSequenceAllow = null;
+
+            ReadOnlySequence<byte> sequence;
+            switch (testCase)
+            {
+                case 0:
+                    Debug.Assert(dataUtf8.Length == 95);
+                    byte[][] buffers = new byte[6][];
+                    buffers[0] = dataUtf8.AsSpan(0, 10).ToArray();
+                    buffers[1] = dataUtf8.AsSpan(10, 28).ToArray();
+                    buffers[2] = dataUtf8.AsSpan(38, 32).ToArray();
+                    buffers[3] = dataUtf8.AsSpan(70, 23).ToArray();
+                    buffers[4] = dataUtf8.AsSpan(93, 1).ToArray();
+                    buffers[5] = dataUtf8.AsSpan(94, 1).ToArray();
+                    sequence = BufferFactory.Create(buffers);
+                    expectedHasValueSequence = new bool[] { false, true, false, false, true, false, true, false, false, false, false, false };
+                    break;
+                case 1:
+                    Debug.Assert(dataUtf8.Length == 97);
+                    buffers = new byte[7][];
+                    buffers[0] = dataUtf8.AsSpan(0, 39).ToArray();
+                    buffers[1] = dataUtf8.AsSpan(39, 22).ToArray();
+                    buffers[2] = dataUtf8.AsSpan(61, 18).ToArray();
+                    buffers[3] = dataUtf8.AsSpan(79, 7).ToArray();
+                    buffers[4] = dataUtf8.AsSpan(86, 7).ToArray();
+                    buffers[5] = dataUtf8.AsSpan(93, 3).ToArray();
+                    buffers[6] = dataUtf8.AsSpan(96, 1).ToArray();
+                    sequence = BufferFactory.Create(buffers);
+                    expectedHasValueSequence = new bool[] { false, false, false, false, false, true, true, false, true, true, true, false, false, false };
+                    break;
+                case 2:
+                    Debug.Assert(dataUtf8.Length == 90);
+                    buffers = new byte[5][];
+                    buffers[0] = dataUtf8.AsSpan(0, 36).ToArray();
+                    buffers[1] = dataUtf8.AsSpan(36, 13).ToArray();
+                    buffers[2] = dataUtf8.AsSpan(49, 30).ToArray();
+                    buffers[3] = dataUtf8.AsSpan(79, 9).ToArray();
+                    buffers[4] = dataUtf8.AsSpan(88, 2).ToArray();
+                    sequence = BufferFactory.Create(buffers);
+                    expectedHasValueSequenceSkip = new bool[] { false, false, false, true, false, false };
+                    expectedHasValueSequenceAllow = new bool[] { false, false, false, false, true, true, false, false };
+                    break;
+                default:
+                    return;
+            }
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow && testCase == 2)
+                {
+                    continue;
+                }
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = commentHandling });
+                var yaml = new Utf8YamlReader(sequence, isFinalBlock: true, state);
+
+                int index = 0;
+
+                while (yaml.Read())
+                {
+                    if (testCase == 0 || testCase == 1)
+                    {
+                        Assert.True(expectedHasValueSequence[index] == yaml.HasValueSequence, $"{commentHandling}, {testCase}, {index}, {yaml.HasValueSequence}");
+                    }
+                    else
+                    {
+                        if (commentHandling == YamlCommentHandling.Skip)
+                        {
+                            Assert.True(expectedHasValueSequenceSkip[index] == yaml.HasValueSequence, $"{commentHandling}, {testCase}, {index}, {yaml.HasValueSequence}");
+                        }
+                        else
+                        {
+                            Assert.True(expectedHasValueSequenceAllow[index] == yaml.HasValueSequence, $"{commentHandling}, {testCase}, {index}, {yaml.HasValueSequence}");
+                        }
+                    }
+                    if (yaml.HasValueSequence)
+                    {
+                        Assert.True(yaml.ValueSpan == default, $"Escaped ValueSpan to be empty when HasValueSequence is true. Test case: {testCase}");
+                        Assert.False(yaml.ValueSequence.IsEmpty, $"Escaped ValueSequence to not be empty when HasValueSequence is true. Test case: {testCase}");
+                    }
+                    else
+                    {
+                        Assert.True(yaml.ValueSequence.IsEmpty, $"Escaped ValueSequence to be empty when HasValueSequence is false. Test case: {testCase}");
+                        Assert.False(yaml.ValueSpan == default, $"Escaped ValueSpan to not be empty when HasValueSequence is false. Test case: {testCase}");
+                    }
+
+                    index++;
+                }
+            }
+        }
+
         [Theory]
         [InlineData("\"abcdefg\"")]
         [InlineData("12345")]
@@ -993,6 +1201,101 @@ namespace System.Text.Yaml.Tests
         }
 
         [Theory]
+        [MemberData(nameof(CommentTestLineSeparators))]
+        public static void ConsumeSingleLineCommentMultiSpanTest(string lineSeparator)
+        {
+            string expected = "Comment";
+            string yamlData = "{//" + expected + lineSeparator + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlData);
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(dataUtf8, 1);
+
+            for (int i = 0; i < yamlData.Length; i++)
+            {
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+
+                var yaml = new Utf8YamlReader(sequence.Slice(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref yaml, expected);
+
+                yaml = new Utf8YamlReader(sequence.Slice(yaml.BytesConsumed), isFinalBlock: true, yaml.CurrentState);
+                VerifyReadLoop(ref yaml, expected);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CommentTestLineSeparators))]
+        public static void SkipSingleLineCommentMultiSpanTest(string lineSeparator)
+        {
+            string expected = "Comment";
+            string yamlData = "{//" + expected + lineSeparator + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlData);
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(dataUtf8, 1);
+
+            for (int i = 0; i < yamlData.Length; i++)
+            {
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Skip });
+
+                var yaml = new Utf8YamlReader(sequence.Slice(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref yaml, null);
+
+                yaml = new Utf8YamlReader(sequence.Slice(yaml.BytesConsumed), isFinalBlock: true, yaml.CurrentState);
+                VerifyReadLoop(ref yaml, null);
+            }
+        }
+
+        [Theory]
+        [InlineData("//\u2028", 1)]
+        [InlineData("//\u2028", 2)]
+        [InlineData("//\u2028", 3)]
+        [InlineData("//\u2028", 100)]
+        [InlineData("//\u2029", 1)]
+        [InlineData("//\u2029", 2)]
+        [InlineData("//\u2029", 3)]
+        [InlineData("//\u2029", 100)]
+        [InlineData("// \u2028", 1)]
+        [InlineData("// \u2028", 2)]
+        [InlineData("// \u2028", 3)]
+        [InlineData("// \u2028", 100)]
+        [InlineData("//   \u2028", 1)]
+        [InlineData("//   \u2028", 2)]
+        [InlineData("//   \u2028", 3)]
+        [InlineData("//   \u2028", 100)]
+        [InlineData("//  \u2029 ", 1)]
+        [InlineData("//  \u2029 ", 2)]
+        [InlineData("//  \u2029 ", 3)]
+        [InlineData("//  \u2029 ", 100)]
+        [InlineData("//  \u2029  ", 1)]
+        [InlineData("//  \u2029  ", 2)]
+        [InlineData("//  \u2029  ", 3)]
+        [InlineData("//  \u2029  ", 100)]
+        public static void YamlWithSingleLineCommentEndingWithNonStandardLineEndingMultiSegment(string yamlString, int segmentSize)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(dataUtf8, segmentSize);
+
+            foreach (YamlCommentHandling yamlCommentHandling in typeof(YamlCommentHandling).GetEnumValues())
+            {
+                if (yamlCommentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = yamlCommentHandling });
+
+                foreach (bool isFinalBlock in new bool[] { false, true })
+                {
+                    var yaml = new Utf8YamlReader(sequence, isFinalBlock, state);
+
+                    try
+                    {
+                        yaml.Read();
+                        Assert.Fail($"Expected YamlException was not thrown. CommentHandling = {yamlCommentHandling}");
+                    }
+                    catch (YamlException) { }
+                }
+            }
+        }
+
+        [Theory]
         [InlineData("{ \"foo\" : \"bar\" //\u2028\n}", 1)]
         [InlineData("{ \"foo\" : \"bar\" //\u2028\n}", 2)]
         [InlineData("{ \"foo\" : \"bar\" //\u2028\n}", 3)]
@@ -1024,6 +1327,33 @@ namespace System.Text.Yaml.Tests
         }
 
         [Theory]
+        [InlineData("//", "", 1, 2)]
+        [InlineData("//", "", 2, 2)]
+        [InlineData("//", "", 3, 2)]
+        [InlineData("//", "", 100, 2)]
+        [InlineData("//a", "a", 1, 3)]
+        [InlineData("//a", "a", 2, 3)]
+        [InlineData("//a", "a", 3, 3)]
+        [InlineData("//a", "a", 100, 3)]
+        [InlineData("//abc", "abc", 1, 5)]
+        [InlineData("//abc", "abc", 2, 5)]
+        [InlineData("//abc", "abc", 3, 5)]
+        [InlineData("//abc", "abc", 100, 5)]
+        public static void YamlWithSingleLineCommentWithNoLineEndingsFinalBlockMultiSegment(string yamlString, string expectedComment, int segmentSize, int expectedBytesConsumed)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(dataUtf8, segmentSize);
+            var yaml = new Utf8YamlReader(sequence, isFinalBlock: true, state);
+
+            Assert.True(yaml.Read());
+            Assert.Equal(YamlTokenType.Comment, yaml.TokenType);
+            Assert.Equal(expectedComment, yaml.GetComment());
+            Assert.False(yaml.Read());
+            Assert.Equal(expectedBytesConsumed, yaml.BytesConsumed);
+        }
+
+        [Theory]
         [InlineData("//", 1)]
         [InlineData("//", 2)]
         [InlineData("//", 3)]
@@ -1045,6 +1375,41 @@ namespace System.Text.Yaml.Tests
 
             Assert.False(yaml.Read());
             Assert.Equal(0, yaml.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("/**/", "", 1, 4)]
+        [InlineData("/**/", "", 2, 4)]
+        [InlineData("/**/", "", 3, 4)]
+        [InlineData("/**/", "", 100, 4)]
+        [InlineData("/*a*/", "a", 1, 5)]
+        [InlineData("/*a*/", "a", 2, 5)]
+        [InlineData("/*a*/", "a", 3, 5)]
+        [InlineData("/*a*/", "a", 100, 5)]
+        [InlineData("/*abc*/", "abc", 1, 7)]
+        [InlineData("/*abc*/", "abc", 2, 7)]
+        [InlineData("/*abc*/", "abc", 3, 7)]
+        [InlineData("/*abc*/", "abc", 100, 7)]
+        [InlineData("/*\u2028*/", "\u2028", 1, 7)]
+        [InlineData("/*\u2028*/", "\u2028", 2, 7)]
+        [InlineData("/*\u2028*/", "\u2028", 3, 7)]
+        [InlineData("/*\u2028*/", "\u2028", 100, 7)]
+        [InlineData("/*\u2029*/", "\u2029", 1, 7)]
+        [InlineData("/*\u2029*/", "\u2029", 2, 7)]
+        [InlineData("/*\u2029*/", "\u2029", 3, 7)]
+        [InlineData("/*\u2029*/", "\u2029", 100, 7)]
+        public static void YamlWithMultiLineCommentWithNoLineEndingsFinalBlockMultiSegment(string yamlString, string expectedComment, int segmentSize, int expectedBytesConsumed)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlString);
+            var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(dataUtf8, segmentSize);
+            var yaml = new Utf8YamlReader(sequence, isFinalBlock: true, state);
+
+            Assert.True(yaml.Read());
+            Assert.Equal(YamlTokenType.Comment, yaml.TokenType);
+            Assert.Equal(expectedComment, yaml.GetComment());
+            Assert.False(yaml.Read());
+            Assert.Equal(expectedBytesConsumed, yaml.BytesConsumed);
         }
 
         [Theory]
@@ -1072,6 +1437,85 @@ namespace System.Text.Yaml.Tests
 
             Assert.False(yaml.Read());
             Assert.Equal(0, yaml.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("//", "", 1)]
+        [InlineData("//", "", 2)]
+        [InlineData("//", "", 3)]
+        [InlineData("//", "", 100)]
+        [InlineData("//a", "a", 1)]
+        [InlineData("//a", "a", 2)]
+        [InlineData("//a", "a", 3)]
+        [InlineData("//a", "a", 100)]
+        [InlineData("//abc", "abc", 1)]
+        [InlineData("//abc", "abc", 2)]
+        [InlineData("//abc", "abc", 3)]
+        [InlineData("//abc", "abc", 100)]
+        public static void YamlWithSingleLineCommentWithRegularLineEndingMultiSegment(string yamlStringWithoutLineEnding, string expectedComment, int segmentSize)
+        {
+            foreach (string lineEnding in new string[] { "\r", "\r ", "\r\n", "\r\n ", "\n", "\n ", "" })
+            {
+                foreach (bool isFinalBlock in new bool[] { false, true })
+                {
+                    if (!isFinalBlock && (lineEnding == "\r" || lineEnding == ""))
+                    {
+                        // In this case parser would return false on the first Read (and check for \n on the next segment)
+                        // which is not the purpose of this test and is covered separately
+                        continue;
+                    }
+
+                    byte[] dataUtf8 = Encoding.UTF8.GetBytes(yamlStringWithoutLineEnding + lineEnding);
+                    var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = YamlCommentHandling.Allow });
+                    ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(dataUtf8, segmentSize);
+
+                    var yaml = new Utf8YamlReader(sequence, isFinalBlock, state);
+
+                    Assert.True(yaml.Read(), $"Expected read to return true. IsFinalBlock = {isFinalBlock}; LineEnding = {string.Join("", lineEnding.Select((c) => ((byte)c).ToString("X2")))}");
+                    Assert.Equal(YamlTokenType.Comment, yaml.TokenType);
+                    Assert.Equal(expectedComment, yaml.GetComment());
+                    Assert.False(yaml.Read());
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlTokenWithExtraValueAndCommentsAfterAQuotedScalarOrACollection))]
+        public static void ReadYamlTokenWithExtraValueAndCommentsMultiSegment(string yamlString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(yamlString);
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(utf8, 1);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(sequence, commentHandling, isFinalBlock: false);
+                TestReadTokenWithExtra(sequence, commentHandling, isFinalBlock: true);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(YamlTokenWithExtraValueAndCommentsAfterAQuotedScalarOrACollection))]
+        public static void ReadYamlTokenWithExtraValueAndCommentsAppendedMultiSegment(string yamlString)
+        {
+            yamlString = "  /* comment */  /* comment */  " + yamlString;
+            byte[] utf8 = Encoding.UTF8.GetBytes(yamlString);
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(utf8, 1);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(sequence, commentHandling, isFinalBlock: false, commentsAppended: true);
+                TestReadTokenWithExtra(sequence, commentHandling, isFinalBlock: true, commentsAppended: true);
+            }
         }
 
         private static void TestReadTokenWithExtra(ReadOnlySequence<byte> sequence, YamlCommentHandling commentHandling, bool isFinalBlock, bool commentsAppended = false)
@@ -1133,6 +1577,93 @@ namespace System.Text.Yaml.Tests
                 while (yamlReader.Read())
                     ;
             });
+        }
+
+        [Theory]
+        [InlineData("123 ")]
+        [InlineData("\"abc\" ")]
+        [InlineData("123 // comment\n")]
+        [InlineData("\"abc\" // comment\n")]
+        [InlineData("{// comment\n}")]
+        [InlineData("[// comment\n]")]
+        [InlineData("{\"Property1\": [ 42], \"Property2\": 42}")]
+        [InlineData("{\"Property1\": [ 42], // comment\n\"Property2\": 42}")]
+        [InlineData("{\"Property1\": [ 42], // comment\r\"Property2\": 42}")]
+        [InlineData("{\"Property1\": [ 42], // comment\r\n\"Property2\": 42}")]
+        [InlineData("{\"Property1\": [ 42], /*comment*/\"Property2\": 42}")]
+        [InlineData("{\"Property1\": [ 42] // comment\n,\"Property2\": 42}")]
+        [InlineData("{\"Property1\": [ 42], // comment\n // comment\n\"Property2\": 42}")]
+        [InlineData("[[ 42], // comment\n 42]")]
+        [InlineData("[[ 42] // comment\n, 42]")]
+        [InlineData("[[ 42, // comment\n 43], // comment\n 42]")]
+        [InlineData("[[ \"42\", // comment\n 43], // comment\n 42]")]
+        [InlineData("[[ true, // comment\n 43], // comment\n 42]")]
+        [InlineData("[[ false, // comment\n 43], // comment\n 42]")]
+        [InlineData("[[ null, // comment\n 43], // comment\n 42]")]
+        [InlineData("{\"Property1\": {\"Property1.1\": 42}, \"Property2\": 42}")]
+        [InlineData("{\"Property1\": {\"Property1.1\": 42}, // comment\n\"Property2\": 42}")]
+        [InlineData("{\"Property1\": {\"Property1.1\": 42}, // comment\r\"Property2\": 42}")]
+        [InlineData("{\"Property1\": {\"Property1.1\": 42}, // comment\r\n\"Property2\": 42}")]
+        [InlineData("{\"Property1\": {\"Property1.1\": 42}, /*comment*/\"Property2\": 42}")]
+        [InlineData("{\"Property1\": {\"Property1.1\": 42} // comment\n,\"Property2\": 42}")]
+        [InlineData("{\"Property1\": {\"Property1.1\": 42}, // comment\n // comment\n\"Property2\": 42}")]
+        [InlineData("[{\"Property1\": 42}, // comment\n 42]")]
+        [InlineData("[{\"Property1\": 42} // comment\n, 42]")]
+        [InlineData("[{\"Property1\": 42, // comment\n \"prop\": 43 }, // comment\n 42]")]
+        [InlineData("[{\"Property1\": \"42\", // comment\n \"prop\": 43 }, // comment\n 42]")]
+        [InlineData("[{\"Property1\": true, // comment\n \"prop\": 43 }, // comment\n 42]")]
+        [InlineData("[{\"Property1\": false, // comment\n \"prop\": 43 }, // comment\n 42]")]
+        [InlineData("[{\"Property1\": null, // comment\n \"prop\": 43 }, // comment\n 42]")]
+        public static void ReadYamlStringsWithComments(string yamlString)
+        {
+            byte[] input = Encoding.UTF8.GetBytes(yamlString);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var options = new YamlReaderOptions() { CommentHandling = commentHandling };
+                var optionsWithTrailing = new YamlReaderOptions() { CommentHandling = commentHandling, AllowTrailingCommas = true };
+
+                var reader = new Utf8YamlReader(input, options);
+                ReadWithCommentsHelper(ref reader, input.Length);
+
+                reader = new Utf8YamlReader(input, optionsWithTrailing);
+                ReadWithCommentsHelper(ref reader, input.Length);
+
+                ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(input, 1);
+                reader = new Utf8YamlReader(sequence, options);
+                ReadWithCommentsHelper(ref reader, input.Length);
+
+                reader = new Utf8YamlReader(sequence, optionsWithTrailing);
+                ReadWithCommentsHelper(ref reader, input.Length);
+
+                for (int splitLocation = 0; splitLocation < input.Length; splitLocation++)
+                {
+                    sequence = YamlTestHelper.CreateSegments(input, splitLocation);
+                    reader = new Utf8YamlReader(sequence, options);
+                    ReadWithCommentsHelper(ref reader, input.Length);
+
+                    reader = new Utf8YamlReader(sequence, optionsWithTrailing);
+                    ReadWithCommentsHelper(ref reader, input.Length);
+                }
+
+                for (int firstSplit = 0; firstSplit < input.Length; firstSplit++)
+                {
+                    for (int secondSplit = firstSplit; secondSplit < input.Length; secondSplit++)
+                    {
+                        sequence = YamlTestHelper.CreateSegments(input, firstSplit, secondSplit);
+                        reader = new Utf8YamlReader(sequence, options);
+                        ReadWithCommentsHelper(ref reader, input.Length);
+
+                        reader = new Utf8YamlReader(sequence, optionsWithTrailing);
+                        ReadWithCommentsHelper(ref reader, input.Length);
+                    }
+                }
+            }
         }
 
         private static void ReadWithCommentsHelper(ref Utf8YamlReader reader, int expectedConsumed, bool validateThrows = false)
@@ -1206,6 +1737,42 @@ namespace System.Text.Yaml.Tests
             reader = new Utf8YamlReader(sequence, isFinalBlock: true, state);
             Assert.True(reader.Read());
             Assert.Equal(expectedIndex, reader.TokenStartIndex);
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleYamlWithCommentsTokenStartIndex))]
+        public static void TestTokenStartIndexMultiSegment_SingleValueWithComments(string yamlString, int expectedIndex)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(yamlString);
+            ReadOnlySequence<byte> sequence = YamlTestHelper.GetSequence(utf8, 1);
+
+            foreach (YamlCommentHandling commentHandling in Enum.GetValues(typeof(YamlCommentHandling)))
+            {
+                if (commentHandling == YamlCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = false });
+                var reader = new Utf8YamlReader(sequence, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                if (commentHandling == YamlCommentHandling.Allow)
+                {
+                    Assert.Equal(YamlTokenType.Comment, reader.TokenType);
+                    Assert.True(reader.Read());
+                }
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+
+                state = new YamlReaderState(options: new YamlReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                reader = new Utf8YamlReader(sequence, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                if (commentHandling == YamlCommentHandling.Allow)
+                {
+                    Assert.Equal(YamlTokenType.Comment, reader.TokenType);
+                    Assert.True(reader.Read());
+                }
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+            }
         }
 
         [Theory]

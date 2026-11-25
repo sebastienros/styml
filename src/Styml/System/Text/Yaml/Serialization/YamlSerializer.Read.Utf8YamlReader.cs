@@ -286,7 +286,7 @@ namespace System.Text.Yaml
                 if (yamlTypeInfo.Options.ResolveMergeKeys && YamlDocument.RewriteMergeKeysOfValue(scopedReader, yamlTypeInfo.Options.DuplicateKeyHandling) is byte[] merged)
                 {
                     // M5b: the value is read from its merged text.
-                    return ReadFromSpan(merged, yamlTypeInfo);
+                    return ReadFromSpan(merged, yamlTypeInfo, reread: YamlRereadComments.None);
                 }
 
                 return yamlTypeInfo.Deserialize(ref scopedReader, ref state);
@@ -316,7 +316,7 @@ namespace System.Text.Yaml
                 Utf8YamlReader scopedReader = GetReaderScopedToNextValue(ref reader, ref state);
                 if (yamlTypeInfo.Options.ResolveMergeKeys && YamlDocument.RewriteMergeKeysOfValue(scopedReader, yamlTypeInfo.Options.DuplicateKeyHandling) is byte[] merged)
                 {
-                    return ReadFromSpanAsObject(merged, yamlTypeInfo);
+                    return ReadFromSpanAsObject(merged, yamlTypeInfo, reread: YamlRereadComments.None);
                 }
 
                 return yamlTypeInfo.DeserializeAsObject(ref scopedReader, ref state);

@@ -132,14 +132,16 @@ namespace System.Text.Yaml
             return ReadFromSpanAsObject(utf8Yaml, GetTypeInfo(context, returnType));
         }
 
-        internal static TValue? ReadFromSpan<TValue>(ReadOnlySpan<byte> utf8Yaml, YamlTypeInfo<TValue> yamlTypeInfo, int? actualByteCount = null, YamlSchemaKind? schema = null)
+        internal static TValue? ReadFromSpan<TValue>(ReadOnlySpan<byte> utf8Yaml, YamlTypeInfo<TValue> yamlTypeInfo, int? actualByteCount = null, YamlSchemaKind? schema = null, YamlRereadComments? reread = null)
         {
             Debug.Assert(yamlTypeInfo.IsConfigured);
 
-            if (yamlTypeInfo.Options.ResolveMergeKeys && RewriteMergeKeys(utf8Yaml.Slice(0, actualByteCount ?? utf8Yaml.Length), yamlTypeInfo.Options, schema) is byte[] merged)
+            if (yamlTypeInfo.Options.ResolveMergeKeys && RewriteMergeKeys(utf8Yaml.Slice(0, actualByteCount ?? utf8Yaml.Length), yamlTypeInfo.Options, schema, reread) is byte[] merged)
             {
+                // The merged text is the writer's: it has no JSON comments, and its '//' is text.
                 utf8Yaml = merged;
                 actualByteCount = null;
+                reread = YamlRereadComments.None;
             }
 
             YamlReaderOptions readerOptions = yamlTypeInfo.Options.GetReaderOptions();
@@ -149,7 +151,7 @@ namespace System.Text.Yaml
                 readerOptions.Schema = kind;
             }
 
-            var readerState = new YamlReaderState(readerOptions);
+            YamlReaderState readerState = CreateReadState(ref readerOptions, reread);
             var reader = new Utf8YamlReader(utf8Yaml, isFinalBlock: true, readerState);
 
             ReadStack state = default;
@@ -162,14 +164,16 @@ namespace System.Text.Yaml
             return value;
         }
 
-        internal static object? ReadFromSpanAsObject(ReadOnlySpan<byte> utf8Yaml, YamlTypeInfo yamlTypeInfo, int? actualByteCount = null, YamlSchemaKind? schema = null)
+        internal static object? ReadFromSpanAsObject(ReadOnlySpan<byte> utf8Yaml, YamlTypeInfo yamlTypeInfo, int? actualByteCount = null, YamlSchemaKind? schema = null, YamlRereadComments? reread = null)
         {
             Debug.Assert(yamlTypeInfo.IsConfigured);
 
-            if (yamlTypeInfo.Options.ResolveMergeKeys && RewriteMergeKeys(utf8Yaml.Slice(0, actualByteCount ?? utf8Yaml.Length), yamlTypeInfo.Options, schema) is byte[] merged)
+            if (yamlTypeInfo.Options.ResolveMergeKeys && RewriteMergeKeys(utf8Yaml.Slice(0, actualByteCount ?? utf8Yaml.Length), yamlTypeInfo.Options, schema, reread) is byte[] merged)
             {
+                // The merged text is the writer's: it has no JSON comments, and its '//' is text.
                 utf8Yaml = merged;
                 actualByteCount = null;
+                reread = YamlRereadComments.None;
             }
 
             YamlReaderOptions readerOptions = yamlTypeInfo.Options.GetReaderOptions();
@@ -179,7 +183,7 @@ namespace System.Text.Yaml
                 readerOptions.Schema = kind;
             }
 
-            var readerState = new YamlReaderState(readerOptions);
+            YamlReaderState readerState = CreateReadState(ref readerOptions, reread);
             var reader = new Utf8YamlReader(utf8Yaml, isFinalBlock: true, readerState);
 
             ReadStack state = default;
@@ -198,7 +202,37 @@ namespace System.Text.Yaml
         /// The DOM reads the input and writes it again with each merged mapping merged, copies counted against
         /// <see cref="YamlSerializerOptions.MaxAliasExpansion"/>.
         /// </summary>
-        internal static byte[]? RewriteMergeKeys(ReadOnlySpan<byte> utf8Yaml, YamlSerializerOptions options, YamlSchemaKind? schema = null)
+        /// <summary>
+        /// The state of the reader of a span. A re-read of bytes the library holds (an element's or a document's
+        /// source, a node's written text) looks for JSON comments as those bytes were read the first time, not as
+        /// the options passed for the re-read say; a value sliced out of a document is not at its document level.
+        /// </summary>
+        private static YamlReaderState CreateReadState(ref YamlReaderOptions readerOptions, YamlRereadComments? reread)
+        {
+            if (reread is not YamlRereadComments comments)
+            {
+                return new YamlReaderState(readerOptions);
+            }
+
+            readerOptions.CommentHandling = comments == YamlRereadComments.None ? YamlCommentHandling.Disallow : YamlCommentHandling.Skip;
+            if (comments != YamlRereadComments.Slice)
+            {
+                return new YamlReaderState(readerOptions);
+            }
+
+            return new YamlReaderState(
+                lineNumber: 0,
+                bytePositionInLine: 0,
+                inObject: default,
+                valueIsEscaped: default,
+                tokenType: default,
+                previousTokenType: default,
+                readerOptions: readerOptions,
+                bitStack: default,
+                yaml: new YamlParseState { Flags = YamlParseFlags.ScopedValue });
+        }
+
+        internal static byte[]? RewriteMergeKeys(ReadOnlySpan<byte> utf8Yaml, YamlSerializerOptions options, YamlSchemaKind? schema = null, YamlRereadComments? reread = null)
         {
             if (utf8Yaml.IndexOf("<<"u8) < 0)
             {
@@ -210,7 +244,12 @@ namespace System.Text.Yaml
                 MaxDepth = options.EffectiveMaxDepth,
                 MaxAliasExpansion = options.MaxAliasExpansion,
                 AllowTrailingCommas = options.AllowTrailingCommas,
-                CommentHandling = options.ReadCommentHandling,
+                CommentHandling = reread switch
+                {
+                    null => options.ReadCommentHandling,
+                    YamlRereadComments.None => YamlCommentHandling.Disallow,
+                    _ => YamlCommentHandling.Skip,
+                },
                 Schema = schema ?? options.Schema,
                 AcceptLenientScalars = options.AcceptLenientScalars,
             }, options.DuplicateKeyHandling);
