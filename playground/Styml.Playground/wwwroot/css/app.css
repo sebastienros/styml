@@ -162,6 +162,8 @@ textarea.code:focus-visible { box-shadow: inset 0 0 0 2px var(--accent-soft); }
 
 
 
+.notice { margin: 0; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--accent-soft); font-size: 13px; color: var(--ink-2); }
+
 .error { flex: 1; overflow: auto; padding: 14px 16px; background: var(--danger-soft); }
 .error-kind { margin: 0 0 8px; font: 700 13px/1.3 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--danger); }
 .error pre { margin: 0; font: 13.5px/1.6 var(--font-mono); white-space: pre-wrap; color: var(--ink); }

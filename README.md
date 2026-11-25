@@ -681,23 +681,23 @@ a: 2
 ### The DOM
 
 `YamlNode` (`YamlObject`, `YamlArray`, `YamlValue`) and the read-only `YamlDocument` parse YAML and keep its scalar and
-collection styles, anchors and tags, so an edited document is written back in its own styles (comments are not
-kept):
+collection styles, anchors and tags, so an edited document is written back in its own styles. Read with
+`CommentHandling = Allow`, they keep its comments too:
 
 <!-- sample:dom -->
 ```csharp
 YamlNode root = YamlNode.Parse("""
-    name: web   # not kept
+    name: web   # the public name
     ports: [80, 443]
     note: 'kept quoted'
-    """)!;
+    """, documentOptions: new() { CommentHandling = YamlCommentHandling.Allow })!;
 root["ports"]!.AsArray().Add(8080);
 root["replicas"] = 3;
 string edited = root.ToYamlString();
 ```
 
 ```yaml
-name: web
+name: web # the public name
 ports: [80, 443, 8080]
 note: 'kept quoted'
 replicas: 3

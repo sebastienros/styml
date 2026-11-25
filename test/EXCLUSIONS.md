@@ -798,6 +798,16 @@ These imported files are changed so that the methods keep running in every leg; 
 | `Styml.Tests/Serialization/OptionsTests.cs` (M5f) | `GetFullyPopulatedOptionsInstance`'s value-type branch also sets `MappingOrder = Sorted` | M5f adds `YamlSerializerOptions.MappingOrder` (review 2); the branch sets the value-type options it knows, so `CopyConstructor_CopiesAllPublicProperties` checks that the copy has it |
 | `Styml.Tests/Serialization/CacheTests.cs` (M5f) | `GetPropertiesWithSettersAndNonDefaultValues` yields `MappingOrder = Sorted` | `YamlSerializerOptions_EqualityComparer_ChangingAnySettingShouldReturnFalse` fails with "missing property declaration for MappingOrder, please update the method" for a new settable property; the options' equality and hash code include it |
 
+## Comments kept by YamlDocument
+
+`YamlDocumentOptions.CommentHandling` accepts `Allow`, which System.Text.Json's `JsonDocumentOptions` refuses: the
+document keeps its comments (`test/Styml.Yaml.Tests/DocumentCommentTests.cs`). A `Utf8YamlReader` read with `Allow` is
+still refused by `YamlDocument.ParseValue`, so `EnableComments` is unchanged.
+
+| File | Change | Why |
+|---|---|---|
+| `Styml.Tests/YamlDocumentTests.cs` | `ReadCommentHandlingDoesNotSupportAllow` lost its `Allow` and `byte.MaxValue + 3` rows (the latter overflows to `Allow`) | both are accepted values now; the other rows, outside the enum, still throw |
+
 ## Tests that need JSON-compatible output (category `jsonoutput`, M4c)
 
 Since M4c the writer's unset style is block. A test

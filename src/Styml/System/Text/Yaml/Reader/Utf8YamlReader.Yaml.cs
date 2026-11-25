@@ -34,6 +34,12 @@ namespace System.Text.Yaml
         private long _yamlRawColumn;
         private int _yamlParentIndentPlusOne;
 
+        // After a pending comment (CommentHandling.Allow): the end of the lookahead's range of comments (a window offset,
+        // 0 for none) and where the next one is looked for, so that the next Read returns it without reading the node
+        // again. Not part of YamlReaderState: a reader resumed from it reads the node again instead.
+        private int _yamlPendingEnd;
+        private YamlCursor _yamlPendingNext;
+
         /// <summary>
         /// Gets the presentation style of the current scalar or mapping key token, or <see cref="YamlScalarStyle.None"/>
         /// for other tokens.
@@ -353,6 +359,12 @@ namespace System.Text.Yaml
             Token,
             NeedMoreData,
             EndOfInput,
+
+            /// <summary>
+            /// A comment the lookahead of a node read past (CommentHandling.Allow): its token fields are set, and the
+            /// rest of the state is rolled back to the start of the Read, so that the next Read reads the node again.
+            /// </summary>
+            PendingComment,
         }
 
         private struct YamlCursor
@@ -433,6 +445,19 @@ namespace System.Text.Yaml
                 TokenStartIndex = tokenStartIndex;
                 ValueSpan = default;
             }
+            else if (step == YamlStep.PendingComment)
+            {
+                _consumed = consumed;
+                _lineNumber = lineNumber;
+                _bytePositionInLine = bytePositionInLine;
+                _tokenType = tokenType;
+                _previousTokenType = previousTokenType;
+                _bitStack = bitStack;
+                _yaml = yaml;
+                _inObject = inObject;
+                YamlEndPendingComment();
+                return true;
+            }
 
             return false;
         }
@@ -471,6 +496,19 @@ namespace System.Text.Yaml
                 TokenStartIndex = tokenStartIndex;
                 ValueSpan = default;
             }
+            else if (step == YamlStep.PendingComment)
+            {
+                _consumed = consumed;
+                _lineNumber = lineNumber;
+                _bytePositionInLine = bytePositionInLine;
+                _tokenType = tokenType;
+                _previousTokenType = previousTokenType;
+                _bitStack = bitStack;
+                _yaml = yaml;
+                _inObject = inObject;
+                YamlEndPendingComment();
+                return YamlStep.Token;
+            }
 
             return step;
         }
@@ -495,7 +533,8 @@ namespace System.Text.Yaml
         {
             YamlCursor c = new() { Pos = _consumed, Line = _lineNumber, Column = _bytePositionInLine };
 
-            if (_tokenType == YamlTokenType.None && c.Pos == 0 && c.Line == 0 && c.Column == 0)
+            // The effective type: the Read after a pending comment at the start of the stream reads it again.
+            if (c.Pos == 0 && c.Line == 0 && c.Column == 0 && YamlEffectiveTokenType == YamlTokenType.None)
             {
                 // A UTF-8 byte-order mark is allowed at the start of the stream.
                 ReadOnlySpan<byte> bom = YamlConstants.Utf8Bom;
@@ -514,6 +553,11 @@ namespace System.Text.Yaml
                         c.Pos = bom.Length;
                     }
                 }
+            }
+
+            if (_yamlPendingEnd != 0 && YamlReadPendingComment())
+            {
+                return YamlStep.PendingComment;
             }
 
             int depth = _bitStack.CurrentDepth;
@@ -741,6 +785,127 @@ namespace System.Text.Yaml
             YamlCommit(c, contentAtLineStart: block && lineStart && c.Line == start.Line);
             YamlSetTokenType(YamlTokenType.Comment);
             return YamlStep.Token;
+        }
+
+        /// <summary>
+        /// CommentHandling.Allow: sets the token fields for the first comment in [<paramref name="from"/>,
+        /// <paramref name="to"/>) that the reader has not returned yet, and returns true; a comment returned before
+        /// (<see cref="YamlParseState.PendingComments"/>) is counted off. The range is what a scan to the next node read
+        /// past: blanks, line breaks and '#' comments only. A Read whose lookahead finds one returns
+        /// <see cref="YamlStep.PendingComment"/>: the comment is a token before the node, and the next Read reads the
+        /// same bytes again, so that the node's token and position are those read with comments skipped.
+        /// </summary>
+        private bool YamlTakePendingComment(in YamlCursor from, int to)
+        {
+            Debug.Assert(YamlAllowComments);
+            YamlCursor c = from;
+            while (YamlNextPendingComment(ref c, to, out int length))
+            {
+                if (_yaml.PendingComments == 0)
+                {
+                    YamlSetPendingComment(c, length, to);
+                    return true;
+                }
+
+                // Returned by an earlier Read: the counter reaches 0 again once this Read has read past them.
+                _yaml.PendingComments--;
+                c.Pos += length + 1;
+                c.Column += length + 1;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The Read after a pending comment: the next comment of the same range, found from where the last one ended,
+        /// so that a run of comments is read once (reading the node again for each would be quadratic in them).
+        /// Returns false when the range has no more: the Read then reads the node again, which counts them off once.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private bool YamlReadPendingComment()
+        {
+            int to = _yamlPendingEnd;
+            _yamlPendingEnd = 0;
+            YamlCursor c = _yamlPendingNext;
+            if (_tokenType != YamlTokenType.Comment || !YamlNextPendingComment(ref c, to, out int length))
+            {
+                return false;
+            }
+
+            YamlSetPendingComment(c, length, to);
+            return true;
+        }
+
+        /// <summary>
+        /// Advances <paramref name="c"/> to the next '#' in the range a scan to content read past, before
+        /// <paramref name="to"/>; <paramref name="length"/> is the length of the comment's text.
+        /// </summary>
+        private readonly bool YamlNextPendingComment(ref YamlCursor c, int to, out int length)
+        {
+            ReadOnlySpan<byte> buffer = _buffer;
+            while (c.Pos < to)
+            {
+                byte b = buffer[c.Pos];
+                if (b == (byte)'#')
+                {
+                    length = YamlReaderHelper.IndexOfLineBreak(buffer.Slice(c.Pos + 1, to - c.Pos - 1));
+                    if (length < 0)
+                    {
+                        length = to - c.Pos - 1;
+                    }
+
+                    return true;
+                }
+
+                if (b == (byte)'\r' && c.Pos + 1 < to && buffer[c.Pos + 1] == (byte)'\n')
+                {
+                    c.Pos++;
+                }
+
+                c.Pos++;
+                if (YamlIsBreak(b))
+                {
+                    c.Line++;
+                    c.Column = 0;
+                }
+                else
+                {
+                    c.Column++;
+                }
+            }
+
+            length = 0;
+            return false;
+        }
+
+        /// <summary>The token fields of the pending comment at <paramref name="at"/>, and where the next is looked for.</summary>
+        private void YamlSetPendingComment(in YamlCursor at, int length, int to)
+        {
+            TokenStartIndex = at.Pos;
+            YamlSetRawStart(at.Pos, at.Line, at.Column);
+            ValueSpan = _buffer.Slice(at.Pos + 1, length);
+            _yamlValueWindowStart = at.Pos + 1;
+            _yamlPendingNext = new YamlCursor { Pos = at.Pos + 1 + length, Line = at.Line, Column = at.Column + 1 + length };
+            _yamlPendingEnd = to;
+        }
+
+        /// <summary>
+        /// After <see cref="YamlStep.PendingComment"/>, once the state is rolled back to the start of the Read: the
+        /// token is a comment, and one more comment of the lookahead has been returned.
+        /// </summary>
+        private void YamlEndPendingComment()
+        {
+            _yaml.PendingComments++;
+            _yamlAnchorLength = 0;
+            _yamlTagLength = 0;
+            _yamlStyle = YamlScalarStyle.None;
+            _yamlIsFlow = false;
+            _yamlIsAlias = false;
+            _yamlIsComplexKey = false;
+            _yamlNumberNotJson = false;
+            _yamlNeedsProcessing = false;
+            ValueIsEscaped = false;
+            YamlSetTokenType(YamlTokenType.Comment);
         }
 
         /// <summary>

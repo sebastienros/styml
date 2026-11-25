@@ -81,6 +81,7 @@
     <Compile Include="System\Text\Yaml\AppContextSwitchHelper.cs" />
     <Compile Include="System\Text\Yaml\BitStack.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.PropertyNameSet.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.Comments.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.ComplexKeys.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.Yaml.cs" />
@@ -111,12 +112,16 @@
     <Compile Include="System\Text\Yaml\Nodes\YamlValueOfElement.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlNode.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlNode.Operators.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlNode.Comments.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlNode.Parse.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlCommentPosition.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlNode.To.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlNodeOptions.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlObject.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlObject.IDictionary.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlObject.IList.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlObject.Comments.cs" />
+    <Compile Include="System\Text\Yaml\Nodes\YamlArray.Comments.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlValue.cs" />
     <Compile Include="System\Text\Yaml\Nodes\YamlValueOfTCustomized.cs" />

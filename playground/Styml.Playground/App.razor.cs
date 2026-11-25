@@ -217,7 +217,7 @@ public sealed partial class App : IAsyncDisposable
         bool[] changed =
         [
             options.Schema != d.Schema, options.DuplicateKeyHandling != d.DuplicateKeyHandling, options.ResolveMergeKeys != d.ResolveMergeKeys,
-            options.SkipJsonComments != d.SkipJsonComments, options.MaxDepth != d.MaxDepth, options.MaxAliasExpansion != d.MaxAliasExpansion,
+            options.CommentHandling != d.CommentHandling, options.MaxDepth != d.MaxDepth, options.MaxAliasExpansion != d.MaxAliasExpansion,
             options.IndentSize != d.IndentSize, options.IndentSequences != d.IndentSequences, options.ExpandSequenceItems != d.ExpandSequenceItems,
             options.MaxLineWidth != d.MaxLineWidth, options.MultiLineStringStyle != d.MultiLineStringStyle, options.DefaultScalarStyle != d.DefaultScalarStyle,
             options.QuoteForLenientReaders != d.QuoteForLenientReaders, options.IgnoreSourceStyles != d.IgnoreSourceStyles, options.JsonIndented != d.JsonIndented,

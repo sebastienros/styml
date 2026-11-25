@@ -122,7 +122,7 @@ namespace System.Text.Yaml
             using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { Style = YamlWriterStyle.Block, NewLine = "\n", MaxDepth = Math.Max(TraversalMaxDepth * 2, 64), SkipValidation = true }))
             {
                 var state = new YamlWriteState { RangeStart = 0, RangeEnd = _parsedData.Length, ResolveMerges = true, MergeSourceHandling = mergeSourceHandling };
-                WriteYamlNode(0, writer, ref state);
+                WriteYamlRoot(0, writer, ref state);
             }
 
             return buffer.ToArray();
@@ -299,11 +299,25 @@ namespace System.Text.Yaml
         {
             List<MergeEntry> entries = GetMergedEntries(index, ref state);
             writer.WriteStartObject();
+            bool outerNoComments = state.NoComments;
+            if (!outerNoComments)
+            {
+                WriteComments(index, CommentPlacement.Start, writer);
+            }
+
             CheckTraversalDepth(++state.Depth);
             bool outer = state.SuppressAnchors;
             foreach (MergeEntry entry in entries)
             {
                 state.SuppressAnchors = outer || entry.SuppressAnchors;
+
+                // An entry copied from a merge source writes none of the source's comments.
+                state.NoComments = outerNoComments || entry.Copy;
+                if (!state.NoComments)
+                {
+                    WriteComments(entry.KeyRow, CommentPlacement.Leading, writer);
+                }
+
                 DbRow key = _parsedData.Get(entry.KeyRow);
                 if ((key.ScalarFlags & DbRow.ComplexKeyFlag) != 0)
                 {
@@ -311,7 +325,7 @@ namespace System.Text.Yaml
                     writer.WriteStartPropertyKey();
                     WriteYamlNode(entry.KeyRow + DbRow.Size, writer, ref state);
                     writer.WriteEndPropertyKey();
-                    WriteYamlNode(entry.ValueRow, writer, ref state);
+                    WriteMergedValue(entry, writer, ref state);
                     continue;
                 }
 
@@ -329,13 +343,33 @@ namespace System.Text.Yaml
                 }
 
                 WritePropertyName(key, writer);
-                WriteYamlNode(entry.ValueRow, writer, ref state);
+                WriteMergedValue(entry, writer, ref state);
             }
 
             state.SuppressAnchors = outer;
+            state.NoComments = outerNoComments;
             state.Depth--;
+            if (!outerNoComments)
+            {
+                WriteComments(index, CommentPlacement.End, writer);
+            }
+
             writer.WriteEndObject();
             return index + SubtreeRows(index) * DbRow.Size;
+        }
+
+        private void WriteMergedValue(in MergeEntry entry, Utf8YamlWriter writer, ref YamlWriteState state)
+        {
+            if (!state.NoComments)
+            {
+                WriteComments(entry.KeyRow, CommentPlacement.AfterKey, writer);
+            }
+
+            WriteYamlNode(entry.ValueRow, writer, ref state);
+            if (!state.NoComments)
+            {
+                WriteComments(entry.ValueRow, CommentPlacement.After, writer);
+            }
         }
     }
 }

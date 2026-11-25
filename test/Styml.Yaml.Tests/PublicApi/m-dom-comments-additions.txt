@@ -1,0 +1,13 @@
+# Comments kept by node trees parsed with CommentHandling.Allow, and set from code: an entry's or an item's comments
+# above it and at the end of its line, and a collection's at its start and end.
+System.Text.Yaml.Nodes.YamlArray.EndComment property System.String { get; set; }
+System.Text.Yaml.Nodes.YamlArray.GetComment(System.Int32, System.Text.Yaml.YamlCommentPosition) System.String
+System.Text.Yaml.Nodes.YamlArray.SetComment(System.Int32, System.Text.Yaml.YamlCommentPosition, System.String) System.Void
+System.Text.Yaml.Nodes.YamlArray.StartComment property System.String { get; set; }
+System.Text.Yaml.Nodes.YamlObject.EndComment property System.String { get; set; }
+System.Text.Yaml.Nodes.YamlObject.GetComment(System.String, System.Text.Yaml.YamlCommentPosition) System.String
+System.Text.Yaml.Nodes.YamlObject.SetComment(System.String, System.Text.Yaml.YamlCommentPosition, System.String) System.Void
+System.Text.Yaml.Nodes.YamlObject.StartComment property System.String { get; set; }
+System.Text.Yaml.YamlCommentPosition.Leading field const System.Text.Yaml.YamlCommentPosition = 0
+System.Text.Yaml.YamlCommentPosition.Trailing field const System.Text.Yaml.YamlCommentPosition = 1
+enum System.Text.Yaml.YamlCommentPosition

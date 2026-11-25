@@ -112,6 +112,69 @@ public class PlaygroundTests
     }
 
     [Theory]
+    [InlineData(YamlCommentHandling.Disallow, 0)]
+    [InlineData(YamlCommentHandling.Skip, 0)]
+    [InlineData(YamlCommentHandling.Allow, 3)]
+    public void TokensFollowCommentHandling(YamlCommentHandling handling, int comments)
+    {
+        var result = PlaygroundEngine.Run("# head\na: 1 # one\nb: [2, /* two */ 3]\n", new() { CommentHandling = handling }, PlaygroundView.Tokens);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal(comments, result.Tokens.Count(t => t.Type == YamlTokenType.Comment));
+    }
+
+    [Fact]
+    public void YamlViewKeepsCommentsUnderAllow()
+    {
+        var yaml = "# head\na: 1 # one\n# tail\n---\n[2, /* two */ 3]\n";
+        var result = PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Allow }, PlaygroundView.Yaml);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal(2, result.DocumentCount);
+        Assert.Null(result.Note);
+        Assert.Equal("# head\na: 1 # one\n# tail\n---\n[2, # two\n  3]\n", result.Output);
+        Assert.Equal("a: 1\n---\n[2, 3]\n", PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Skip }, PlaygroundView.Yaml).Output);
+    }
+
+    [Fact]
+    public void YamlViewKeepsTheCommentsAfterAFlowRoot()
+    {
+        var result = PlaygroundEngine.Run("[1, 2]\n# tail\n", new() { CommentHandling = YamlCommentHandling.Allow }, PlaygroundView.Yaml);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal("[1, 2]\n# tail\n", result.Output);
+    }
+
+    [Theory]
+    [InlineData(PlaygroundView.Json, true)]
+    [InlineData(PlaygroundView.Tree, false)]
+    public void OnlyTheJsonViewNotesTheComments(PlaygroundView view, bool note)
+    {
+        var result = PlaygroundEngine.Run("a: 1 # one\n", new() { CommentHandling = YamlCommentHandling.Allow }, view);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal(note, result.Note is not null);
+    }
+
+    [Fact]
+    public void CommentHandlingRoundTripsThroughTheHash()
+    {
+        var state = new PlaygroundState { Yaml = "a: 1\n", Options = new() { CommentHandling = YamlCommentHandling.Allow } };
+        Assert.Equal(YamlCommentHandling.Allow, PlaygroundState.FromHash(state.ToHash())!.Options.CommentHandling);
+
+        // A link written when the option was a JSON comments checkbox.
+        Assert.Equal(YamlCommentHandling.Skip, PlaygroundState.FromHash(Hash("""{"y": "a: 1\n", "o": {"jc": true}}"""))!.Options.CommentHandling);
+        Assert.Equal(YamlCommentHandling.Disallow, PlaygroundState.FromHash(Hash("""{"y": "a: 1\n", "o": {"jc": false}}"""))!.Options.CommentHandling);
+    }
+
+    private static string Hash(string yaml)
+    {
+        using var buffer = new MemoryStream();
+        using (var deflate = new System.IO.Compression.DeflateStream(buffer, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            deflate.Write(System.Text.Encoding.UTF8.GetBytes(yaml));
+        }
+
+        return Convert.ToBase64String(buffer.ToArray()).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    [Theory]
     [InlineData(PlaygroundLanguage.Yaml)]
     [InlineData(PlaygroundLanguage.Json)]
     public void HighlighterHasEveryGrammar(PlaygroundLanguage language)

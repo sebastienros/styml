@@ -97,6 +97,7 @@ namespace System.Text.Yaml.Nodes
                 if (_yamlElement is { } element)
                 {
                     CaptureCollectionStyle(element);
+                    CaptureCollectionComments(element);
                 }
 
                 _yamlElement = null;
@@ -109,6 +110,7 @@ namespace System.Text.Yaml.Nodes
             }
 
             dictionary.Clear();
+            SlotCommentMap = null;
 
             // M7b: the collection-key entries go too.
             if (_complexKeys is { } complexKeys)
@@ -166,6 +168,7 @@ namespace System.Text.Yaml.Nodes
             bool success = dictionary.Remove(propertyName, out YamlNode? removedNode);
             if (success)
             {
+                SlotCommentMap?.Remove(propertyName);
                 DetachParent(removedNode);
                 if (index >= 0)
                 {
@@ -283,6 +286,11 @@ namespace System.Text.Yaml.Nodes
                     // the last under LastWins; under Error it throws here, as in System.Text.Json.
                     YamlDuplicateKeyHandling handling = yamlElement.Value.DuplicateKeyHandlingForNodes;
                     List<ComplexKeyEntry>? complexKeys = null;
+
+                    // The comments move from the document to the entries, unless this node is a copy made through an
+                    // alias: then its children are copies too, which keep none.
+                    bool captureComments = !NoComments && yamlElement.Value.HasComments;
+                    Dictionary<string, SlotComments>? slotComments = null;
                     Dictionary<string, int>? complexKeyIndex = null;
                     foreach (YamlProperty jElementProperty in yamlElement.Value.EnumerateObject())
                     {
@@ -295,13 +303,18 @@ namespace System.Text.Yaml.Nodes
                             keyNode.Parent = this;
                             YamlNode? valueNode = YamlNodeConverter.CreateChild(jElementProperty.Value, Options, this);
                             valueNode?.Parent = this;
-                            var entry = new ComplexKeyEntry(keyNode, valueNode, newDictionary.Count);
+                            InheritNoComments(keyNode);
+                            InheritNoComments(valueNode);
+                            var entry = new ComplexKeyEntry(keyNode, valueNode, newDictionary.Count)
+                            {
+                                Comments = captureComments ? SlotComments.From(jElementProperty.Value, property: true) : null,
+                            };
                             string identity = YamlElement.KeyIdentity(jElementProperty);
                             if ((complexKeyIndex ??= new Dictionary<string, int>(StringComparer.Ordinal)).TryGetValue(identity, out int existing))
                             {
                                 if (handling == YamlDuplicateKeyHandling.LastWins)
                                 {
-                                    complexKeys![existing] = new ComplexKeyEntry(keyNode, valueNode, complexKeys[existing].Position);
+                                    complexKeys![existing] = new ComplexKeyEntry(keyNode, valueNode, complexKeys[existing].Position) { Comments = entry.Comments };
                                 }
 
                                 continue;
@@ -319,6 +332,7 @@ namespace System.Text.Yaml.Nodes
 
                         YamlNode? node = YamlNodeConverter.CreateChild(jElementProperty.Value, Options, this);
                         node?.Parent = this;
+                        InheritNoComments(node);
 
                         if (handling == YamlDuplicateKeyHandling.LastWins)
                         {
@@ -328,15 +342,30 @@ namespace System.Text.Yaml.Nodes
                         {
                             newDictionary.Add(jElementProperty.Name, node);
                         }
+
+                        if (captureComments)
+                        {
+                            SlotComments? comments = SlotComments.From(jElementProperty.Value, property: true);
+                            if (comments is not null)
+                            {
+                                (slotComments ??= CreateSlotComments(Options))[jElementProperty.Name] = comments;
+                            }
+                            else
+                            {
+                                slotComments?.Remove(jElementProperty.Name); // a repeated name read LastWins
+                            }
+                        }
                     }
 
                     _complexKeys = complexKeys;
+                    SlotCommentMap = slotComments;
                 }
 
-                // M7b: the element's style is kept before the element is dropped.
+                // M7b: the element's style is kept before the element is dropped, and so are its comments.
                 if (yamlElement.HasValue)
                 {
                     CaptureCollectionStyle(yamlElement.Value);
+                    CaptureCollectionComments(yamlElement.Value);
                 }
 
                 // Ensure only one dictionary instance is published using CompareExchange

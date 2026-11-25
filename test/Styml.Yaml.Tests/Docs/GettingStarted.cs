@@ -93,6 +93,84 @@ namespace System.Text.Yaml.Tests.Docs
             Check("json-is-yaml", yaml + "---\n" + json + "\n");
         }
 
+        // docs: json-writer-type
+        static void WriteYaml(Utf8YamlWriter writer, JsonElement element)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    writer.WriteStartObject();
+                    foreach (JsonProperty property in element.EnumerateObject())
+                    {
+                        writer.WritePropertyName(property.Name);
+                        WriteYaml(writer, property.Value);
+                    }
+                    writer.WriteEndObject();
+                    break;
+                case JsonValueKind.Array:
+                    writer.WriteStartArray();
+                    foreach (JsonElement item in element.EnumerateArray())
+                    {
+                        WriteYaml(writer, item);
+                    }
+                    writer.WriteEndArray();
+                    break;
+                case JsonValueKind.String:
+                    writer.WriteStringValue(element.GetString());
+                    break;
+                case JsonValueKind.Number:
+                    // The number as written: 1.50 stays 1.50, and a big integer isn't rounded to a double.
+                    writer.WriteRawValue(element.GetRawText(), skipInputValidation: true);
+                    break;
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    writer.WriteBooleanValue(element.GetBoolean());
+                    break;
+                default:
+                    writer.WriteNullValue();
+                    break;
+            }
+        }
+        // docs: end
+
+        [Fact]
+        public void JsonWriter()
+        {
+            // docs: json-writer yaml
+            using JsonDocument json = JsonDocument.Parse("""
+                {"name": "web", "replicas": 3, "ratio": 1.50, "tags": ["front", "yes", "8080"], "script": "nginx -t\nnginx -s reload"}
+                """);
+            using var buffer = new MemoryStream();
+            using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { NewLine = "\n" }))
+            {
+                WriteYaml(writer, json.RootElement);
+            }
+
+            string yaml = Encoding.UTF8.GetString(buffer.ToArray());
+            // docs: end
+            Check("json-writer", yaml);
+        }
+
+        [Fact]
+        public void JsonElementToYamlElement()
+        {
+            // docs: json-element text
+            using JsonDocument json = JsonDocument.Parse("""
+                {"name": "web", "ports": [80, 443], "tls": {"enabled": true}, "port": "8080", "port": "9090"}
+                """);
+            // JsonDocument keeps duplicate keys and finds the last one, where YAML rejects them by default.
+            var options = new YamlDocumentOptions { DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins };
+            YamlElement element = YamlElement.Parse(json.RootElement.GetRawText(), options);
+
+            YamlElement ports = element.GetProperty("ports");
+            string line = $"{element.ValueKind}, {ports.GetArrayLength()} ports, last {ports[1].GetInt32()}, "
+                + $"tls {element.GetProperty("tls").GetProperty("enabled").GetBoolean()}, "
+                + $"port {element.GetProperty("port").GetString()} ({element.GetProperty("port").ValueKind})";
+            // docs: end
+            Check("json-element", line + "\n", defaultStyle: false);
+            Assert.Equal(json.RootElement.GetProperty("port").GetString(), element.GetProperty("port").GetString());
+        }
+
         // docs: reuse-options
         // Create the options once and reuse them: they cache the contracts of the types they serialize.
         private static readonly YamlSerializerOptions Options = new()

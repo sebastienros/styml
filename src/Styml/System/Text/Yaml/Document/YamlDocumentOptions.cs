@@ -22,11 +22,25 @@ namespace System.Text.Yaml
         /// Thrown when the comment handling enum is set to a value that is not supported (or not within the <see cref="YamlCommentHandling"/> enum range).
         /// </exception>
         /// <remarks>
+        /// <para>
         /// By default (<see cref="YamlCommentHandling.Disallow"/>) <c>#</c> comments are skipped and <c>//</c> and
         /// <c>/* */</c> are not comments, as in standard YAML. With <see cref="YamlCommentHandling.Skip"/> the JSON
         /// comments of a JSON payload are skipped too, as System.Text.Json skips them; see
-        /// <see cref="YamlCommentHandling"/> for where they are read. <see cref="YamlCommentHandling.Allow"/> is not
-        /// supported here.
+        /// <see cref="YamlCommentHandling"/> for where they are read.
+        /// </para>
+        /// <para>
+        /// With <see cref="YamlCommentHandling.Allow"/> the document keeps its comments, where System.Text.Json's
+        /// <c>JsonDocument</c> refuses the value: each one is attached to the entry or item it is above or ends the line
+        /// of, or to the start or the end of a collection (the comments at the top and the bottom of a file are the root
+        /// collection's). A block-style <see cref="Utf8YamlWriter"/> writes them back with the element; a
+        /// JSON-compatible one writes none. The text and the place relative to the nodes are kept, not the columns, the
+        /// blank lines or the spacing after <c>#</c>: a comment is written <c># text</c>. JSON comments read this way
+        /// are written as <c>#</c> comments. A copy of a node, through an alias or a merge key, writes no comments of
+        /// its source. A comment the writer can't put where it was, such as one on a block scalar's header
+        /// (<c>key: | # c</c>), is written on its own line next to it. A few comments are not kept: one on a directive's
+        /// line, one after a flow node's anchor or tag (<c>[&amp;a # c</c>), and those inside a key node read after
+        /// <c>?</c> (after its properties or its header) or inside a collection key.
+        /// </para>
         /// </remarks>
         public YamlCommentHandling CommentHandling
         {
@@ -34,8 +48,10 @@ namespace System.Text.Yaml
             set
             {
                 Debug.Assert(value >= 0);
-                if (value > YamlCommentHandling.Skip)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.YamlDocumentDoesNotSupportComments);
+                if (value > YamlCommentHandling.Allow)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_CommentEnumMustBeInRange(nameof(value));
+                }
 
                 _commentHandling = value;
             }

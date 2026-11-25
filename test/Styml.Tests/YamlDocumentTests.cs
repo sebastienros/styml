@@ -2172,11 +2172,9 @@ namespace System.Text.Yaml.Tests
 
         [Theory]
         [InlineData(-1)]
-        [InlineData((int)YamlCommentHandling.Allow)]
         [InlineData(3)]
         [InlineData(byte.MaxValue)]
-        [InlineData(byte.MaxValue + 3)] // Other values, like byte.MaxValue + 1 overflows to 0 (i.e. YamlCommentHandling.Disallow), which is valid.
-        [InlineData(byte.MaxValue + 4)]
+        [InlineData(byte.MaxValue + 4)] // Other values, like byte.MaxValue + 1 overflows to 0 (i.e. YamlCommentHandling.Disallow), which is valid.
         public static void ReadCommentHandlingDoesNotSupportAllow(int enumValue)
         {
             Assert.Throws<ArgumentOutOfRangeException>("value", () => new YamlDocumentOptions

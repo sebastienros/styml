@@ -69,6 +69,9 @@ namespace System.Text.Yaml
             /// </summary>
             internal bool RootTagOutsideSource;
 
+            /// <summary>The comments, sorted by row, when the document was read with CommentHandling.Allow (YamlDocument.Comments.cs).</summary>
+            internal CommentEntry[]? Comments;
+
             internal void Add(in NodeInfo info)
             {
                 Debug.Assert(InfoCount == 0 || Infos[InfoCount - 1].Row < info.Row);
@@ -281,6 +284,23 @@ namespace System.Text.Yaml
 
             var reader = new Utf8YamlReader(utf8YamlSpan, isFinalBlock: true, new YamlReaderState(options: readerOptions));
 
+            if (readerOptions.CommentHandling == YamlCommentHandling.Allow && !readerOptions.YamlCommentsOnly)
+            {
+                // Comments are kept: the full loop reads every token, so that this loop stays as it is for the others.
+                if (reader.Read())
+                {
+                    var state = default(YamlLoopState);
+                    Dictionary<string, int>? anchors = null;
+                    var comments = new CommentCollector();
+                    ParseYamlFull(utf8YamlSpan, ref reader, ref database, ref stack, ref tables, ref state, ref anchors, baseOffset: 0, comments: comments);
+                    comments.Complete(ref tables, database.Length);
+                }
+
+                ThrowIfNoYamlValue(ref reader, database.Length);
+                database.CompleteAllocations();
+                return;
+            }
+
             while (reader.Read())
             {
                 YamlTokenType tokenType = reader.TokenType;
@@ -303,7 +323,7 @@ namespace System.Text.Yaml
                         LastEnd = lastEnd,
                     };
                     Dictionary<string, int>? anchors = null;
-                    ParseYamlFull(utf8YamlSpan, ref reader, ref database, ref stack, ref tables, ref state, ref anchors, baseOffset: 0);
+                    ParseYamlFull(utf8YamlSpan, ref reader, ref database, ref stack, ref tables, ref state, ref anchors, baseOffset: 0, comments: null);
                     break;
                 }
 
@@ -407,10 +427,12 @@ namespace System.Text.Yaml
             ref YamlTables? tables,
             ref YamlLoopState state,
             ref Dictionary<string, int>? anchors,
-            int baseOffset)
+            int baseOffset,
+            CommentCollector? comments)
         {
             // baseOffset: M5e, a collection key's own rows are read by its key reader, whose positions count from the
-            // key's first byte; the document's reader passes 0.
+            // key's first byte; the document's reader passes 0. comments: the document reader's collector under
+            // CommentHandling.Allow; a collection key's comments are not kept.
             bool inArray = state.InArray;
             int arrayItemsOrPropertyCount = state.ArrayItemsOrPropertyCount;
             int numberOfRowsForMembers = state.NumberOfRowsForMembers;
@@ -422,12 +444,14 @@ namespace System.Text.Yaml
                 YamlTokenType tokenType = reader.TokenType;
                 if (tokenType == YamlTokenType.Comment)
                 {
+                    comments?.OnComment(utf8YamlSpan, ref reader);
                     continue;
                 }
 
                 Debug.Assert(reader.TokenStartIndex <= int.MaxValue);
                 int tokenStart = checked((int)reader.TokenStartIndex + baseOffset);
                 int rowIndex = database.Length;
+                comments?.OnToken(utf8YamlSpan, ref reader, tokenType, rowIndex);
                 string? anchor = reader.Anchor.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Anchor);
                 string? tag = reader.Tag.IsEmpty ? null : YamlReaderHelper.TranscodeHelper(reader.Tag);
                 string? expandedTag = tag is null ? null : reader.GetExpandedTag();
@@ -817,7 +841,7 @@ namespace System.Text.Yaml
             if (keyReader.Read())
             {
                 var state = new YamlLoopState { LastEnd = keyStart };
-                ParseYamlFull(utf8YamlSpan, ref keyReader, ref database, ref stack, ref tables, ref state, ref anchors, baseOffset: keyStart);
+                ParseYamlFull(utf8YamlSpan, ref keyReader, ref database, ref stack, ref tables, ref state, ref anchors, baseOffset: keyStart, comments: null);
             }
 
             lastEnd = keyStart + raw.Length;

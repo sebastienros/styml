@@ -18,8 +18,8 @@ namespace System.Text.Yaml.Tests
     /// m3b-additions.txt, m3d-additions.txt, m4-additions.txt, m4b-reader-additions.txt, m5a-additions.txt,
     /// m5b-additions.txt, m5c-additions.txt, m5d-additions.txt, m5e-additions.txt and m5f-additions.txt the M3b, M3d, M4, M4b
     /// reader-step, M5a, M5b, M5c, M5d, M5e and M5f ones; all are the same for every target. m5-additions.txt is their M5
-    /// union, for the end-of-M5 check. m7b-additions.txt holds M7b's. Later additions are in files named after what
-    /// they add (yaml13-draft-additions.txt).
+    /// union, for the end-of-M5 check. m7b-additions.txt holds M7b's, m-dom-comments-additions.txt the node trees'
+    /// comments, and m-yaml13-draft-additions.txt the reader option for the YAML 1.3 draft restrictions.
     /// m7-removals.txt lists what M7 removed (M7c: the inherited obsolete APIs), subtracted from the expected listing.
     /// </remarks>
     public class PublicApiTests
@@ -33,7 +33,7 @@ namespace System.Text.Yaml.Tests
 
             var baseline = new SortedSet<string>(ReadListing(Path.Combine(dir, $"m2b.{target}.txt")), StringComparer.Ordinal);
             var additions = new SortedSet<string>(
-                Directory.GetFiles(dir, "*-additions.txt").SelectMany(ReadListing), StringComparer.Ordinal);
+                Directory.GetFiles(dir, "m*-additions.txt").SelectMany(ReadListing), StringComparer.Ordinal);
             Assert.Empty(baseline.Intersect(additions));
 
             var expected = new SortedSet<string>(baseline.Concat(additions), StringComparer.Ordinal);

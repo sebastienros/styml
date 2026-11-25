@@ -105,6 +105,17 @@ namespace System.Text.Yaml
                         c.Pos += 3;
                         c.Column += 3;
                         _yaml.Set(YamlParseFlags.RootDone, false);
+                        if (YamlAllowComments)
+                        {
+                            // '... # c': the comment is a token after the marker, which has none of its own.
+                            YamlCursor rest = c;
+                            YamlSkipBlanks(ref rest);
+                            if (rest.Pos > c.Pos && rest.Pos < _buffer.Length && _buffer[rest.Pos] == (byte)'#')
+                            {
+                                return YamlEmitComment(ref rest);
+                            }
+                        }
+
                         if (!YamlExpectLineEnd(ref c))
                         {
                             return YamlStep.NeedMoreData;
