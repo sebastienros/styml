@@ -72,9 +72,11 @@ namespace System.Text.Yaml
             {
                 int start = (int)reader.TokenStartIndex;
                 string text = CommentText(source, start, reader.ValueSpan);
+                ReadOnlySpan<byte> between = source.Slice(_previousEnd, Math.Max(0, start - _previousEnd));
                 bool ownLine = _previous == Previous.None
                     || (_previousEnd > 0 && source[_previousEnd - 1] == (byte)'\n')
-                    || source.Slice(_previousEnd, Math.Max(0, start - _previousEnd)).IndexOf((byte)'\n') >= 0;
+                    || between.IndexOf((byte)'\n') >= 0
+                    || (_previous == Previous.Key && !IsBlank(between));
                 if (!ownLine)
                 {
                     CommentPlacement placement = _previous switch
@@ -139,6 +141,7 @@ namespace System.Text.Yaml
                 {
                     (int target, CommentPlacement placement) = _previous switch
                     {
+                        Previous.Start when blockStart && NestsInsideItem(source, ref reader) => (row, CommentPlacement.Start),
                         Previous.Start => (_previousRow, CommentPlacement.Start),
                         Previous.Key or Previous.None when blockStart => (row, CommentPlacement.Start),
                         Previous.Key => (_previousRow, CommentPlacement.AfterKey),
@@ -164,6 +167,29 @@ namespace System.Text.Yaml
 
                 _previousRow = row;
                 _previousEnd = (int)reader.BytesConsumed;
+            }
+
+            /// <summary>
+            /// The block collection that starts is indented inside the open one's first entry ("-\n  # c\n  - x"), and
+            /// the comments above it are at its column or right of it: they are its own, not the open collection's.
+            /// </summary>
+            private bool NestsInsideItem(ReadOnlySpan<byte> source, ref Utf8YamlReader reader)
+            {
+                int column = ColumnOf(source, (int)reader.TokenStartIndex);
+                if (_open.Count == 0 || _open[_open.Count - 1].Flow || column <= _open[_open.Count - 1].Column)
+                {
+                    return false;
+                }
+
+                foreach (Pending pending in _pending)
+                {
+                    if (pending.Column < column)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             /// <summary>Stores the comments in <paramref name="tables"/>, the ones left after the root as its After.</summary>
@@ -204,6 +230,21 @@ namespace System.Text.Yaml
 
             private void Add(int row, CommentPlacement placement, bool ownLine, string text) =>
                 _entries.Add(new CommentEntry { Row = row, Placement = placement, OwnLine = ownLine, Text = text });
+
+            // After a key, a comment that follows the value's properties or a block scalar's header ("key: &a # c") is
+            // read before the value's token: it is kept with the value, as a comment on the line below the key.
+            private static bool IsBlank(ReadOnlySpan<byte> bytes)
+            {
+                foreach (byte b in bytes)
+                {
+                    if (b is not ((byte)' ' or (byte)'\t'))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
 
             private static int ColumnOf(ReadOnlySpan<byte> source, int index) =>
                 index - (source.Slice(0, index).LastIndexOf((byte)'\n') + 1);

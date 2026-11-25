@@ -36,9 +36,10 @@ namespace System.Text.Yaml
         /// JSON-compatible one writes none. The text and the place relative to the nodes are kept, not the columns, the
         /// blank lines or the spacing after <c>#</c>: a comment is written <c># text</c>. JSON comments read this way
         /// are written as <c>#</c> comments. A copy of a node, through an alias or a merge key, writes no comments of
-        /// its source. A few comments are not kept: one on a block scalar's header (<c>key: | # c</c>), after an
-        /// explicit key or value indicator (<c>? k # c</c>, <c>- # c</c> above the item's content), after a node's
-        /// anchor or tag alone on its line, and inside a collection key.
+        /// its source. A comment the writer can't put where it was, such as one on a block scalar's header
+        /// (<c>key: | # c</c>), is written on its own line next to it. A few comments are not kept: one on a directive's
+        /// line, one after a flow node's anchor or tag (<c>[&amp;a # c</c>), and those inside a key node read after
+        /// <c>?</c> (after its properties or its header) or inside a collection key.
         /// </para>
         /// </remarks>
         public YamlCommentHandling CommentHandling

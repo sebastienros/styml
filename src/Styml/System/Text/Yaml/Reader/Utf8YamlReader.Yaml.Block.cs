@@ -387,6 +387,13 @@ namespace System.Text.Yaml
                 return YamlStep.NeedMoreData;
             }
 
+            // '? # c' with the key node on a later line: the node was read with comments skipped, and the comments
+            // between the indicator and the node's first byte are tokens before the key.
+            if (YamlAllowComments && YamlTakePendingComment(c, node.Complex ? node.Start.Pos : _yamlRawStart))
+            {
+                return YamlStep.PendingComment;
+            }
+
             if (node.Complex)
             {
                 YamlSetComplexKey(node);
@@ -454,6 +461,7 @@ namespace System.Text.Yaml
         private YamlStep YamlReadBlockMappingValue(ref YamlCursor c, int indent, bool compactAllowed)
         {
             int separationStart = c.Pos;
+            YamlCursor separation = c;
             if (!YamlScanToContent(ref c, out YamlScan s, stopAtComment: YamlAllowComments && !compactAllowed))
             {
                 return YamlStep.NeedMoreData;
@@ -462,6 +470,13 @@ namespace System.Text.Yaml
             if (s.IsComment)
             {
                 return YamlEmitComment(ref c);
+            }
+
+            if (compactAllowed && YamlAllowComments && YamlTakePendingComment(separation, c.Pos))
+            {
+                // After an explicit key's ':' (a compact collection may follow on its line, so the comments are not
+                // read as tokens of the mapping): tokens before the value.
+                return YamlStep.PendingComment;
             }
 
             if (s.AtEnd)
@@ -591,6 +606,12 @@ namespace System.Text.Yaml
                     return YamlStep.NeedMoreData;
                 }
 
+                if (YamlAllowComments && YamlTakePendingComment(c, entry.Pos))
+                {
+                    // '- # c', and the comments below it: tokens before the entry node.
+                    return YamlStep.PendingComment;
+                }
+
                 if (es.AtEnd)
                 {
                     return YamlEmitNull(entry, es.LineStart, default, entry.Pos, entry.Line, entry.Column);
@@ -673,7 +694,14 @@ namespace System.Text.Yaml
 
                     if (empty)
                     {
+                        // The comments after the properties are read after the empty node, as after any node.
                         return YamlEmitNull(c, lineStart: false, props, rawStart, rawLine, rawColumn);
+                    }
+
+                    if (YamlAllowComments && YamlTakePendingComment(c, after.Pos))
+                    {
+                        // '&a # c', and the comments below it: tokens before the node the properties belong to.
+                        return YamlStep.PendingComment;
                     }
 
                     propsOnOwnLine = true;
@@ -714,6 +742,10 @@ namespace System.Text.Yaml
                         if (s3.AtEnd || YamlDocumentMarker(after, s3.LineStart) != 0 || (s3.LineStart && s3.Indent <= parentIndent))
                         {
                             return YamlEmitNull(c, lineStart: false, props, rawStart, rawLine, rawColumn);
+                        }
+                        if (YamlAllowComments && YamlTakePendingComment(c, after.Pos))
+                        {
+                            return YamlStep.PendingComment;
                         }
                         c = after;
                         s = s3;

@@ -37,6 +37,12 @@ namespace System.Text.Yaml
 
         internal YamlParseFlags Flags;
 
+        // CommentHandling.Allow: how many comments the lookahead of the next node has returned as tokens. The reader
+        // reads past them before it knows the node, so each one is returned by a Read whose other state is rolled
+        // back. The next Read returns the next one of the same range, and the last one reads the node again, counting
+        // them off (YamlTakePendingComment).
+        internal int PendingComments;
+
         // The line (+1) of the last collection the key probe found too long to be an implicit key, so that a ':' after
         // it reports that limit rather than a key spanning lines.
         internal long TooLongKeyLinePlusOne;

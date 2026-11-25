@@ -93,8 +93,10 @@ ports: [80, 443]
 <!-- /sample:dom-document-comments -->
 
 A JSON-compatible writer writes no comments, and a node written again through an alias or a merge key writes none of
-its source's. The reader doesn't return a few comments, so they are not kept: one on a block scalar's header
-(`key: | # c`), after an anchor or tag alone on its line, and after a `-` or `?` whose node starts on the next line.
+its source's. A comment the writer can't put where it was, such as one on a block scalar's header (`key: | # c`) or
+after a `-` whose node starts on the next line, goes on its own line next to it. A few comments are not kept: one on a
+directive's line, one after a flow node's anchor or tag (`[&a # c`), and those inside a key node read after `?` (after
+its properties or its header) or inside a collection key.
 `System.Text.Json`'s `JsonDocument` refuses `Allow`.
 
 ## Edit with YamlNode

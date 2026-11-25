@@ -206,20 +206,62 @@ namespace System.Text.Yaml.Tests
         }
 
         /// <summary>
-        /// Comments the reader does not return as tokens, so the document has none to keep: on a block scalar's header,
-        /// between a node's anchor or tag alone on its line and the node, and after a sequence entry's indicator above
-        /// the entry's content.
+        /// Comments the reader reads past before it knows the node, returned as tokens before it: on a block scalar's
+        /// header, after a node's anchor or tag alone on its line, after a sequence entry's indicator or an explicit
+        /// key's ':' above the node, and after '...'. One the writer can't put where it was goes on the line below.
+        /// </summary>
+        public static IEnumerable<object[]> LookaheadRoundTrips() => new[]
+        {
+            new object[] { "s: | # header\n  text\n", "s:\n  # header\n  |\n  text\n" },
+            new object[] { "base: &b # after anchor\n  x: 1\n", "base: &b\n  # after anchor\n  x: 1\n" },
+            new object[] { "base: &b\n  # below anchor\n  x: 1\n", "base: &b\n  # below anchor\n  x: 1\n" },
+            new object[] { "base: &b # c\n  # d\n  x: 1\ncopy: *b\n", "base: &b\n  # c\n  # d\n  x: 1\ncopy: *b\n" },
+            new object[] { "k: &a # c\n  v\n", "k:\n  # c\n  &a v\n" },
+            new object[] { "k: !!seq # c\n- 1\n", "k: !!seq\n# c\n- 1\n" },
+            new object[] { "- # after dash\n  x: 1\n", "# after dash\n- x: 1\n" },
+            new object[] { "- a\n- # c\n  x: 1\n", "- a\n# c\n- x: 1\n" },
+            new object[] { "- # c\n- b\n", "# c\n- null\n- b\n" },
+            new object[] { "? a\n: # c\n  v\n", "a:\n  # c\n  v\n" },
+            new object[] { "? # c\n  a\n: v\n", "# c\na: v\n" },
+            new object[] { "&r # c\nx: 1\n", "&r\n# c\nx: 1\n" },
+            new object[] { "a\n... # c\n", "a\n# c\n" },
+            // Nested: the comment stays with the collection it is above, inside the item.
+            new object[] { "- - # c\n    x: 1\n", "-\n  # c\n  - x: 1\n" },
+            new object[] { "-\n  # c\n  x: 1\n", "-\n  # c\n  x: 1\n" },
+            new object[] { "k:\n  - # c\n    x: 1\n", "k:\n# c\n- x: 1\n" },
+            new object[] { "k:\n  ? # c\n    a\n  : v\n", "k:\n  # c\n  a: v\n" },
+            new object[] { "k:\n  x: &a # c\n    z: 1\n", "k:\n  x: &a\n    # c\n    z: 1\n" },
+            new object[] { "k:\n  - | # c\n    text\n", "k:\n# c\n- |\n  text\n" },
+        };
+
+        [Fact]
+        public void LookaheadComment_InAnIndentedSequence()
+        {
+            using YamlDocument document = YamlDocument.Parse("k:\n  - # c\n    x: 1\n", s_allow);
+            string written = Write(document.RootElement, new YamlWriterOptions { IndentSequences = true });
+            Assert.Equal("k:\n  # c\n  - x: 1\n", written);
+            using YamlDocument again = YamlDocument.Parse(written, s_allow);
+            Assert.Equal(written, Write(again.RootElement, new YamlWriterOptions { IndentSequences = true }));
+        }
+
+        /// <summary>
+        /// Comments still not kept: on a directive's line, after a flow node's properties, and inside an explicit key's
+        /// node (after its properties or its block scalar header), which is read with comments skipped, like a
+        /// collection key.
         /// </summary>
         [Theory]
-        [InlineData("s: | # header\n  text\n", "s: |\n  text\n")]
-        [InlineData("base: &b # after anchor\n  x: 1\n", "base: &b\n  x: 1\n")]
-        [InlineData("base: &b\n  # below anchor\n  x: 1\n", "base: &b\n  x: 1\n")]
-        [InlineData("- # after dash\n  x: 1\n", "- x: 1\n")]
-        public void ReaderGaps_AreNotKept(string yaml, string expected)
+        [InlineData("%YAML 1.2 # c\n---\na: 1\n", "a: 1\n")]
+        [InlineData("k: [&a # c\n  1]\n", "k: [&a 1]\n")]
+        [InlineData("? &k # c\n  a\n: v\n", "&k a: v\n")]
+        public void RemainingGaps_AreNotKept(string yaml, string expected)
         {
             using YamlDocument document = YamlDocument.Parse(yaml, s_allow);
             Assert.Equal(expected, Write(document.RootElement));
         }
+
+        [Theory]
+        [MemberData(nameof(LookaheadRoundTrips))]
+        public void LookaheadComments_AreWrittenBack(string yaml, string expected) => Comments_AreWrittenBack(yaml, expected);
 
         private static void AssertFixedPoint(string written)
         {
