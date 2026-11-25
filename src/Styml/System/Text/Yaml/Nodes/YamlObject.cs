@@ -44,6 +44,9 @@ namespace System.Text.Yaml.Nodes
 
             // M7b: kept in step with the string entries when one is inserted or removed (ShiftCollectionKeys).
             internal int Position { get; set; }
+
+            // The entry's comments, from the document or set.
+            internal SlotComments? Comments { get; set; }
         }
 
         /// <summary>
@@ -366,8 +369,8 @@ namespace System.Text.Yaml.Nodes
             if (dictionary is null)
             {
                 return (yamlElement.HasValue
-                    ? new YamlObject(yamlElement.Value.Clone(), Options) { _collectionStyle = _collectionStyle }
-                    : new YamlObject(Options) { _collectionStyle = _collectionStyle }).WithPropertiesOf<YamlObject>(this);
+                    ? new YamlObject(yamlElement.Value.Clone(), Options) { _collectionStyle = _collectionStyle, NoComments = NoComments }
+                    : new YamlObject(Options) { _collectionStyle = _collectionStyle, _startComment = _startComment, _endComment = _endComment }).WithPropertiesOf<YamlObject>(this);
             }
 
             var jObject = new YamlObject(Options)
@@ -389,10 +392,22 @@ namespace System.Text.Yaml.Nodes
                     value?.Parent = jObject;
                     YamlNode key = entry.Key.DeepCloneCore();
                     key.Parent = jObject; // M7b: a collection key's parent is its object, as its value's is
-                    (jObject._complexKeys ??= new List<ComplexKeyEntry>()).Add(new ComplexKeyEntry(key, value, entry.Position));
+                    (jObject._complexKeys ??= new List<ComplexKeyEntry>()).Add(new ComplexKeyEntry(key, value, entry.Position) { Comments = entry.Comments?.Copy() });
                 }
             }
 
+            if (_slotComments is { } slotComments)
+            {
+                jObject._slotComments = CreateSlotComments(Options);
+                foreach (KeyValuePair<string, SlotComments> item in slotComments)
+                {
+                    jObject._slotComments[item.Key] = item.Value.Copy();
+                }
+            }
+
+            jObject._startComment = _startComment;
+            jObject._endComment = _endComment;
+            jObject.NoComments = NoComments;
             return jObject.WithPropertiesOf<YamlObject>(this);
         }
 
@@ -458,15 +473,17 @@ namespace System.Text.Yaml.Nodes
 
             if (dictionary is null && yamlElement.HasValue && !HasOwnProperties && _collectionStyle == 0)
             {
-                // Write the element without converting to nodes (it writes its own source styles).
-                yamlElement.Value.WriteTo(writer);
+                // Write the element without converting to nodes (it writes its own source styles and comments).
+                WriteElementTo(yamlElement.Value, writer);
             }
             else
             {
                 WritePropertiesTo(writer);
                 WriteCollectionStyleTo(writer);
                 writer.WriteStartObject();
+                WriteOwnLineComment(writer, _startComment);
                 WriteContentsTo(writer, options);
+                WriteOwnLineComment(writer, _endComment);
                 writer.WriteEndObject();
             }
         }
@@ -492,13 +509,18 @@ namespace System.Text.Yaml.Nodes
             {
                 OrderedDictionary<string, YamlNode?> entries = Dictionary;
                 List<ComplexKeyEntry>? complexKeys = _complexKeys;
+                Dictionary<string, SlotComments>? slotComments = writer.IsBlockStyle ? _slotComments : null;
                 int position = 0;
                 int next = 0;
                 foreach (KeyValuePair<string, YamlNode?> entry in entries)
                 {
                     WriteComplexKeys(writer, options, complexKeys, position, ref next);
+                    SlotComments? comments = null;
+                    slotComments?.TryGetValue(entry.Key, out comments);
+                    comments?.WriteLeading(writer, entry.Value, item: false);
                     writer.HintDefaultScalarStyleForNextKey(); // M7b (fix A): a YamlObject's keys are styled as a dictionary's
                     writer.WritePropertyName(entry.Key);
+                    comments?.WriteAfterKey(writer, entry.Value);
 
                     if (entry.Value is null)
                     {
@@ -509,6 +531,7 @@ namespace System.Text.Yaml.Nodes
                         entry.Value.WriteTo(writer, options);
                     }
 
+                    comments?.WriteAfterValue(writer, entry.Value, item: false);
                     position++;
                 }
 
@@ -527,9 +550,11 @@ namespace System.Text.Yaml.Nodes
                 }
 
                 ComplexKeyEntry entry = complexKeys[next++];
+                entry.Comments?.WriteLeading(writer, entry.Value, item: false);
                 writer.WriteStartPropertyKey();
                 entry.Key.WriteTo(writer, options);
                 writer.WriteEndPropertyKey();
+                entry.Comments?.WriteAfterKey(writer, entry.Value);
                 if (entry.Value is null)
                 {
                     writer.WriteNullValue();
@@ -538,6 +563,8 @@ namespace System.Text.Yaml.Nodes
                 {
                     entry.Value.WriteTo(writer, options);
                 }
+
+                entry.Comments?.WriteAfterValue(writer, entry.Value, item: false);
             }
         }
 

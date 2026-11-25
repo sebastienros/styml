@@ -1933,6 +1933,39 @@ namespace System.Text.Yaml
             _parent.WritePropertyName(_rowIdx, writer);
         }
 
+        /// <summary>The element's document keeps comments (it was read with CommentHandling.Allow and had some).</summary>
+        internal bool HasComments => _parent?.HasComments ?? false;
+
+        /// <summary>Writes the element without its comments: a node tree's copy made through an alias.</summary>
+        internal void WriteToWithoutComments(Utf8YamlWriter writer)
+        {
+            CheckValidInstance();
+
+            _parent.WriteElementTo(_idx, writer, comments: false);
+        }
+
+        /// <summary>The comments of the entry (<paramref name="property"/>) or the item whose value this element is.</summary>
+        internal void GetSlotComments(bool property, out string? leading, out string? trailing, out bool trailingAfterKey)
+        {
+            CheckValidInstance();
+
+            _parent.GetSlotComments(_rowIdx, property, out leading, out trailing, out trailingAfterKey);
+        }
+
+        /// <summary>The comments at the start and the end of this collection; none for a copy made through an alias.</summary>
+        internal void GetCollectionComments(out string? start, out string? end)
+        {
+            CheckValidInstance();
+
+            if (IsAlias)
+            {
+                start = end = null;
+                return;
+            }
+
+            _parent.GetCollectionComments(_idx, out start, out end);
+        }
+
         /// <summary>The comments of the slot of the property whose value this element is (YamlProperty.WriteTo).</summary>
         internal void WritePropertyCommentsTo(Utf8YamlWriter writer, YamlDocument.CommentPlacement placement)
         {

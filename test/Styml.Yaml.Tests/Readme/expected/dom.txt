@@ -1,4 +1,4 @@
-name: web
+name: web # the public name
 ports: [80, 443, 8080]
 note: 'kept quoted'
 replicas: 3

@@ -86,6 +86,26 @@ namespace System.Text.Yaml.Tests.Docs
         }
 
         [Fact]
+        public void NodeComments()
+        {
+            // docs: dom-node-comments yaml
+            YamlObject config = YamlNode.Parse("""
+                # Service settings
+                name: web # the public name
+                ports: [80, 443]
+                """, documentOptions: new() { CommentHandling = YamlCommentHandling.Allow })!.AsObject();
+
+            config["name"] = "api"; // the entry keeps its comment
+            config.SetComment("ports", YamlCommentPosition.Leading, "Ports to expose");
+            config["replicas"] = 2;
+            config.SetComment("replicas", YamlCommentPosition.Trailing, "one per zone");
+            config.EndComment = "Generated";
+            string yaml = config.ToYamlString();
+            // docs: end
+            Check("dom-node-comments", yaml);
+        }
+
+        [Fact]
         public void Create()
         {
             // docs: dom-create yaml

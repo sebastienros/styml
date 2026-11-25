@@ -135,9 +135,9 @@ namespace System.Text.Yaml
             internal bool NoComments; // a copy (an expanded alias, a merged entry) writes no comments of its source
         }
 
-        private void WriteYamlElementTo(int index, Utf8YamlWriter writer)
+        private void WriteYamlElementTo(int index, Utf8YamlWriter writer, bool comments = true)
         {
-            var state = new YamlWriteState { RangeStart = index, RangeEnd = GetEndIndex(index, includeEndElement: true) };
+            var state = new YamlWriteState { RangeStart = index, RangeEnd = GetEndIndex(index, includeEndElement: true), NoComments = !comments };
             WriteYamlRoot(index, writer, ref state);
         }
 
@@ -145,7 +145,7 @@ namespace System.Text.Yaml
         // which its node writes); any other element leaves its own slot's comments to the container that writes it.
         private void WriteYamlRoot(int index, Utf8YamlWriter writer, ref YamlWriteState state)
         {
-            if (index == 0 && _yaml?.Comments is not null)
+            if (index == 0 && _yaml?.Comments is not null && !state.NoComments)
             {
                 WriteComments(0, CommentPlacement.Leading, writer);
                 WriteYamlNode(index, writer, ref state);

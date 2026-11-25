@@ -100,8 +100,7 @@ its source's. The reader doesn't return a few comments, so they are not kept: on
 ## Edit with YamlNode
 
 `YamlNode.Parse` reads a mutable tree of `YamlObject`, `YamlArray` and `YamlValue`. The indexers read and replace
-values, and `ToYamlString` writes the tree in the styles it was read in, anchors and tags included. Comments are not
-kept:
+values, and `ToYamlString` writes the tree in the styles it was read in, anchors and tags included:
 
 <!-- sample:dom-node -->
 ```csharp
@@ -124,6 +123,42 @@ services:
       TIER: front
 ```
 <!-- /sample:dom-node -->
+
+### Comments in a tree
+
+A tree parsed with `CommentHandling = Allow` keeps the document's comments. Each entry or item has a comment above it
+and one at the end of its line (`GetComment`, `SetComment` with a `YamlCommentPosition`), and each mapping or sequence
+has its `StartComment` and `EndComment`, which hold the comments at the top and the bottom of the file for the root.
+An entry keeps its comments when its value is replaced or it is renamed, and loses them when it is removed:
+
+<!-- sample:dom-node-comments -->
+```csharp
+YamlObject config = YamlNode.Parse("""
+    # Service settings
+    name: web # the public name
+    ports: [80, 443]
+    """, documentOptions: new() { CommentHandling = YamlCommentHandling.Allow })!.AsObject();
+
+config["name"] = "api"; // the entry keeps its comment
+config.SetComment("ports", YamlCommentPosition.Leading, "Ports to expose");
+config["replicas"] = 2;
+config.SetComment("replicas", YamlCommentPosition.Trailing, "one per zone");
+config.EndComment = "Generated";
+string yaml = config.ToYamlString();
+```
+
+```yaml
+# Service settings
+name: api # the public name
+# Ports to expose
+ports: [80, 443]
+replicas: 2 # one per zone
+# Generated
+```
+<!-- /sample:dom-node-comments -->
+
+A copy made through an alias keeps none of the anchored node's comments, and `DeepEquals` ignores comments, as it
+ignores styles.
 
 ## Create nodes
 

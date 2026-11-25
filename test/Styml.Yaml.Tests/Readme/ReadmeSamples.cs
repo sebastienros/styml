@@ -380,10 +380,10 @@ namespace System.Text.Yaml.Tests.Readme
         {
             // readme: dom yaml
             YamlNode root = YamlNode.Parse("""
-                name: web   # not kept
+                name: web   # the public name
                 ports: [80, 443]
                 note: 'kept quoted'
-                """)!;
+                """, documentOptions: new() { CommentHandling = YamlCommentHandling.Allow })!;
             root["ports"]!.AsArray().Add(8080);
             root["replicas"] = 3;
             string edited = root.ToYamlString();

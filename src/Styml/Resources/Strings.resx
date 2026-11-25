@@ -195,6 +195,12 @@
   <data name="YamlDocumentDoesNotSupportComments" xml:space="preserve">
     <value>A YamlDocument read from a Utf8YamlReader cannot keep comments: read with the Skip or Disallow comment handling, or parse the text with YamlDocumentOptions.CommentHandling set to Allow.</value>
   </data>
+  <data name="InvalidNodeComment" xml:space="preserve">
+    <value>The comment holds a character a YAML comment cannot hold, or a trailing comment holds a line break.</value>
+  </data>
+  <data name="NodeCommentPropertyNotFound" xml:space="preserve">
+    <value>The object has no property named '{0}'.</value>
+  </data>
   <data name="YamlElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>

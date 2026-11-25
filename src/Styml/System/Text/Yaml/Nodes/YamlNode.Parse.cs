@@ -77,7 +77,7 @@ namespace System.Text.Yaml.Nodes
             YamlElement element;
             try
             {
-                element = YamlElement.Parse(yaml, WithoutComments(documentOptions));
+                element = YamlElement.Parse(yaml, documentOptions);
             }
             catch (YamlException e) when (e.IsEmptyInput)
             {
@@ -108,7 +108,7 @@ namespace System.Text.Yaml.Nodes
             YamlElement element;
             try
             {
-                element = YamlElement.Parse(utf8Yaml, WithoutComments(documentOptions));
+                element = YamlElement.Parse(utf8Yaml, documentOptions);
             }
             catch (YamlException e) when (e.IsEmptyInput)
             {
@@ -142,7 +142,7 @@ namespace System.Text.Yaml.Nodes
             YamlElement element;
             try
             {
-                element = YamlElement.ParseValue(utf8Yaml, WithoutComments(documentOptions));
+                element = YamlElement.ParseValue(utf8Yaml, documentOptions);
             }
             catch (YamlException e) when (e.IsEmptyInput)
             {
@@ -178,7 +178,7 @@ namespace System.Text.Yaml.Nodes
             YamlDocument document;
             try
             {
-                document = await YamlDocument.ParseAsyncCoreUnrented(utf8Yaml, WithoutComments(documentOptions), cancellationToken).ConfigureAwait(false);
+                document = await YamlDocument.ParseAsyncCoreUnrented(utf8Yaml, documentOptions, cancellationToken).ConfigureAwait(false);
             }
             catch (YamlException e) when (e.IsEmptyInput)
             {
@@ -186,17 +186,6 @@ namespace System.Text.Yaml.Nodes
             }
 
             return YamlNodeConverter.Create(document.RootElement, nodeOptions);
-        }
-
-        // A node tree does not keep comments yet: CommentHandling.Allow reads as Skip.
-        private static YamlDocumentOptions WithoutComments(YamlDocumentOptions options)
-        {
-            if (options.CommentHandling == YamlCommentHandling.Allow)
-            {
-                options.CommentHandling = YamlCommentHandling.Skip;
-            }
-
-            return options;
         }
     }
 }

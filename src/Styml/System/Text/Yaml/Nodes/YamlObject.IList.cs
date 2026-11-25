@@ -28,6 +28,7 @@ namespace System.Text.Yaml.Nodes
             OrderedDictionary<string, YamlNode?> dictionary = Dictionary;
             KeyValuePair<string, YamlNode?> existing = dictionary.GetAt(index);
             dictionary.SetAt(index, propertyName, value);
+            MoveSlotComments(existing.Key, propertyName);
             DetachParent(existing.Value);
             value?.AssignParent(this);
         }
@@ -80,6 +81,7 @@ namespace System.Text.Yaml.Nodes
         {
             KeyValuePair<string, YamlNode?> existing = Dictionary.GetAt(index);
             Dictionary.RemoveAt(index);
+            _slotComments?.Remove(existing.Key);
             DetachParent(existing.Value);
             ShiftCollectionKeys(index, -1);
         }

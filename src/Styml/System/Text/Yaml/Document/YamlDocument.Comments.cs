@@ -259,6 +259,60 @@ namespace System.Text.Yaml
             WriteComments(placement == CommentPlacement.After ? valueIndex : NameRowOf(valueIndex), placement, writer);
         }
 
+        /// <summary>The comments at <paramref name="row"/> and <paramref name="placement"/>, one per line, or null.</summary>
+        private string? GetCommentText(int row, CommentPlacement placement)
+        {
+            CommentEntry[]? comments = _yaml?.Comments;
+            if (comments is null)
+            {
+                return null;
+            }
+
+            string? text = null;
+            for (int i = FirstComment(comments, row); i < comments.Length && comments[i].Row == row; i++)
+            {
+                if (comments[i].Placement == placement)
+                {
+                    text = text is null ? comments[i].Text : text + "\n" + comments[i].Text;
+                }
+            }
+
+            return text;
+        }
+
+        private static string? JoinComments(string? first, string? second) =>
+            first is null ? second : second is null ? first : first + "\n" + second;
+
+        /// <summary>
+        /// The comments of the slot of the value at <paramref name="valueRow"/> (a node tree's entry or item): above it,
+        /// and at the end of its line, after its key when it was read there (a key's comment wins over its value's).
+        /// </summary>
+        internal void GetSlotComments(int valueRow, bool property, out string? leading, out string? trailing, out bool trailingAfterKey)
+        {
+            CheckNotDisposed();
+            int slotRow = property ? NameRowOf(valueRow) : valueRow;
+            leading = GetCommentText(slotRow, CommentPlacement.Leading);
+            string? afterKey = property ? GetCommentText(slotRow, CommentPlacement.AfterKey) : null;
+            trailingAfterKey = afterKey is not null;
+            trailing = afterKey ?? GetCommentText(valueRow, CommentPlacement.After);
+        }
+
+        /// <summary>
+        /// The comments at the start and the end of the collection at <paramref name="index"/>. The root's take the
+        /// document's first and last comments, which a scalar or flow root holds as its own slot's.
+        /// </summary>
+        internal void GetCollectionComments(int index, out string? start, out string? end)
+        {
+            CheckNotDisposed();
+            start = GetCommentText(index, CommentPlacement.Start);
+            end = GetCommentText(index, CommentPlacement.End);
+            if (index == 0)
+            {
+                start = JoinComments(GetCommentText(0, CommentPlacement.Leading), start);
+                end = JoinComments(end, GetCommentText(0, CommentPlacement.After));
+            }
+        }
+
         private static int FirstComment(CommentEntry[] comments, int row)
         {
             int lo = 0;
