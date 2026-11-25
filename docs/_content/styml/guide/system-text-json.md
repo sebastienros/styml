@@ -68,6 +68,113 @@ Environment:
 ```
 <!-- /sample:json-is-yaml -->
 
+## From System.Text.Json's documents
+
+`YamlSerializer` has no converters for `JsonElement` and `JsonNode`: a `JsonElement` comes out as a mapping with one
+`ValueKind` entry. Their JSON text is YAML, though: `YamlNode.Parse(node.ToJsonString())` and
+`YamlNode.Parse(element.GetRawText())` read it, and `IgnoreSourceStyles` writes it as block YAML, as in
+[Styles](dom.md#styles).
+
+A `Utf8YamlWriter` writes a `JsonElement` as YAML without parsing its text again. Its methods are
+`Utf8JsonWriter`'s, so a walk of the element is all it takes:
+
+<!-- sample:json-writer-type -->
+```csharp
+static void WriteYaml(Utf8YamlWriter writer, JsonElement element)
+{
+    switch (element.ValueKind)
+    {
+        case JsonValueKind.Object:
+            writer.WriteStartObject();
+            foreach (JsonProperty property in element.EnumerateObject())
+            {
+                writer.WritePropertyName(property.Name);
+                WriteYaml(writer, property.Value);
+            }
+            writer.WriteEndObject();
+            break;
+        case JsonValueKind.Array:
+            writer.WriteStartArray();
+            foreach (JsonElement item in element.EnumerateArray())
+            {
+                WriteYaml(writer, item);
+            }
+            writer.WriteEndArray();
+            break;
+        case JsonValueKind.String:
+            writer.WriteStringValue(element.GetString());
+            break;
+        case JsonValueKind.Number:
+            // The number as written: 1.50 stays 1.50, and a big integer isn't rounded to a double.
+            writer.WriteRawValue(element.GetRawText(), skipInputValidation: true);
+            break;
+        case JsonValueKind.True:
+        case JsonValueKind.False:
+            writer.WriteBooleanValue(element.GetBoolean());
+            break;
+        default:
+            writer.WriteNullValue();
+            break;
+    }
+}
+```
+<!-- /sample:json-writer-type -->
+
+The writer quotes the strings that would read back as another type, `yes` and `8080` here, and a string with line
+breaks is written as a literal block:
+
+<!-- sample:json-writer -->
+```csharp
+using JsonDocument json = JsonDocument.Parse("""
+    {"name": "web", "replicas": 3, "ratio": 1.50, "tags": ["front", "yes", "8080"], "script": "nginx -t\nnginx -s reload"}
+    """);
+using var buffer = new MemoryStream();
+using (var writer = new Utf8YamlWriter(buffer, new YamlWriterOptions { NewLine = "\n" }))
+{
+    WriteYaml(writer, json.RootElement);
+}
+
+string yaml = Encoding.UTF8.GetString(buffer.ToArray());
+```
+
+```yaml
+name: web
+replicas: 3
+ratio: 1.50
+tags:
+- front
+- "yes"
+- "8080"
+script: |-
+  nginx -t
+  nginx -s reload
+```
+<!-- /sample:json-writer -->
+
+`YamlElement.Parse` turns a `JsonElement` into a `YamlElement`, which needs no document to dispose. Strings stay
+strings, as JSON's are quoted, and numbers, `true`, `false` and `null` keep their kinds. `JsonDocument` accepts a key
+twice and finds its last value, so `LastWins` reads the same document:
+
+<!-- sample:json-element -->
+```csharp
+using JsonDocument json = JsonDocument.Parse("""
+    {"name": "web", "ports": [80, 443], "tls": {"enabled": true}, "port": "8080", "port": "9090"}
+    """);
+// JsonDocument keeps duplicate keys and finds the last one, where YAML rejects them by default.
+var options = new YamlDocumentOptions { DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins };
+YamlElement element = YamlElement.Parse(json.RootElement.GetRawText(), options);
+
+YamlElement ports = element.GetProperty("ports");
+string line = $"{element.ValueKind}, {ports.GetArrayLength()} ports, last {ports[1].GetInt32()}, "
+    + $"tls {element.GetProperty("tls").GetProperty("enabled").GetBoolean()}, "
+    + $"port {element.GetProperty("port").GetString()} ({element.GetProperty("port").ValueKind})";
+```
+
+```text
+Object, 2 ports, last 443, tls True, port 9090 (String)
+```
+<!-- /sample:json-element -->
+
 ## What YAML adds
 
 - **Anchors and aliases**, read everywhere and written by `ReferenceHandler.Preserve` in place of `$id` and `$ref`,
