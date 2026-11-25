@@ -241,6 +241,38 @@ namespace System.Text.Yaml.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Schemas))]
+        public void ReRead_AliasToAnOutsideAnchorInsideTheValue_KeepsStyles(YamlSchemaKind schema)
+        {
+            // An object site whose value has an alias to an anchor outside it reads the value written again with the
+            // alias expanded: its scalars, and the expanded node's, keep their styles. A block scalar the writer cannot
+            // hold as one is double-quoted, never plain, so it reads as the same string under every schema.
+            const string Yaml =
+                "base: &b\n  l: |\n    x\n  s: 'q'\n  f: >\n    a\n    b\nwrap:\n  own: |\n    y\n  'sk': 'a'\n  \"dk\": \"b\"\n" +
+                "  one: |-\n    12\n  t: >-\n    true\n  ref: *b\n";
+            var options = new YamlSerializerOptions(s_block) { Schema = schema };
+            YamlElement wrap = YamlSerializer.Deserialize<Dictionary<string, YamlElement>>(Yaml, options)!["wrap"];
+            YamlElement expanded = wrap.GetProperty("ref");
+            Assert.Equal(YamlScalarStyle.Literal, wrap.GetProperty("own").ScalarStyle);
+            Assert.Equal(YamlScalarStyle.Literal, expanded.GetProperty("l").ScalarStyle);
+            Assert.Equal("x\n", expanded.GetProperty("l").GetString());
+            Assert.Equal(YamlScalarStyle.SingleQuoted, expanded.GetProperty("s").ScalarStyle);
+            Assert.Equal(YamlScalarStyle.Folded, expanded.GetProperty("f").ScalarStyle);
+            Assert.Equal("a b\n", expanded.GetProperty("f").GetString());
+            foreach ((string name, string value) in new[] { ("one", "12"), ("t", "true") })
+            {
+                Assert.Equal(YamlValueKind.String, wrap.GetProperty(name).ValueKind);
+                Assert.Equal(value, wrap.GetProperty(name).GetString());
+                Assert.Equal(YamlScalarStyle.DoubleQuoted, wrap.GetProperty(name).ScalarStyle);
+            }
+
+            // Quoted keys are written quoted again.
+            string written = YamlSerializer.Serialize(wrap, s_block);
+            Assert.Contains("'sk': 'a'\n", written);
+            Assert.Contains("\"dk\": \"b\"\n", written);
+        }
+
         private static void AssertSameKindsAndValues(Dictionary<string, object> expected, Dictionary<string, object> actual)
         {
             Assert.Equal(expected.Keys.OrderBy(k => k, StringComparer.Ordinal), actual.Keys.OrderBy(k => k, StringComparer.Ordinal));

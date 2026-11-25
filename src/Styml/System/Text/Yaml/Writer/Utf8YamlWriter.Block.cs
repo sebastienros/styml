@@ -49,8 +49,9 @@ namespace System.Text.Yaml
         // is skipped, so a plain 2001-01-01 written back is not quoted.
         private bool _plainFromSource;
 
-        // With a pending hint: the next string value is the merge rewrite's, which must not come out plain. A literal or
-        // folded hint the writer cannot hold falls back to double quotes, not to the writer's own choice.
+        // With a pending hint: the next string value is a rewrite's (merge keys, or an alias expanded at an object site),
+        // which must not come out plain. A literal or folded hint the writer cannot hold falls back to double quotes,
+        // not to the writer's own choice.
         private bool _quotedFallback;
 
         // M5f: the key being written is a converter's number, boolean or non-finite text, written plain.
@@ -106,9 +107,9 @@ namespace System.Text.Yaml
         }
 
         /// <summary>
-        /// The merge rewrite's style for a quoted or block source string: the source style where the writer can hold the
-        /// text in it, double quotes otherwise, never plain, so that the rewrite reads as the source under every schema.
-        /// Block style only.
+        /// A rewrite's style for a quoted or block source string (the merge-key rewrite, or a value written again with
+        /// outside aliases expanded): the source style where the writer can hold the text in it, double quotes otherwise,
+        /// never plain, so that the rewrite reads as the source under every schema. Block style only.
         /// </summary>
         internal void HintSourceScalarStyleOrQuoted(YamlScalarStyle style)
         {
@@ -1690,7 +1691,7 @@ namespace System.Text.Yaml
 
             if (quotedFallback && hint is (YamlScalarStyle.Literal or YamlScalarStyle.Folded))
             {
-                // The merge rewrite's block scalar that is not written as one.
+                // A rewrite's block scalar that is not written as one.
                 hint = YamlScalarStyle.DoubleQuoted;
             }
 
