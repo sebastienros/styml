@@ -20,14 +20,20 @@ on:
     - 'Directory.*'
     - 'global.json'
     - '.github/workflows/docs.yml'
+  # The same paths as push: the API reference, the playground and the samples build against the library, so a pull
+  # request that changes it is checked before main deploys.
   pull_request:
     branches: [ main ]
     paths:
     - 'docs/**'
+    - 'src/Styml/**'
     - 'playground/**'
     - 'eng/docs/**'
     - 'test/Styml.Yaml.Tests/Docs/**'
     - 'README.md'
+    - 'assets/logo.svg'
+    - 'Directory.*'
+    - 'global.json'
     - '.github/workflows/docs.yml'
 
 permissions:
