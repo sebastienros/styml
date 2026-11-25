@@ -49,6 +49,11 @@ namespace System.Text.Yaml
         // is skipped, so a plain 2001-01-01 written back is not quoted.
         private bool _plainFromSource;
 
+        // With a pending hint: the next string value is a rewrite's (merge keys, or an alias expanded at an object site),
+        // which must not come out plain. A literal or folded hint the writer cannot hold falls back to double quotes,
+        // not to the writer's own choice.
+        private bool _quotedFallback;
+
         // M5f: the key being written is a converter's number, boolean or non-finite text, written plain.
         private bool _plainNumberKey;
 
@@ -91,13 +96,27 @@ namespace System.Text.Yaml
         /// <summary>
         /// M5f: a <see cref="YamlDocument"/> scalar's source style, for the string value or key the DOM writes
         /// next: applied where the writer can hold the text in it (the rules of <see cref="WriteScalarStyle"/>), and only
-        /// when no hint is pending, so that the merge rewrite's own quoting goes first. Block style only.
+        /// when no hint is pending, so that the merge rewrite's own hint goes first. Block style only.
         /// </summary>
         internal void HintSourceScalarStyle(YamlScalarStyle style)
         {
             if (_style == WriterStyleBlock && _scalarStyleHint == YamlScalarStyle.None && !_options.IgnoreSourceStyles)
             {
                 _scalarStyleHint = style;
+            }
+        }
+
+        /// <summary>
+        /// A rewrite's style for a quoted or block source string (the merge-key rewrite, or a value written again with
+        /// outside aliases expanded): the source style where the writer can hold the text in it, double quotes otherwise,
+        /// never plain, so that the rewrite reads as the source under every schema. Block style only.
+        /// </summary>
+        internal void HintSourceScalarStyleOrQuoted(YamlScalarStyle style)
+        {
+            if (_style == WriterStyleBlock)
+            {
+                WriteScalarStyle(style);
+                _quotedFallback = true;
             }
         }
 
@@ -486,6 +505,7 @@ namespace System.Text.Yaml
         {
             _scalarStyleHint = YamlScalarStyle.None;
             _plainFromSource = false;
+            _quotedFallback = false;
             if (_softScalarStyleHint)
             {
                 // The serializer's hint for a member whose value is not a string.
@@ -1151,6 +1171,7 @@ namespace System.Text.Yaml
                 hint = _scalarStyleHint;
                 _scalarStyleHint = YamlScalarStyle.None;
                 _plainFromSource = false;
+                _quotedFallback = false;
             }
 
             bool plain = hint is not (YamlScalarStyle.DoubleQuoted or YamlScalarStyle.SingleQuoted) && YamlWriterHelper.IsBlockPlainKey(key, _lenient);
@@ -1204,6 +1225,7 @@ namespace System.Text.Yaml
                 hint = _scalarStyleHint;
                 _scalarStyleHint = YamlScalarStyle.None;
                 _plainFromSource = false;
+                _quotedFallback = false;
             }
 
             // M7b (fix A): a dictionary's string key takes DefaultScalarStyle where no hint does; a key cannot be a block
@@ -1633,6 +1655,8 @@ namespace System.Text.Yaml
             _scalarStyleHint = YamlScalarStyle.None;
             bool fromSource = _plainFromSource;
             _plainFromSource = false;
+            bool quotedFallback = _quotedFallback;
+            _quotedFallback = false;
             bool flow = _blockSpecial != 0 && InFlow;
 
             // M7b: DefaultScalarStyle, below every hint and below a MultiLineStringStyle that is set
@@ -1663,6 +1687,12 @@ namespace System.Text.Yaml
                     EndBlockScalar(YamlTokenType.String);
                     return;
                 }
+            }
+
+            if (quotedFallback && hint is (YamlScalarStyle.Literal or YamlScalarStyle.Folded))
+            {
+                // A rewrite's block scalar that is not written as one.
+                hint = YamlScalarStyle.DoubleQuoted;
             }
 
             if (hint == YamlScalarStyle.SingleQuoted && YamlWriterHelper.CanWriteSingleQuoted(text) && !EncoderEscapes(text))

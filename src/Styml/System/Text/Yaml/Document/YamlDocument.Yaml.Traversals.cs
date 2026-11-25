@@ -258,9 +258,10 @@ namespace System.Text.Yaml
                 case YamlTokenType.String:
                     if (state.ResolveMerges && block && row.ScalarStyle != YamlScalarStyle.Plain)
                     {
-                        // M5c: a quoted or block string stays quoted, so that the rewrite reads as the source under every
-                        // schema (the writer's own choice of plain is Core-safe, and under Json a plain string is an error).
-                        writer.WriteScalarStyle(YamlScalarStyle.DoubleQuoted);
+                        // A quoted or block string keeps its style, or is double-quoted where the writer cannot hold it so,
+                        // never plain: the rewrite then reads as the source under every schema (the writer's own choice
+                        // of plain is Core-safe, and under Json a plain string is an error).
+                        writer.HintSourceScalarStyleOrQuoted(row.ScalarStyle);
                     }
 
                     WriteString(row, writer);

@@ -499,6 +499,12 @@ namespace System.Text.Yaml.Serialization
                                     writer.WriteTag(reader.Tag);
                                 }
 
+                                if (reader.ScalarStyle is YamlScalarStyle.SingleQuoted or YamlScalarStyle.DoubleQuoted)
+                                {
+                                    // A quoted key is written quoted again, where the writer can.
+                                    writer.HintSourceScalarStyle(reader.ScalarStyle);
+                                }
+
                                 writer.WritePropertyName(reader.GetString()!);
                                 break;
                         }
@@ -521,9 +527,10 @@ namespace System.Text.Yaml.Serialization
                 case YamlTokenType.String:
                     if (reader.ScalarStyle != YamlScalarStyle.Plain)
                     {
-                        // M5c: a quoted or block string stays quoted, so that the expanded text reads as the source under
-                        // every schema (under Json a plain string is an error).
-                        writer.WriteScalarStyle(YamlScalarStyle.DoubleQuoted);
+                        // A quoted or block string keeps its style, or is double-quoted where the writer cannot hold it
+                        // so, never plain: the expanded text then reads as the source under every schema (under Json a
+                        // plain string is an error).
+                        writer.HintSourceScalarStyleOrQuoted(reader.ScalarStyle);
                     }
 
                     writer.WriteStringValue(reader.GetString());
