@@ -1,0 +1,1 @@
+YamlException: The YAML property 'Intervall' could not be mapped to any .NET member contained in type 'System.Text.Yaml.Tests.Docs.ContractSamples+Probe'.

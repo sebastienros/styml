@@ -1,0 +1,9 @@
+# YamlException: A possible object cycle was detected.
+Name: Ada
+Home: null
+Manager: null
+---
+&1
+Name: Ada
+Home: null
+Manager: *1

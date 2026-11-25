@@ -1,0 +1,1 @@
+{"Name":"web","Replicas":3,"Hosts":["a.example"],"Kind":"Rolling"}

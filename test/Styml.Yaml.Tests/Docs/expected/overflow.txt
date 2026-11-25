@@ -1,0 +1,5 @@
+# extra: metadata, spec
+Kind: Deployment
+metadata:
+  name: web
+spec: {ports: [80]}

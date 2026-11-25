@@ -1,0 +1,9 @@
+name: web
+ports: [80, 443]
+limits: &limits
+  cpu: 0.5
+  memory: 512Mi
+defaults: !settings
+  inherit: true
+
+# 500m

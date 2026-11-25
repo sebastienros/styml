@@ -1,0 +1,7 @@
+web:
+  image: nginx:1.27
+  replicas: 4
+admin:
+  image: nginx:1.27
+  replicas: 2
+  port: 8081

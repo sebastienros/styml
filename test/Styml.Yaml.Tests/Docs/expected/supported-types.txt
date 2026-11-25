@@ -1,0 +1,12 @@
+Date: 2026-11-24T09:30:00+01:00
+Time: "01:30:00"
+Id: 8f2e5a3c-7b1d-4c6e-9a0f-1d2e3f4a5b6c
+Uri: https://example.org
+Bytes: "AQID"
+Nullable: null
+Tuple:
+  Item1: 3
+  Item2: three
+Set:
+- a
+- b

@@ -1,0 +1,90 @@
+---
+title: Styml
+description: The System.Text.Json API, for YAML. A YAML 1.2 reader, writer, document model and serializer for .NET, with reflection and source generation.
+layout: base.html
+body_class: home
+liquid: true
+---
+<main id="main" class="home" data-pagefind-ignore="all">
+  <section class="hero">
+    <div class="hero__copy">
+      <p class="eyebrow"><span class="eyebrow__dot"></span>Open source, MIT licensed</p>
+      <h1 class="hero__title">YAML for .NET. <em>The API you already know.</em> <em>The performance you expect.</em></h1>
+      <p class="hero__lede">Styml is System.Text.Json's code and API, carried over to YAML 1.2: <code>YamlSerializer</code>, <code>Utf8YamlReader</code>, <code>YamlDocument</code>, <code>YamlNode</code> and a source generator. Code written against System.Text.Json reads the same with <code>Yaml</code> in place of <code>Json</code>.</p>
+      <div class="hero__actions">
+        <a class="button button--primary" href="{{ meta.base }}guide/getting-started/">Get started</a>
+        <a class="button button--ghost" href="{{ meta.base }}playground/">Try it in the browser</a>
+      </div>
+      <div class="install" data-copy-root>
+        <span class="install__prompt" aria-hidden="true">$</span>
+        <code class="install__command">dotnet add package Styml</code>
+        <button class="install__copy" type="button" data-copy>Copy</button>
+      </div>
+    </div>
+    <div class="hero__visual" aria-label="A C# record and the YAML Styml writes for it">
+      <div class="terminal">
+        <div class="terminal__bar"><span></span><span></span><span></span><p>Program.cs</p></div>
+<pre class="terminal__body"><code><span class="t-accent">var</span> service = <span class="t-accent">new</span> <span class="t-strong">Service</span>(<span class="t-ok">"web"</span>, <span class="t-ok">"nginx:1.27"</span>, [80, 443],
+    <span class="t-accent">new</span>() { [<span class="t-ok">"TIER"</span>] = <span class="t-ok">"front"</span>, [<span class="t-ok">"REPLICAS"</span>] = <span class="t-ok">"3"</span> });
+
+<span class="t-accent">string</span> yaml = <span class="t-strong">YamlSerializer</span>.Serialize(service);</code></pre>
+        <div class="terminal__bar terminal__bar--split"><p>Output</p></div>
+<pre class="terminal__body"><code><span class="t-accent">Name</span>: web
+<span class="t-accent">Image</span>: nginx:1.27
+<span class="t-accent">Ports</span>:
+- 80
+- 443
+<span class="t-accent">Environment</span>:
+  <span class="t-accent">TIER</span>: front
+  <span class="t-accent">REPLICAS</span>: <span class="t-ok">"3"</span>  <span class="t-dim"># quoted: a plain 3 is a number</span></code></pre>
+      </div>
+      <img class="hero__mark" src="{{ meta.base }}assets/logo.svg" alt="" width="260" height="260">
+    </div>
+  </section>
+
+  <section class="twelve" aria-labelledby="features-title">
+    <header class="section-head">
+      <p class="section-head__kicker">Features</p>
+      <h2 id="features-title">System.Text.Json's design, and everything YAML adds</h2>
+    </header>
+    <ol class="twelve__grid">
+      <li><span class="n">01</span><h3>The same API</h3><p>Options, attributes, converters, naming policies, the contract model and the source generator, renamed from <code>Json</code> to <code>Yaml</code>.</p><a href="{{ meta.base }}guide/system-text-json/">Coming from System.Text.Json</a></li>
+      <li><span class="n">02</span><h3>YAML 1.2, all of it</h3><p>Every valid case of the yaml-test-suite is read with the expected events, every error case is rejected.</p><a href="{{ meta.base }}guide/reading-yaml/">Reading YAML</a></li>
+      <li><span class="n">03</span><h3>Anchors and aliases</h3><p>Aliases are read everywhere, <code>ReferenceHandler.Preserve</code> writes anchors, and alias expansion is bounded.</p><a href="{{ meta.base }}guide/references/">References</a></li>
+      <li><span class="n">04</span><h3>Tags, safely</h3><p>Tag-based polymorphism and tag mappings are explicit allow-lists: a tag never loads a .NET type.</p><a href="{{ meta.base }}guide/polymorphism/">Polymorphism and tags</a></li>
+      <li><span class="n">05</span><h3>Styles you choose</h3><p>Block or flow collections, plain, quoted, literal or folded scalars, comments, and quotes only where YAML needs them.</p><a href="{{ meta.base }}guide/scalar-styles/">Scalar styles</a></li>
+      <li><span class="n">06</span><h3>A DOM that round-trips</h3><p><code>YamlDocument</code> and <code>YamlNode</code> keep styles, anchors and tags, so an edited document keeps its look.</p><a href="{{ meta.base }}guide/dom/">The DOM</a></li>
+      <li><span class="n">07</span><h3>Trimming and Native AOT</h3><p>A source-generated <code>YamlSerializerContext</code> serializes without reflection, with the analyzers on.</p><a href="{{ meta.base }}guide/source-generation/">Source generation</a></li>
+      <li><span class="n">08</span><h3>Fast, few allocations</h3><p>A UTF-8 reader and writer over spans, pooled buffers, and a document that allocates 72 bytes.</p><a href="{{ meta.base }}guide/performance/">Performance</a></li>
+    </ol>
+  </section>
+
+  <section class="flow" aria-labelledby="code-title">
+    <div class="flow__copy">
+      <p class="section-head__kicker">Source generation</p>
+      <h2 id="code-title">Declare the types once, serialize without reflection</h2>
+      <p>A <code>YamlSerializerContext</code> is generated at build time with the contracts of your types and the options you set on it, the YAML ones included. It works trimmed and with Native AOT.</p>
+      <a class="button button--ghost" href="{{ meta.base }}guide/source-generation/">Source generation</a>
+    </div>
+    <div class="flow__code">
+<pre data-lang="csharp"><code class="language-csharp">string yaml = YamlSerializer.Serialize(service, AppYamlContext.Default.Service);
+Service back = YamlSerializer.Deserialize(yaml, AppYamlContext.Default.Service)!;
+
+[YamlSerializable(typeof(Service))]
+[YamlSourceGenerationOptions(
+    PropertyNamingPolicy = YamlKnownNamingPolicy.CamelCase,
+    IndentSequences = true)]
+public partial class AppYamlContext : YamlSerializerContext;
+</code></pre>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Paste some YAML now.</h2>
+    <p>The playground runs Styml in your browser with WebAssembly. Format YAML, convert it to JSON, look at its document tree and its tokens, and change every reading and writing option.</p>
+    <a class="button button--primary" href="{{ meta.base }}playground/">Open the playground</a>
+  </section>
+</main>
+<footer class="site-footer">
+  <p>Styml is released under the MIT License. It is derived from System.Text.Json and is not a Microsoft product. This site is built with <a href="https://sebastienros.github.io/douze/">Douze</a> from <a href="{{ meta.repo }}/tree/main/docs">docs/</a>.</p>
+</footer>

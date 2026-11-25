@@ -1,0 +1,6 @@
+# Coordinate, Color, YamlElement, YamlElement
+- !geo
+  Lat: 51.5
+  Lon: -0.12
+- !<tag:example.org,2026:color>
+  Hex: "#2563eb"

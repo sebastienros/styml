@@ -1,0 +1,175 @@
+---
+title: The DOM
+description: Read YAML without types with YamlDocument and YamlElement, edit it with YamlNode, and keep its styles, anchors and tags.
+---
+
+Styml has System.Text.Json's two document models. `YamlDocument` is read-only and fast: it parses into pooled
+buffers, and its `YamlElement` values point into them. `YamlNode` is a tree of objects that you can change and write
+back. Both keep what YAML adds: anchors, aliases, tags, and the style of each scalar and collection.
+
+The samples of this page read this document:
+
+```yaml
+services:
+  web:
+    image: &image nginx:1.27
+    ports: ["80:80"]
+    command: !shell |
+      nginx -g 'daemon off;'
+  admin:
+    image: *image
+    replicas: 2
+```
+
+## Read with YamlDocument
+
+`YamlDocument.Parse` reads a document, and its `RootElement` navigates it: `GetProperty`, `TryGetProperty`,
+`EnumerateObject`, `EnumerateArray`, and the typed `Get` methods. An element also tells its anchor, whether it is an
+alias, its tag and its style. Dispose the document to return its buffers to the pool:
+
+<!-- sample:dom-document -->
+```csharp
+using YamlDocument document = YamlDocument.Parse(Compose);
+YamlElement services = document.RootElement.GetProperty("services");
+var lines = new List<string>();
+foreach (YamlProperty service in services.EnumerateObject())
+{
+    YamlElement image = service.Value.GetProperty("image");
+    string alias = image.IsAlias ? $" (alias of &{image.GetAnchor()})" : "";
+    lines.Add($"{service.Name}: {image.GetString()}{alias}");
+}
+
+YamlElement command = services.GetProperty("web").GetProperty("command");
+lines.Add($"command: tag {command.GetTag()}, {command.ScalarStyle}, {command.GetString()!.TrimEnd()}");
+lines.Add($"ports: {services.GetProperty("web").GetProperty("ports").CollectionStyle}");
+bool scaled = services.GetProperty("admin").TryGetProperty("replicas", out YamlElement replicas) && replicas.GetInt32() > 1;
+lines.Add($"admin scaled: {scaled}");
+```
+
+```text
+web: nginx:1.27
+admin: nginx:1.27 (alias of &image)
+command: tag !shell, Literal, nginx -g 'daemon off;'
+ports: Flow
+admin scaled: True
+```
+<!-- /sample:dom-document -->
+
+An alias element reads as the node it refers to, and `IsAlias` and `GetAnchor()` tell it apart.
+
+## Edit with YamlNode
+
+`YamlNode.Parse` reads a mutable tree of `YamlObject`, `YamlArray` and `YamlValue`. The indexers read and replace
+values, and `ToYamlString` writes the tree in the styles it was read in, anchors and tags included. Comments are not
+kept:
+
+<!-- sample:dom-node -->
+```csharp
+YamlNode root = YamlNode.Parse(Compose)!;
+YamlObject web = root["services"]!["web"]!.AsObject();
+web["ports"]!.AsArray().Add("443:443");
+web["environment"] = new YamlObject { ["TIER"] = "front" };
+root["services"]!.AsObject().Remove("admin");
+string yaml = root.ToYamlString();
+```
+
+```yaml
+services:
+  web:
+    image: &image nginx:1.27
+    ports: ["80:80", 443:443]
+    command: !shell |
+      nginx -g 'daemon off;'
+    environment:
+      TIER: front
+```
+<!-- /sample:dom-node -->
+
+## Create nodes
+
+Nodes are created with collection initializers, and values convert implicitly from .NET values. `CollectionStyle`
+chooses block or flow, and `Anchor` and `Tag` set a node's anchor and tag:
+
+<!-- sample:dom-create -->
+```csharp
+var config = new YamlObject
+{
+    ["name"] = "web",
+    ["ports"] = new YamlArray(80, 443) { CollectionStyle = YamlCollectionStyle.Flow },
+    ["limits"] = new YamlObject { ["cpu"] = 0.5, ["memory"] = "512Mi" },
+};
+config["limits"]!.Anchor = "limits";
+config["defaults"] = new YamlObject { ["inherit"] = true };
+config["defaults"]!.Tag = "!settings";
+string yaml = config.ToYamlString();
+int cpu = (int)(config["limits"]!["cpu"]!.GetValue<double>() * 1000);
+```
+
+```yaml
+name: web
+ports: [80, 443]
+limits: &limits
+  cpu: 0.5
+  memory: 512Mi
+defaults: !settings
+  inherit: true
+
+# 500m
+```
+<!-- /sample:dom-create -->
+
+## Typed values
+
+`GetValue<T>`, the explicit conversions and `Deserialize<T>` read typed values from nodes. `GetValueKind()` tells what
+a scalar resolves to under the [schema](schemas.md): here `yes` is a string, as YAML 1.2 says:
+
+<!-- sample:dom-typed-types -->
+```csharp
+public record Service(int Replicas, string Name);
+```
+<!-- /sample:dom-typed-types -->
+
+<!-- sample:dom-typed -->
+```csharp
+YamlNode node = YamlNode.Parse("replicas: 3\nratio: 0.75\nenabled: yes\nname: '3'\n")!;
+int replicas = node["replicas"]!.GetValue<int>();
+double ratio = (double)node["ratio"]!;
+string enabled = node["enabled"]!.GetValueKind().ToString();
+string name = node["name"]!.GetValue<string>();
+Service service = node.Deserialize<Service>(new YamlSerializerOptions { PropertyNameCaseInsensitive = true })!;
+```
+
+```text
+3, 0.75, enabled is String, name '3', Service { Replicas = 3, Name = 3 }
+```
+<!-- /sample:dom-typed -->
+
+## Styles
+
+A parsed document is written back in its own styles: JSON read in comes out as JSON, a single-quoted string stays
+single-quoted. `IgnoreSourceStyles` writes it in the options' styles instead, which turns JSON into block YAML:
+
+<!-- sample:dom-styles -->
+```csharp
+YamlNode fromJson = YamlNode.Parse("""{"name": "web", "ports": [80, 443], "note": "kept as written"}""")!;
+string asIs = fromJson.ToYamlString();
+string block = fromJson.ToYamlString(new YamlSerializerOptions { IgnoreSourceStyles = true });
+```
+
+```yaml
+{"name": "web", "ports": [80, 443], "note": "kept as written"}
+---
+name: web
+ports:
+- 80
+- 443
+note: kept as written
+```
+<!-- /sample:dom-styles -->
+
+## Options
+
+`YamlDocumentOptions` reads with the [schema](schemas.md), the duplicate-key policy, the alias bound and the merge
+keys of your choice, and `YamlNodeOptions` sets case-insensitive property names on `YamlObject`. The
+[playground](/styml/playground/) parses its input with `YamlDocument` and shows the tree of each document, with these
+options.

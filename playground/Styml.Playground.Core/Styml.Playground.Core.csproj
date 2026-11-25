@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The logic of the playground without UI: options, URL state, formatting, the document tree, the tokens, samples and
+       colors. Tested by Styml.Playground.Tests. -->
+  <PropertyGroup>
+    <RootNamespace>Styml.Playground</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src\Styml\Styml.csproj" />
+    <ProjectReference Include="$(RepoRoot)src\Styml.SourceGeneration\Styml.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <PackageReference Include="Tint" />
+    <PackageReference Include="Tint.Grammars" />
+    <PackageReference Include="Tint.Themes" />
+  </ItemGroup>
+</Project>

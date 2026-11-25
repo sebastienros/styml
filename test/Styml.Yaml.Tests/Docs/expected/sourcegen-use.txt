@@ -1,0 +1,6 @@
+hosts:
+  - a.example
+  - b.example
+kind: BlueGreen
+name: web
+replicas: 3

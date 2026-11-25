@@ -1,0 +1,2 @@
+YamlException: The maximum configured depth of 64 has been exceeded. Cannot read next YAML array. Path: $ | LineNumber: 0 | BytePositionInLine: 64.
+MaxDepth 128: YamlElement

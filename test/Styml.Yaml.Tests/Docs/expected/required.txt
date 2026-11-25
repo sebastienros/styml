@@ -1,0 +1,1 @@
+YamlException: YAML deserialization for type 'System.Text.Yaml.Tests.Docs.ContractSamples+Job' was missing required properties including: 'Image'.

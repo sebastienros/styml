@@ -1,0 +1,5 @@
+host-name: api.example
+tcp-port: 443
+protocol: h2
+request-headers:
+  X-TRACE: "on"

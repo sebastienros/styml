@@ -1,0 +1,15 @@
+Name: api
+Tls: true
+# Requests per second.
+# Over this limit, clients get a 429.
+RateLimit: 100
+# The address the server listens on.
+Host: 0.0.0.0
+---
+Name: api
+# The address the server listens on.
+Host: 0.0.0.0
+# Requests per second.
+# Over this limit, clients get a 429.
+RateLimit: 100
+Tls: true

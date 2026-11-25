@@ -1,0 +1,6 @@
+- !bike
+  Electric: true
+  Wheels: 2
+- !truck
+  Load: 7.5
+  Wheels: 6

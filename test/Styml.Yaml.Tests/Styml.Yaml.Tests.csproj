@@ -12,6 +12,7 @@
     <Compile Include="*.cs" />
     <Compile Include="YamlTestSuite\*.cs" />
     <Compile Include="Readme\*.cs" />
+    <Compile Include="Docs\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +30,11 @@
     <None Include="Readme\ReadmeSamples.cs" Link="Readme\ReadmeSamples.cs.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
     <None Include="..\..\README.md" Link="Readme\README.md" CopyToOutputDirectory="PreserveNewest" Visible="false" />
     <None Include="..\..\docs\options.md" Link="Readme\options.md" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <!-- The documentation site's samples (Docs/DocSample.cs): their outputs, their sources and the guide pages that
+         DocsSiteTests compares. -->
+    <None Include="Docs\expected\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Docs\*.cs" Exclude="Docs\DocSample.cs;Docs\DocsSiteTests.cs" Link="Docs\sources\%(Filename).cs.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\..\docs\_content\styml\guide\*.md" LinkBase="Docs\pages" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

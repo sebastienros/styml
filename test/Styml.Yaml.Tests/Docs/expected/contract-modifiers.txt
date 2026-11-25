@@ -1,0 +1,6 @@
+Host: db.internal
+# The PostgreSQL port.
+Port: 5432
+Notes: |
+  Primary.
+  Backed up nightly.

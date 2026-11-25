@@ -1,0 +1,2 @@
+YamlException: Duplicate properties not allowed during deserialization.
+LastWins: nginx:1.27

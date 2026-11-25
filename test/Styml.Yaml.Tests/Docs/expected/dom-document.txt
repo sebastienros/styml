@@ -1,0 +1,5 @@
+web: nginx:1.27
+admin: nginx:1.27 (alias of &image)
+command: tag !shell, Literal, nginx -g 'daemon off;'
+ports: Flow
+admin scaled: True

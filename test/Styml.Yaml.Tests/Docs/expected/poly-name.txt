@@ -1,0 +1,4 @@
+- kind: circle
+  Radius: 2
+  Color: black
+- Color: red
