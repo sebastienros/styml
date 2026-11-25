@@ -122,21 +122,26 @@ public class PlaygroundTests
         Assert.Equal(comments, result.Tokens.Count(t => t.Type == YamlTokenType.Comment));
     }
 
-    [Theory]
-    [InlineData(PlaygroundView.Yaml)]
-    [InlineData(PlaygroundView.Json)]
-    [InlineData(PlaygroundView.Tree)]
-    public void DocumentViewsReadAllowAsSkip(PlaygroundView view)
+    [Fact]
+    public void YamlViewKeepsCommentsUnderAllow()
     {
-        var yaml = "# head\na: 1 # one\n---\n[2, /* two */ 3]\n";
-        var result = PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Allow }, view);
+        var yaml = "# head\na: 1 # one\n# tail\n---\n[2, /* two */ 3]\n";
+        var result = PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Allow }, PlaygroundView.Yaml);
         Assert.True(result.Error is null, result.Error?.Message);
         Assert.Equal(2, result.DocumentCount);
-        Assert.NotNull(result.Note);
-        var skip = PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Skip }, view);
-        Assert.Null(skip.Note);
-        Assert.Equal(skip.Output, result.Output);
-        Assert.Equal(skip.Trees.Count, result.Trees.Count);
+        Assert.Null(result.Note);
+        Assert.Equal("# head\na: 1 # one\n# tail\n---\n[2, # two\n  3]\n", result.Output);
+        Assert.Equal("a: 1\n---\n[2, 3]\n", PlaygroundEngine.Run(yaml, new() { CommentHandling = YamlCommentHandling.Skip }, PlaygroundView.Yaml).Output);
+    }
+
+    [Theory]
+    [InlineData(PlaygroundView.Json, true)]
+    [InlineData(PlaygroundView.Tree, false)]
+    public void OnlyTheJsonViewNotesTheComments(PlaygroundView view, bool note)
+    {
+        var result = PlaygroundEngine.Run("a: 1 # one\n", new() { CommentHandling = YamlCommentHandling.Allow }, view);
+        Assert.True(result.Error is null, result.Error?.Message);
+        Assert.Equal(note, result.Note is not null);
     }
 
     [Fact]

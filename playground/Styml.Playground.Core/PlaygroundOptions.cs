@@ -24,9 +24,8 @@ public sealed record PlaygroundOptions
     /// <summary>
     /// <see cref="YamlReaderOptions.CommentHandling"/>: <see cref="YamlCommentHandling.Skip"/> and
     /// <see cref="YamlCommentHandling.Allow"/> read JSON's <c>//</c> and <c>/* */</c> comments, and
-    /// <see cref="YamlCommentHandling.Allow"/> returns every comment as a token. A <see cref="YamlDocument"/> stores no
-    /// comments and refuses <see cref="YamlCommentHandling.Allow"/>, so the views that parse documents read with
-    /// <see cref="YamlCommentHandling.Skip"/> instead (<see cref="ToDocumentOptions"/>).
+    /// <see cref="YamlCommentHandling.Allow"/> returns every comment as a token and keeps them in the documents, which the
+    /// YAML view writes back.
     /// </summary>
     [YamlPropertyName("cm")] public YamlCommentHandling CommentHandling { get; init; }
 
@@ -93,22 +92,13 @@ public sealed record PlaygroundOptions
     /// </summary>
     public const int MaxDepthLimit = 1_000;
 
-    /// <summary>
-    /// The comment handling of a <see cref="YamlDocument"/>: <see cref="CommentHandling"/>, with
-    /// <see cref="YamlCommentHandling.Allow"/> read as <see cref="YamlCommentHandling.Skip"/>, since a document has no
-    /// place for comments.
-    /// </summary>
-    [YamlIgnore]
-    public YamlCommentHandling DocumentCommentHandling =>
-        CommentHandling == YamlCommentHandling.Allow ? YamlCommentHandling.Skip : CommentHandling;
-
     /// <summary>The options of <see cref="YamlDocument.Parse(ReadOnlyMemory{byte}, YamlDocumentOptions)"/>.</summary>
     public YamlDocumentOptions ToDocumentOptions() => new()
     {
         Schema = Schema,
         DuplicateKeyHandling = DuplicateKeyHandling,
         ResolveMergeKeys = ResolveMergeKeys,
-        CommentHandling = DocumentCommentHandling,
+        CommentHandling = CommentHandling,
         MaxDepth = Math.Min(MaxDepth, MaxDepthLimit),
         MaxAliasExpansion = MaxAliasExpansion,
     };

@@ -48,6 +48,30 @@ namespace System.Text.Yaml.Tests.Docs
         }
 
         [Fact]
+        public void DocumentComments()
+        {
+            // docs: dom-document-comments yaml
+            var options = new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Allow };
+            using YamlDocument document = YamlDocument.Parse("""
+                # Service settings
+                name: web # the public name
+
+                # Ports to expose
+                ports: [80, 443]
+                """, options);
+
+            var stream = new MemoryStream();
+            using (var writer = new Utf8YamlWriter(stream))
+            {
+                document.WriteTo(writer);
+            }
+
+            string yaml = Encoding.UTF8.GetString(stream.ToArray());
+            // docs: end
+            Check("dom-document-comments", yaml);
+        }
+
+        [Fact]
         public void Node()
         {
             // docs: dom-node yaml

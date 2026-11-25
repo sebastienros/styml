@@ -147,13 +147,14 @@ public static class PlaygroundSamples
         new("comments", "Comments", new PlaygroundState
         {
             Yaml = """
-                # The reader returns comments as tokens under CommentHandling = Allow.
+                # Under CommentHandling = Allow, a YamlDocument keeps its comments
+                # and writes them back. The Tokens view lists them.
                 server:
                   host: example.com  # where it listens
+                  # The ports to open
                   ports: [80, 443] # both
-                # A YamlDocument keeps no comments: the YAML view drops them.
+                # The end of the file
                 """,
-            View = PlaygroundView.Tokens,
             Options = new() { CommentHandling = YamlCommentHandling.Allow },
         }),
         new("errors", "An error", new PlaygroundState

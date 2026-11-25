@@ -172,11 +172,11 @@
                     </select>
                 </label>
                 <label class="check" title="YamlDocumentOptions.ResolveMergeKeys"><input type="checkbox" checked="@_options.ResolveMergeKeys" @onchange="e => Set(_options with { ResolveMergeKeys = IsChecked(e) })" /> Merge keys (<code>&lt;&lt;</code>)</label>
-                <label class="select" title="YamlReaderOptions.CommentHandling: Skip and Allow read JSON's // and /* */ comments; Allow returns every comment as a token. A YamlDocument keeps no comments, so the YAML, JSON and Tree views read Allow as Skip.">Comments
+                <label class="select" title="CommentHandling: Skip and Allow read JSON's // and /* */ comments; Allow keeps every comment, as tokens and in the documents, which the YAML view writes back.">Comments
                     <select value="@_options.CommentHandling" @onchange="e => Set(_options with { CommentHandling = Parse<YamlCommentHandling>(e) })">
                         <option value="@YamlCommentHandling.Disallow">Disallow (YAML only)</option>
                         <option value="@YamlCommentHandling.Skip">Skip (also // and /* */)</option>
-                        <option value="@YamlCommentHandling.Allow">Allow (as tokens)</option>
+                        <option value="@YamlCommentHandling.Allow">Allow (keep them)</option>
                     </select>
                 </label>
                 <label class="number" title="YamlDocumentOptions.MaxDepth, 0 for 64">Max depth <input type="number" min="0" max="@PlaygroundOptions.MaxDepthLimit" value="@_options.MaxDepth" @onchange="e => Set(_options with { MaxDepth = Math.Min(ToInt(e, _options.MaxDepth), PlaygroundOptions.MaxDepthLimit) })" /></label>

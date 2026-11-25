@@ -1,0 +1,4 @@
+# Service settings
+name: web # the public name
+# Ports to expose
+ports: [80, 443]

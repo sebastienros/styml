@@ -681,8 +681,8 @@ a: 2
 ### The DOM
 
 `YamlNode` (`YamlObject`, `YamlArray`, `YamlValue`) and the read-only `YamlDocument` parse YAML and keep its scalar and
-collection styles, anchors and tags, so an edited document is written back in its own styles (comments are not
-kept):
+collection styles, anchors and tags, so an edited document is written back in its own styles. `YamlDocument` also keeps
+the comments when it is read with `CommentHandling = Allow`; `YamlNode` does not:
 
 <!-- sample:dom -->
 ```csharp

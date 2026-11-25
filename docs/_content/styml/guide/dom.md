@@ -57,6 +57,46 @@ admin scaled: True
 
 An alias element reads as the node it refers to, and `IsAlias` and `GetAnchor()` tell it apart.
 
+### Keep comments
+
+With `CommentHandling = YamlCommentHandling.Allow`, a document keeps its comments, and writing it in block style puts
+them back. Each comment stays with the entry or item it is above or ends the line of, or with the start or the end of
+a collection: the comments at the top and the bottom of a file are the root's. The text is kept, not the blank lines,
+the columns or the spacing after `#`:
+
+<!-- sample:dom-document-comments -->
+```csharp
+var options = new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Allow };
+using YamlDocument document = YamlDocument.Parse("""
+    # Service settings
+    name: web # the public name
+
+    # Ports to expose
+    ports: [80, 443]
+    """, options);
+
+var stream = new MemoryStream();
+using (var writer = new Utf8YamlWriter(stream))
+{
+    document.WriteTo(writer);
+}
+
+string yaml = Encoding.UTF8.GetString(stream.ToArray());
+```
+
+```yaml
+# Service settings
+name: web # the public name
+# Ports to expose
+ports: [80, 443]
+```
+<!-- /sample:dom-document-comments -->
+
+A JSON-compatible writer writes no comments, and a node written again through an alias or a merge key writes none of
+its source's. The reader doesn't return a few comments, so they are not kept: one on a block scalar's header
+(`key: | # c`), after an anchor or tag alone on its line, and after a `-` or `?` whose node starts on the next line.
+`System.Text.Json`'s `JsonDocument` refuses `Allow`.
+
 ## Edit with YamlNode
 
 `YamlNode.Parse` reads a mutable tree of `YamlObject`, `YamlArray` and `YamlValue`. The indexers read and replace

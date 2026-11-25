@@ -73,7 +73,7 @@ public sealed record PlaygroundResult
     /// <summary>The tokens, for <see cref="PlaygroundView.Tokens"/>.</summary>
     public IReadOnlyList<PlaygroundToken> Tokens { get; init; } = [];
 
-    /// <summary>A note on how the options were applied, such as comments a document could not keep.</summary>
+    /// <summary>A note on how the options were applied, such as comments the view can't show.</summary>
     public string? Note { get; init; }
 
     /// <summary>The error, if the input could not be read.</summary>
@@ -124,7 +124,7 @@ public static class PlaygroundEngine
                 _ => new PlaygroundResult { Output = Write(documents, options, view == PlaygroundView.Json) },
             };
             write.Stop();
-            return result with { DocumentCount = documents.Count, ParseTime = parse.Elapsed, WriteTime = write.Elapsed, Note = DocumentNote(options) };
+            return result with { DocumentCount = documents.Count, ParseTime = parse.Elapsed, WriteTime = write.Elapsed, Note = DocumentNote(options, view) };
         }
         catch (Exception e) when (e is YamlException or InvalidOperationException or ArgumentException or NotSupportedException)
         {
@@ -139,10 +139,10 @@ public static class PlaygroundEngine
         }
     }
 
-    /// <summary>The note of the views that parse documents.</summary>
-    internal static string? DocumentNote(PlaygroundOptions options) =>
-        options.CommentHandling == YamlCommentHandling.Allow
-            ? "A YamlDocument keeps no comments, so this view reads with CommentHandling = Skip and drops them. The Tokens view shows them."
+    /// <summary>The note of the views that parse documents: the documents keep their comments, which JSON can't hold.</summary>
+    internal static string? DocumentNote(PlaygroundOptions options, PlaygroundView view) =>
+        options.CommentHandling == YamlCommentHandling.Allow && view == PlaygroundView.Json
+            ? "JSON has no comments: the documents keep theirs, which the YAML view writes back."
             : null;
 
     /// <summary>
