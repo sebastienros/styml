@@ -105,6 +105,8 @@ public class PlaygroundTests
         Assert.Equal(state.Options, back.Options);
         Assert.Equal(state.Yaml, back.Yaml);
         Assert.Equal(state.View, back.View);
+        Assert.False(PlaygroundState.FromHash(new PlaygroundState { Options = new() { JsonIndented = false } }.ToHash())!.Options.JsonIndented);
+        Assert.Null(PlaygroundState.FromHash(new PlaygroundState { Yaml = new string('a', PlaygroundState.MaxStateLength) }.ToHash()));
         Assert.Null(PlaygroundState.FromHash("#not-a-state"));
         Assert.Null(PlaygroundState.FromHash(""));
     }
@@ -117,5 +119,13 @@ public class PlaygroundTests
         var highlighter = new PlaygroundHighlighter();
         Assert.Empty(highlighter.GetMissingGrammars(language));
         Assert.Contains("<span", highlighter.ToHtml("a: [1, 'b']", language));
+    }
+
+    [Fact]
+    public void MaxDepthIsBounded()
+    {
+        var options = new PlaygroundOptions { MaxDepth = 100_000 };
+        Assert.Equal(PlaygroundOptions.MaxDepthLimit, options.ToDocumentOptions().MaxDepth);
+        Assert.Equal(PlaygroundOptions.MaxDepthLimit, options.ToReaderOptions().MaxDepth);
     }
 }

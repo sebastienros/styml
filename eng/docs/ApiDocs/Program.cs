@@ -32,8 +32,16 @@ var anchors = types.ToDictionary(t => t, t => new HashSet<string>(members[t].Sel
 var docs = new XmlDocs(xmlPath, Resolve);
 var undocumented = new List<string>();
 
+// The folder is replaced, so it must be one this program wrote (with its api.yml), or empty: a mistyped path must not
+// delete another folder.
 if (Directory.Exists(output))
 {
+    if (!File.Exists(Path.Combine(output, "api.yml")) && Directory.EnumerateFileSystemEntries(output).Any())
+    {
+        Console.Error.WriteLine($"{output} is not empty and was not written by ApiDocs (no api.yml): refusing to replace it.");
+        return 1;
+    }
+
     Directory.Delete(output, recursive: true);
 }
 

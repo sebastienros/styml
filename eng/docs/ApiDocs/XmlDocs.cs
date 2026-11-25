@@ -175,7 +175,9 @@ internal sealed partial class XmlDocs
     {
         string text = Markdown(element);
         text = MarkdownLink().Replace(text, "$1");
-        text = text.Replace("`", "").Replace("**", "").Replace("\\", "");
+        text = text.Replace("`", "").Replace("**", "");
+        // Undo the escapes of Escape (a backslash before punctuation), keeping other backslashes.
+        text = Regex.Replace(text, @"\\([\\`*_\[\]<>|])", "$1");
         text = WebUtility(text);
         text = Regex.Replace(text, @"\s+", " ").Trim();
         return text;
@@ -272,7 +274,10 @@ internal sealed partial class XmlDocs
             foreach (XElement item in list.Elements("item"))
             {
                 string term = Markdown(item.Element("term"));
-                string description = Markdown(item.Element("description") ?? item);
+                // An item without a description is its own content, without the term already written.
+                string description = item.Element("description") is { } d
+                    ? Markdown(d)
+                    : Markdown(new XElement("item", item.Nodes().Where(n => n is not XElement { Name.LocalName: "term" })));
                 string content = term.Length > 0 ? $"**{term}**: {description}" : description;
                 text.Append(type == "number" ? $"{n++}. " : "- ").Append(Regex.Replace(content.Trim(), @"\n+", " ")).Append('\n');
             }

@@ -23,7 +23,7 @@ public sealed record PlaygroundOptions
     /// <summary><see cref="YamlDocumentOptions.CommentHandling"/> set to <see cref="YamlCommentHandling.Skip"/>: JSON's <c>//</c> and <c>/* */</c> comments.</summary>
     [YamlPropertyName("jc")] public bool SkipJsonComments { get; init; }
 
-    /// <summary><see cref="YamlDocumentOptions.MaxDepth"/>, 0 for the default (64).</summary>
+    /// <summary><see cref="YamlDocumentOptions.MaxDepth"/>, 0 for the default (64), at most <see cref="MaxDepthLimit"/>.</summary>
     [YamlPropertyName("md")] public int MaxDepth { get; init; }
 
     /// <summary><see cref="YamlDocumentOptions.MaxAliasExpansion"/>, 0 for the default.</summary>
@@ -56,7 +56,17 @@ public sealed record PlaygroundOptions
     [YamlPropertyName("ig")] public bool IgnoreSourceStyles { get; init; }
 
     /// <summary><see cref="YamlWriterOptions.Indented"/> for the JSON output.</summary>
-    [YamlPropertyName("ji")] public bool JsonIndented { get; init; } = true;
+    /// <remarks>Always written in the URL state: its default is <see langword="true"/>, which the state's
+    /// <see cref="YamlIgnoreCondition.WhenWritingDefault"/> would otherwise drop when it is <see langword="false"/>.</remarks>
+    [YamlPropertyName("ji")]
+    [YamlIgnore(Condition = YamlIgnoreCondition.Never)]
+    public bool JsonIndented { get; init; } = true;
+
+    /// <summary>
+    /// The deepest <see cref="MaxDepth"/> the playground accepts: the tree view is built recursively, and a deeper
+    /// document would overflow the WebAssembly stack, which can't be caught.
+    /// </summary>
+    public const int MaxDepthLimit = 1_000;
 
     /// <summary>The options of <see cref="YamlDocument.Parse(ReadOnlyMemory{byte}, YamlDocumentOptions)"/>.</summary>
     public YamlDocumentOptions ToDocumentOptions() => new()
@@ -65,7 +75,7 @@ public sealed record PlaygroundOptions
         DuplicateKeyHandling = DuplicateKeyHandling,
         ResolveMergeKeys = ResolveMergeKeys,
         CommentHandling = SkipJsonComments ? YamlCommentHandling.Skip : YamlCommentHandling.Disallow,
-        MaxDepth = MaxDepth,
+        MaxDepth = Math.Min(MaxDepth, MaxDepthLimit),
         MaxAliasExpansion = MaxAliasExpansion,
     };
 
@@ -74,7 +84,7 @@ public sealed record PlaygroundOptions
     {
         Schema = Schema,
         CommentHandling = SkipJsonComments ? YamlCommentHandling.Skip : YamlCommentHandling.Disallow,
-        MaxDepth = MaxDepth,
+        MaxDepth = Math.Min(MaxDepth, MaxDepthLimit),
         AllowMultipleValues = true,
     };
 

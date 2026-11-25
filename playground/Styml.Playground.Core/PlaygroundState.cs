@@ -12,6 +12,9 @@ namespace Styml.Playground;
 /// </summary>
 public sealed record PlaygroundState
 {
+    /// <summary>The most bytes a state read from a URL may inflate to.</summary>
+    public const int MaxStateLength = 1 << 20;
+
     /// <summary>The YAML input.</summary>
     [YamlPropertyName("y")] public string Yaml { get; init; } = "";
 
@@ -59,9 +62,15 @@ public sealed record PlaygroundState
             var base64 = new StringBuilder(text.Length + 3).Append(text).Replace('-', '+').Replace('_', '/');
             base64.Append('=', (4 - base64.Length % 4) % 4);
             using var deflate = new DeflateStream(new MemoryStream(Convert.FromBase64String(base64.ToString())), CompressionMode.Decompress);
-            using var yaml = new MemoryStream();
-            deflate.CopyTo(yaml);
-            return YamlSerializer.Deserialize(yaml.ToArray(), PlaygroundYamlContext.Default.PlaygroundState);
+            // A link is untrusted: a small fragment must not inflate into more than the playground would ever store.
+            byte[] buffer = new byte[MaxStateLength + 1];
+            int length = 0, read;
+            while (length < buffer.Length && (read = deflate.Read(buffer, length, buffer.Length - length)) > 0)
+            {
+                length += read;
+            }
+
+            return length > MaxStateLength ? null : YamlSerializer.Deserialize(buffer.AsSpan(0, length), PlaygroundYamlContext.Default.PlaygroundState);
         }
         catch (Exception e) when (e is FormatException or InvalidDataException or YamlException)
         {

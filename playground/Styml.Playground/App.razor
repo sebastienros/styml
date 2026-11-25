@@ -168,7 +168,7 @@
                 </label>
                 <label class="check" title="YamlDocumentOptions.ResolveMergeKeys"><input type="checkbox" checked="@_options.ResolveMergeKeys" @onchange="e => Set(_options with { ResolveMergeKeys = IsChecked(e) })" /> Merge keys (<code>&lt;&lt;</code>)</label>
                 <label class="check" title="YamlDocumentOptions.CommentHandling = Skip"><input type="checkbox" checked="@_options.SkipJsonComments" @onchange="e => Set(_options with { SkipJsonComments = IsChecked(e) })" /> JSON comments (<code>//</code>, <code>/* */</code>)</label>
-                <label class="number" title="YamlDocumentOptions.MaxDepth, 0 for 64">Max depth <input type="number" min="0" value="@_options.MaxDepth" @onchange="e => Set(_options with { MaxDepth = ToInt(e, _options.MaxDepth) })" /></label>
+                <label class="number" title="YamlDocumentOptions.MaxDepth, 0 for 64">Max depth <input type="number" min="0" max="@PlaygroundOptions.MaxDepthLimit" value="@_options.MaxDepth" @onchange="e => Set(_options with { MaxDepth = Math.Min(ToInt(e, _options.MaxDepth), PlaygroundOptions.MaxDepthLimit) })" /></label>
                 <label class="number" title="YamlDocumentOptions.MaxAliasExpansion, 0 for the default">Max alias expansion <input type="number" min="0" step="100" value="@_options.MaxAliasExpansion" @onchange="e => Set(_options with { MaxAliasExpansion = ToInt(e, _options.MaxAliasExpansion) })" /></label>
             </fieldset>
 
