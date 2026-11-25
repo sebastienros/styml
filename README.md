@@ -896,6 +896,11 @@ its tests:
 
 The expectation lists in `test/Styml.Yaml.Tests/YamlTestSuite` are empty: no case is an exception.
 
+A document with a `%YAML 1.x` directive is read as YAML 1.2 whatever its minor version, with no warning; another
+major version is an error. That covers YAML 1.3, an unreleased draft whose stated goal is to make no significant
+change to the language. The suite's 22 cases rewritten for 1.3 are among the accepted ones, and so are the 30 it
+marks as invalid in 1.3, which YAML 1.2 allows.
+
 ## Target frameworks
 
 The package targets `net11.0`, `net10.0` and `netstandard2.0` (which covers .NET Framework 4.6.2 and later). The tests

@@ -194,6 +194,38 @@ MaxDepth 128: YamlElement
 ```
 <!-- /sample:depth -->
 
+## YAML versions
+
+A `%YAML` directive names the version a document was written for. Styml reads a document of any `1.x` version as
+YAML 1.2, with no warning, and refuses another major version:
+
+<!-- sample:versions -->
+```csharp
+static string Read(string version) => Describe(() =>
+{
+    var values = YamlSerializer.Deserialize<Dictionary<string, YamlElement>>($"%YAML {version}\n---\nanswer: yes\n")!;
+    return values["answer"].ValueKind;
+});
+
+string output = string.Join("\n", new[] { "1.1", "1.2", "1.3", "2.0" }.Select(version => $"{version}: {Read(version)}"));
+```
+
+```text
+1.1: String
+1.2: String
+1.3: String
+2.0: YamlException: Unsupported YAML version '2.0'. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
+```
+<!-- /sample:versions -->
+
+The directive does not choose the [schema](schemas.md): under `%YAML 1.1`, `yes` is still a string unless `Schema`
+is `Yaml11`.
+
+YAML 1.3 is an unreleased draft, whose stated goal is to make no significant change to the language, so a
+`%YAML 1.3` document is read by the same rules. The [yaml-test-suite](https://github.com/yaml/yaml-test-suite) has
+22 cases rewritten for 1.3, which Styml accepts, and 30 it marks as invalid in 1.3, which Styml keeps accepting
+because YAML 1.2 allows them.
+
 ## Errors
 
 A `YamlException` reports the path of the value (`$.Ports[1]`), its line and its column, from 0. The

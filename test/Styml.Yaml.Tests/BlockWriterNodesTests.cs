@@ -553,6 +553,20 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(new[] { "+STR", "+DOC", "=VAL <tag:example.com,2000:foo> :a", "-DOC", "+DOC", "=VAL :b", "-DOC", "+DOC", "=VAL :c", "-DOC", "-STR" }, trace);
         }
 
+        [Fact]
+        public void Directives_Yaml13_IsWrittenAsGivenAndReadsBack()
+        {
+            string yaml = Write(w =>
+            {
+                w.WriteDirective("%YAML 1.3");
+                w.WriteDocumentStart();
+                w.WriteStringValue("a");
+            });
+
+            Assert.Equal("%YAML 1.3\n---\na\n", yaml);
+            Assert.Equal(new[] { "+STR", "+DOC", "=VAL :a", "-DOC", "-STR" }, YamlEventTrace.Read(Encoding.UTF8.GetBytes(yaml)));
+        }
+
         [Theory]
         [InlineData("%YAML")]
         [InlineData("%YAML 1")]
