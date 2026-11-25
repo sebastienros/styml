@@ -1,0 +1,6 @@
+text\n => YamlReaderException: With ApplyYaml13DraftRestrictions, a scalar at the top level of a YAML document needs a '---' line before it. LineNumber: 0 | BytePositionInLine: 0.
+---\ntext\n => read
+--- text\n => YamlReaderException: With ApplyYaml13DraftRestrictions, a plain or quoted scalar may not start on the '---' line of a YAML document; only a block scalar may. LineNumber: 0 | BytePositionInLine: 4.
+&a\nkey: v\n => YamlReaderException: With ApplyYaml13DraftRestrictions, a YAML anchor or tag may not be alone on its line; write it after the indicator before its node, or on the first line of the node. LineNumber: 0 | BytePositionInLine: 0.
+--- &a\nkey: v\n => read
+[a, b]: v\n => YamlReaderException: With ApplyYaml13DraftRestrictions, a YAML flow collection may not be an implicit key of a block mapping; use an explicit key ('? '). LineNumber: 0 | BytePositionInLine: 0.

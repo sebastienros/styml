@@ -1,0 +1,34 @@
+# yaml-test-suite read with YamlReaderOptions.ApplyYaml13DraftRestrictions (YamlTestSuiteDraft13Tests).
+# The 30 valid cases that the suite marks as invalid in YAML 1.3 (tags/1.3-err of release data-2022-01-17), one per
+# line: <case id> <rule that rejects it>. The option must reject each of them with that rule.
+#
+27NA scalar-on-marker-line
+2SXE anchor-name
+4GC6 root-scalar-without-marker
+4UYU root-scalar-without-marker
+6LVF scalar-on-marker-line
+6VJK root-scalar-without-marker
+6ZKB root-scalar-without-marker
+7T8X root-scalar-without-marker
+82AN root-scalar-without-marker
+8MK2 root-scalar-without-marker
+9KAX properties-on-own-line
+9WXW root-scalar-without-marker
+9YRD root-scalar-without-marker
+BU8L properties-on-own-line
+DWX9 root-scalar-without-marker
+G992 root-scalar-without-marker
+K527 root-scalar-without-marker
+KSS4 scalar-on-marker-line
+LX3P implicit-collection-key
+M5C3 properties-on-own-line
+M7A3 root-scalar-without-marker
+M9B4 root-scalar-without-marker
+MJS9 root-scalar-without-marker
+MYW6 root-scalar-without-marker
+Q9WF implicit-collection-key
+TS54 root-scalar-without-marker
+U3XV properties-on-own-line
+W4TN root-block-scalar-indentation
+W5VH anchor-name
+XW4D properties-on-own-line

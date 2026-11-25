@@ -1,0 +1,36 @@
+# yaml-test-suite read with YamlReaderOptions.ApplyYaml13DraftRestrictions (YamlTestSuiteDraft13Tests).
+# The other valid cases that the option rejects, one per line: <case id> <rule that rejects it>. The suite does not
+# mark them as invalid in YAML 1.3, but they hold the same forms as cases it does mark (7A4E, NP9H, PRH3 and TL85
+# even have a 1.3 rewrite). The test fails when a listed case starts being accepted, or is rejected by another rule.
+#
+3R3P properties-on-own-line
+3RLN/00 root-scalar-without-marker
+3RLN/01 root-scalar-without-marker
+3RLN/02 root-scalar-without-marker
+3RLN/03 root-scalar-without-marker
+3RLN/04 root-scalar-without-marker
+3RLN/05 root-scalar-without-marker
+6BFJ properties-on-own-line
+7A4E root-scalar-without-marker
+9MQT/00 scalar-on-marker-line
+DE56/00 root-scalar-without-marker
+DE56/01 root-scalar-without-marker
+DE56/02 root-scalar-without-marker
+DE56/03 root-scalar-without-marker
+DE56/04 root-scalar-without-marker
+DE56/05 root-scalar-without-marker
+DK3J root-block-scalar-indentation
+FP8R root-block-scalar-indentation
+HS5T root-scalar-without-marker
+K54U scalar-on-marker-line
+KH5V/00 root-scalar-without-marker
+KH5V/01 root-scalar-without-marker
+KH5V/02 root-scalar-without-marker
+L383 scalar-on-marker-line
+M2N8/01 implicit-collection-key
+NP9H root-scalar-without-marker
+PRH3 root-scalar-without-marker
+SKE5 properties-on-own-line
+TL85 root-scalar-without-marker
+UKK6/02 properties-on-own-line
+Y2GN anchor-name

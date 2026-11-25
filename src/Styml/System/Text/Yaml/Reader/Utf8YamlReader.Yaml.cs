@@ -296,6 +296,62 @@ namespace System.Text.Yaml
         /// <summary>JSON comments around the root node: not for a reader over a value sliced out of a document.</summary>
         private readonly bool YamlJsonCommentsAtDocumentLevel => YamlJsonComments && !_yaml.Has(YamlParseFlags.ScopedValue);
 
+        /// <summary>The restrictions of the YAML 1.3 drafts apply (<see cref="YamlReaderOptions.ApplyYaml13DraftRestrictions"/>).</summary>
+        private readonly bool YamlDraft13 => _readerOptions.ApplyYaml13DraftRestrictions;
+
+        /// <summary>
+        /// The node being read is the root of a document read with the YAML 1.3 draft restrictions: not the root of a
+        /// reader over a value sliced out of a document, whose depth 0 is not the document level.
+        /// </summary>
+        private readonly bool YamlDraft13AtRoot => YamlDraft13 && _bitStack.CurrentDepth == 0 && !_yaml.Has(YamlParseFlags.ScopedValue);
+
+        /// <summary>
+        /// YAML 1.3 drafts: a scalar that is a document's root needs '---' before it, and a plain or quoted one may
+        /// not start on that line. Called before the scalar at <paramref name="at"/> is emitted, and only with the
+        /// restrictions on, so that reading without them costs one test of the option.
+        /// </summary>
+        private readonly void YamlCheckDraft13RootScalar(in YamlCursor at, bool startsOnMarkerLine)
+        {
+            Debug.Assert(YamlDraft13);
+            if (_bitStack.CurrentDepth != 0 || _yaml.Has(YamlParseFlags.ScopedValue))
+            {
+                return;
+            }
+
+            if (!_yaml.Has(YamlParseFlags.DocumentOpen))
+            {
+                YamlThrow(YamlGrammarError.Draft13RootScalarWithoutMarker, at);
+            }
+
+            if (startsOnMarkerLine)
+            {
+                YamlThrow(YamlGrammarError.Draft13ScalarOnMarkerLine, at);
+            }
+        }
+
+        /// <summary>
+        /// Checks the name of an anchor or alias: one or more ns-anchor-char, and with the YAML 1.3 draft
+        /// restrictions no ASCII character other than a letter, a digit, '_' or '-'.
+        /// </summary>
+        private readonly void YamlCheckAnchorName(ReadOnlySpan<byte> name, in YamlCursor at)
+        {
+            if (name.IsEmpty || !YamlWriterHelper.IsValidAnchorName(name))
+            {
+                YamlThrow(YamlGrammarError.InvalidAnchor, at);
+            }
+
+            if (YamlDraft13)
+            {
+                foreach (byte b in name)
+                {
+                    if (b < 0x80 && !(b is (>= (byte)'a' and <= (byte)'z') or (>= (byte)'A' and <= (byte)'Z') or (>= (byte)'0' and <= (byte)'9') or (byte)'_' or (byte)'-'))
+                    {
+                        YamlThrow(YamlGrammarError.Draft13AnchorName, at);
+                    }
+                }
+            }
+        }
+
         private readonly YamlTokenType YamlEffectiveTokenType => _tokenType == YamlTokenType.Comment ? _previousTokenType : _tokenType;
 
         private enum YamlStep : byte

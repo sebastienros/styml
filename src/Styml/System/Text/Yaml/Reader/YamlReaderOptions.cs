@@ -98,6 +98,36 @@ namespace System.Text.Yaml
         public bool DisallowImplicitCollectionKeys { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the reader refuses the YAML 1.2 forms that the drafts of YAML 1.3 take out of the
+        /// language. <see langword="false"/> by default. When it is set, each of these is an error:
+        /// <list type="bullet">
+        /// <item><description>A scalar at the top level of a document with no <c>---</c> line before it: a file that
+        /// holds <c>'text'</c> alone.</description></item>
+        /// <item><description>A plain or quoted scalar that starts on the <c>---</c> line (<c>--- text</c>). A block
+        /// scalar may start there (<c>--- |</c>), and so may an anchor or a tag.</description></item>
+        /// <item><description>The content of a top-level block scalar with no indentation, at the start of its
+        /// lines.</description></item>
+        /// <item><description>Outside a flow collection, an anchor or a tag alone on its line, when the line before
+        /// does not end with the indicator the node follows: <c>&amp;a</c> on a line, then <c>key: v</c> on the next.
+        /// <c>top: &amp;a</c>, with the mapping on the next line, is not affected.</description></item>
+        /// <item><description>An anchor or alias name with an ASCII character that is not a letter, a digit,
+        /// <c>_</c> or <c>-</c> (<c>&amp;a:b</c>). Characters outside ASCII are accepted.</description></item>
+        /// <item><description>A flow collection as an implicit key of a block mapping (<c>[a, b]: v</c>). An explicit
+        /// key (<c>? [a, b]</c>) and a key of a flow mapping (<c>{[a, b]: v}</c>) are not affected.</description></item>
+        /// </list>
+        /// </summary>
+        /// <remarks>
+        /// YAML 1.3 is not released. These rules come from its draft proposals and from the yaml-test-suite's cases
+        /// marked as invalid in YAML 1.3 or rewritten for it, limited to what those cases need, and they may change
+        /// with the drafts. The option
+        /// does not depend on a <c>%YAML</c> directive: a document that declares another version is read by the same
+        /// rules. Two forms that <see cref="Utf8YamlWriter"/> writes do not read back with this option: a top-level
+        /// scalar, unless <see cref="Utf8YamlWriter.WriteDocumentStart"/> was called before it, and a top-level block
+        /// collection with an anchor or a tag, which the writer puts on a line of its own.
+        /// </remarks>
+        public bool ApplyYaml13DraftRestrictions { get; set; }
+
+        /// <summary>
         /// Gets or sets whether typed reads accept scalars that YamlDotNet or SharpYaml resolve although no YAML standard
         /// does. <see langword="false"/> by default. When it is set:
         /// <list type="bullet">

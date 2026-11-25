@@ -753,6 +753,10 @@ namespace System.Text.Yaml
                             end = line;
                             break;
                         }
+                        if (spaces == 0 && YamlDraft13AtRoot)
+                        {
+                            YamlThrow(YamlGrammarError.Draft13RootBlockScalarIndentation, line);
+                        }
                         contentIndent = spaces;
                         indentKnown = true;
                         if (maxLeadingBlank > contentIndent)
@@ -848,10 +852,7 @@ namespace System.Text.Yaml
                     {
                         return false;
                     }
-                    if (nameEnd == nameStart || !YamlWriterHelper.IsValidAnchorName(buffer.Slice(nameStart, nameEnd - nameStart)))
-                    {
-                        YamlThrow(YamlGrammarError.InvalidAnchor, c);
-                    }
+                    YamlCheckAnchorName(buffer.Slice(nameStart, nameEnd - nameStart), c);
                     props.AnchorStart = nameStart;
                     props.AnchorLength = nameEnd - nameStart;
                     c.Column += nameEnd - c.Pos;
@@ -978,10 +979,7 @@ namespace System.Text.Yaml
                 nameLength = 0;
                 return false;
             }
-            if (nameEnd == nameStart || !YamlWriterHelper.IsValidAnchorName(buffer.Slice(nameStart, nameEnd - nameStart)))
-            {
-                YamlThrow(YamlGrammarError.InvalidAnchor, c);
-            }
+            YamlCheckAnchorName(buffer.Slice(nameStart, nameEnd - nameStart), c);
 
             nameLength = nameEnd - nameStart;
             c.Column += nameEnd - c.Pos;

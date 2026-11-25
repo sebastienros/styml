@@ -1,0 +1,26 @@
+# yaml-test-suite read with YamlReaderOptions.ApplyYaml13DraftRestrictions (YamlTestSuiteDraft13Tests).
+# The 22 cases that the suite rewrote for YAML 1.3 (tags/1.3-mod of release data-2022-01-17), one per line:
+# <case id> <the case it rewrites>. The option must accept each of them with the expected events.
+#
+2LFX 6LVF
+4Q9F TS54
+4QFQ R4YG
+52DL 8MK2
+6WLZ 9WXW
+6WPF TL85
+753E MYW6
+7BMT U3XV
+93WF K527
+9DXL 6ZKB
+9TFX 7A4E
+B3HG G992
+EX5H 9YRD
+EXG3 82AN
+Q8AD NP9H
+RZP5 XW4D
+SSW6 4GC6
+T26H DWX9
+T4YY PRH3
+T5N4 M9B4
+XV9V 5GBF
+Z67P M5C3
