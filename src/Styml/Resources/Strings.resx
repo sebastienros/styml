@@ -193,7 +193,7 @@
     <value>Enum type '{0}' uses unsupported identifier '{1}'. It must not be null nor contain leading or trailing whitespace. Flags enums must additionally not be empty nor contain commas.</value>
   </data>
   <data name="YamlDocumentDoesNotSupportComments" xml:space="preserve">
-    <value>Comments cannot be stored in a YamlDocument, only the Skip and Disallow comment handling modes are supported.</value>
+    <value>A YamlDocument read from a Utf8YamlReader cannot keep comments: read with the Skip or Disallow comment handling, or parse the text with YamlDocumentOptions.CommentHandling set to Allow.</value>
   </data>
   <data name="YamlElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>

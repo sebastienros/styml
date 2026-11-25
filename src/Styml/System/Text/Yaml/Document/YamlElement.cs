@@ -1933,6 +1933,14 @@ namespace System.Text.Yaml
             _parent.WritePropertyName(_rowIdx, writer);
         }
 
+        /// <summary>The comments of the slot of the property whose value this element is (YamlProperty.WriteTo).</summary>
+        internal void WritePropertyCommentsTo(Utf8YamlWriter writer, YamlDocument.CommentPlacement placement)
+        {
+            CheckValidInstance();
+
+            _parent.WritePropertyComments(_rowIdx, placement, writer);
+        }
+
         /// <summary>
         ///   Get an enumerator to enumerate the values in the YAML array represented by this YamlElement.
         /// </summary>

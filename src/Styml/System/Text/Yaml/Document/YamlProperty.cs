@@ -135,6 +135,8 @@ namespace System.Text.Yaml
         {
             ArgumentNullException.ThrowIfNull(writer);
 
+            // A document read with comments writes the entry's own: above it, after its key, after its value.
+            Value.WritePropertyCommentsTo(writer, YamlDocument.CommentPlacement.Leading);
             if (KeyKind != YamlKeyKind.Scalar && GetKeyElement() is { ValueKind: YamlValueKind.Object or YamlValueKind.Array } key)
             {
                 // M5e: a collection key is written as an explicit key, which only the block style has.
@@ -152,7 +154,9 @@ namespace System.Text.Yaml
                 Value.WritePropertyNameTo(writer);
             }
 
+            Value.WritePropertyCommentsTo(writer, YamlDocument.CommentPlacement.AfterKey);
             Value.WriteTo(writer);
+            Value.WritePropertyCommentsTo(writer, YamlDocument.CommentPlacement.After);
         }
 
         /// <summary>

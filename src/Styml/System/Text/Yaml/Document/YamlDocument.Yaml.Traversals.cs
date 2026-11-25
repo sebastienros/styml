@@ -132,11 +132,27 @@ namespace System.Text.Yaml
             internal bool ResolveMerges; // M5b: mappings with a plain '<<' key are written merged (YamlDocument.Merge.cs)
             internal bool SuppressAnchors; // M5b: a merged copy of an aliased mapping's entries writes no anchors
             internal YamlDuplicateKeyHandling MergeSourceHandling; // M5c: a key repeated inside one merge source
+            internal bool NoComments; // a copy (an expanded alias, a merged entry) writes no comments of its source
         }
 
         private void WriteYamlElementTo(int index, Utf8YamlWriter writer)
         {
             var state = new YamlWriteState { RangeStart = index, RangeEnd = GetEndIndex(index, includeEndElement: true) };
+            WriteYamlRoot(index, writer, ref state);
+        }
+
+        // The root writes the document's first and last comments (a collection root holds them as its Start and End,
+        // which its node writes); any other element leaves its own slot's comments to the container that writes it.
+        private void WriteYamlRoot(int index, Utf8YamlWriter writer, ref YamlWriteState state)
+        {
+            if (index == 0 && _yaml?.Comments is not null)
+            {
+                WriteComments(0, CommentPlacement.Leading, writer);
+                WriteYamlNode(index, writer, ref state);
+                WriteComments(0, CommentPlacement.After, writer);
+                return;
+            }
+
             WriteYamlNode(index, writer, ref state);
         }
 
@@ -157,7 +173,10 @@ namespace System.Text.Yaml
 
                 CountAliasExpansion(index, ref state.Expanded);
                 CheckTraversalDepth(++state.Depth);
+                bool noComments = state.NoComments;
+                state.NoComments = true;
                 WriteYamlNode(target, writer, ref state);
+                state.NoComments = noComments;
                 state.Depth--;
                 return index + DbRow.Size;
             }
@@ -198,6 +217,12 @@ namespace System.Text.Yaml
                             writer.WriteStartArray();
                         }
 
+                        bool comments = block && !state.NoComments && _yaml?.Comments is not null;
+                        if (comments)
+                        {
+                            WriteComments(index, CommentPlacement.Start, writer);
+                        }
+
                         CheckTraversalDepth(++state.Depth);
                         int i = index + DbRow.Size;
                         while (true)
@@ -208,6 +233,13 @@ namespace System.Text.Yaml
                                 break;
                             }
 
+                            if (comments)
+                            {
+                                // The slot's comments: above its key, or above the item.
+                                WriteComments(i, CommentPlacement.Leading, writer);
+                            }
+
+                            int slot = i;
                             if (child.TokenType == YamlTokenType.PropertyName && (child.ScalarFlags & DbRow.ComplexKeyFlag) != 0)
                             {
                                 // M5e: a collection key, written as an explicit key (block style only).
@@ -219,6 +251,10 @@ namespace System.Text.Yaml
                                 writer.WriteStartPropertyKey();
                                 i = WriteYamlNode(i + DbRow.Size, writer, ref state);
                                 writer.WriteEndPropertyKey();
+                                if (comments)
+                                {
+                                    WriteComments(slot, CommentPlacement.AfterKey, writer);
+                                }
                             }
                             else if (child.TokenType == YamlTokenType.PropertyName)
                             {
@@ -236,10 +272,25 @@ namespace System.Text.Yaml
                                 }
 
                                 WritePropertyName(child, writer);
+                                if (comments)
+                                {
+                                    WriteComments(slot, CommentPlacement.AfterKey, writer);
+                                }
+
                                 i = ValueRowOf(i);
                             }
 
+                            int value = i;
                             i = WriteYamlNode(i, writer, ref state);
+                            if (comments)
+                            {
+                                WriteComments(value, CommentPlacement.After, writer);
+                            }
+                        }
+
+                        if (comments)
+                        {
+                            WriteComments(index, CommentPlacement.End, writer);
                         }
 
                         state.Depth--;
@@ -395,6 +446,7 @@ namespace System.Text.Yaml
                 payload = new byte[] { (byte)' ' };
             }
 
+            tables.Comments = CopyComments(index, endIndex);
             tables.SourceLength = sourceEnd - sourceStart;
             tables.RootTagOutsideSource = tables.InfoCount > 0 && tables.Infos[0].Row == 0 && tables.Infos[0].Tag is not null;
             var copy = new YamlDocument(payload, new MetadataDb(rows), isDisposable: false, yaml: tables);
@@ -425,7 +477,14 @@ namespace System.Text.Yaml
         private YamlElement CloneByWriting(int index)
         {
             byte[] written = WriteYamlNodeToBytes(index);
-            using YamlDocument parsed = Parse(written, new YamlDocumentOptions { MaxDepth = TraversalMaxDepth, Schema = Schema, MaxAliasExpansion = MaxAliasExpansion });
+            // The written text holds the element's comments, which a document read with them keeps.
+            using YamlDocument parsed = Parse(written, new YamlDocumentOptions
+            {
+                MaxDepth = TraversalMaxDepth,
+                Schema = Schema,
+                MaxAliasExpansion = MaxAliasExpansion,
+                CommentHandling = HasComments ? YamlCommentHandling.Allow : YamlCommentHandling.Disallow,
+            });
             return parsed.RootElement.Clone();
         }
 

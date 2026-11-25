@@ -81,6 +81,7 @@
     <Compile Include="System\Text\Yaml\AppContextSwitchHelper.cs" />
     <Compile Include="System\Text\Yaml\BitStack.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.PropertyNameSet.cs" />
+    <Compile Include="System\Text\Yaml\Document\YamlDocument.Comments.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.ComplexKeys.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.cs" />
     <Compile Include="System\Text\Yaml\Document\YamlDocument.Yaml.cs" />
