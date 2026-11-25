@@ -215,6 +215,21 @@ namespace System.Text.Yaml.Tests.Docs
         }
 
         [Fact]
+        public void Versions()
+        {
+            // docs: versions text
+            static string Read(string version) => Describe(() =>
+            {
+                var values = YamlSerializer.Deserialize<Dictionary<string, YamlElement>>($"%YAML {version}\n---\nanswer: yes\n")!;
+                return values["answer"].ValueKind;
+            });
+
+            string output = string.Join("\n", new[] { "1.1", "1.2", "1.3", "2.0" }.Select(version => $"{version}: {Read(version)}"));
+            // docs: end
+            Check("versions", output + "\n", defaultStyle: false);
+        }
+
+        [Fact]
         public void Empty()
         {
             // docs: empty text

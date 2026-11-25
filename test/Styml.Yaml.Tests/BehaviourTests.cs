@@ -70,6 +70,59 @@ namespace System.Text.Yaml.Tests
             Assert.Equal(new[] { (YamlTokenType.Null, "") }, Tokens("%YAML 1.2\n--- # nothing\n...\n"));
         }
 
+        [Theory]
+        [InlineData("1.0")]
+        [InlineData("1.1")]
+        [InlineData("1.2")]
+        [InlineData("1.3")]
+        [InlineData("1.99")]
+        public void YamlDirective_AnyMinorOfMajor1ReadsAsYaml12(string version)
+        {
+            // A 1.1 document is read with the 1.2 rules, and so is a later minor: 1.3 is an unreleased draft meant to
+            // make no significant change to the language.
+            const string Document = "--- [true, 0o17, 017, yes]\n";
+            var expected = new[]
+            {
+                (YamlTokenType.StartArray, "["), (YamlTokenType.True, "true"), (YamlTokenType.Number, "0o17"),
+                (YamlTokenType.Number, "017"), (YamlTokenType.String, "yes"), (YamlTokenType.EndArray, "]"),
+            };
+            Assert.Equal(expected, Tokens(Document));
+            Assert.Equal(expected, Tokens("%YAML " + version + "\n" + Document));
+        }
+
+        [Fact]
+        public void YamlDirective_DoesNotSelectTheSchema()
+        {
+            const string Yaml = "%YAML 1.1\n--- yes\n";
+            Assert.Equal(new[] { (YamlTokenType.String, "yes") }, Tokens(Yaml));
+            Assert.Equal(new[] { (YamlTokenType.True, "yes") }, Tokens(Yaml, new YamlReaderOptions { Schema = YamlSchemaKind.Yaml11 }));
+        }
+
+        [Theory]
+        [InlineData("2.0")]
+        [InlineData("10.0")]
+        [InlineData("0.9")]
+        public void YamlDirective_AnotherMajorIsRefused(string version)
+        {
+            string yaml = "%YAML " + version + "\n--- a\n";
+            YamlException e = Assert.ThrowsAny<YamlException>(() => Tokens(yaml));
+            Assert.Contains("Unsupported YAML version '" + version + "'", e.Message);
+            Assert.ThrowsAny<YamlException>(() => YamlDocument.Parse(yaml));
+            Assert.ThrowsAny<YamlException>(() => YamlSerializer.Deserialize<object>(yaml));
+        }
+
+        [Fact]
+        public void YamlDirective_Version13ReadsThroughEveryLayer()
+        {
+            const string Yaml = "%YAML 1.3\n---\na: 1\n";
+            using (YamlDocument document = YamlDocument.Parse(Yaml))
+            {
+                Assert.Equal(1, document.RootElement.GetProperty("a").GetInt32());
+            }
+            Assert.Equal(1, System.Text.Yaml.Nodes.YamlNode.Parse(Yaml)!["a"]!.GetValue<int>());
+            Assert.Equal(1, YamlSerializer.Deserialize<Dictionary<string, int>>(Yaml)!["a"]);
+        }
+
         [Fact]
         public void D3_CommentsAreSkippedByDefaultAndYieldedWithAllow()
         {

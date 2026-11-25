@@ -198,7 +198,9 @@ namespace System.Text.Yaml
                     YamlThrow(YamlGrammarError.InvalidDirective, c);
                 }
 
-                // version: digits '.' digits, major version 1.
+                // version: digits '.' digits, major version 1. Every minor is read as YAML 1.2: a 1.1 document as the
+                // specification says, and a later one (1.3 is an unreleased draft meant to make no significant change
+                // to the language) without the warning it recommends, which the reader has no way to give.
                 int dot = args.IndexOf((byte)'.');
                 if (dot <= 0 || dot == args.Length - 1 || !YamlReaderHelper.AllDigits(args.Slice(0, dot)) || !YamlReaderHelper.AllDigits(args.Slice(dot + 1)))
                 {
