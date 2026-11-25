@@ -370,7 +370,7 @@ namespace System.Text.Yaml.Nodes
             {
                 return (yamlElement.HasValue
                     ? new YamlObject(yamlElement.Value.Clone(), Options) { _collectionStyle = _collectionStyle, NoComments = NoComments }
-                    : new YamlObject(Options) { _collectionStyle = _collectionStyle, _startComment = _startComment, _endComment = _endComment }).WithPropertiesOf<YamlObject>(this);
+                    : new YamlObject(Options) { _collectionStyle = _collectionStyle, StartText = StartText, EndText = EndText }).WithPropertiesOf<YamlObject>(this);
             }
 
             var jObject = new YamlObject(Options)
@@ -396,17 +396,17 @@ namespace System.Text.Yaml.Nodes
                 }
             }
 
-            if (_slotComments is { } slotComments)
+            if (SlotCommentMap is { } slotComments)
             {
-                jObject._slotComments = CreateSlotComments(Options);
+                jObject.SlotCommentMap = CreateSlotComments(Options);
                 foreach (KeyValuePair<string, SlotComments> item in slotComments)
                 {
-                    jObject._slotComments[item.Key] = item.Value.Copy();
+                    jObject.SlotCommentMap[item.Key] = item.Value.Copy();
                 }
             }
 
-            jObject._startComment = _startComment;
-            jObject._endComment = _endComment;
+            jObject.StartText = StartText;
+            jObject.EndText = EndText;
             jObject.NoComments = NoComments;
             return jObject.WithPropertiesOf<YamlObject>(this);
         }
@@ -481,9 +481,9 @@ namespace System.Text.Yaml.Nodes
                 WritePropertiesTo(writer);
                 WriteCollectionStyleTo(writer);
                 writer.WriteStartObject();
-                WriteOwnLineComment(writer, _startComment);
+                WriteOwnLineComment(writer, StartText);
                 WriteContentsTo(writer, options);
-                WriteOwnLineComment(writer, _endComment);
+                WriteOwnLineComment(writer, EndText);
                 writer.WriteEndObject();
             }
         }
@@ -509,7 +509,7 @@ namespace System.Text.Yaml.Nodes
             {
                 OrderedDictionary<string, YamlNode?> entries = Dictionary;
                 List<ComplexKeyEntry>? complexKeys = _complexKeys;
-                Dictionary<string, SlotComments>? slotComments = writer.IsBlockStyle ? _slotComments : null;
+                Dictionary<string, SlotComments>? slotComments = writer.IsBlockStyle ? SlotCommentMap : null;
                 int position = 0;
                 int next = 0;
                 foreach (KeyValuePair<string, YamlNode?> entry in entries)

@@ -1,5 +1,7 @@
 // Copyright (c) Sébastien Ros. Licensed under the MIT license.
 
+using System.Collections.Generic;
+
 namespace System.Text.Yaml.Nodes
 {
     public abstract partial class YamlNode
@@ -30,6 +32,21 @@ namespace System.Text.Yaml.Nodes
             {
                 element.WriteTo(writer);
             }
+        }
+
+        /// <summary>
+        /// A collection's comments, allocated only when it has some, so that a node without comments carries one null
+        /// reference: its start and end, and its entries' (by name) or items' (in step with them).
+        /// </summary>
+        internal sealed class CollectionComments
+        {
+            internal string? Start;
+            internal string? End;
+            internal Dictionary<string, SlotComments>? Slots;
+            internal List<SlotComments?>? Items;
+
+            /// <summary>The start and end were taken from the element.</summary>
+            internal bool Captured;
         }
 
         /// <summary>The comments of an entry or an item: above it, and at the end of its line.</summary>

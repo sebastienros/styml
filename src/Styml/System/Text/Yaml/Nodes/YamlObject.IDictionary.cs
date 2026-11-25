@@ -110,7 +110,7 @@ namespace System.Text.Yaml.Nodes
             }
 
             dictionary.Clear();
-            _slotComments = null;
+            SlotCommentMap = null;
 
             // M7b: the collection-key entries go too.
             if (_complexKeys is { } complexKeys)
@@ -168,7 +168,7 @@ namespace System.Text.Yaml.Nodes
             bool success = dictionary.Remove(propertyName, out YamlNode? removedNode);
             if (success)
             {
-                _slotComments?.Remove(propertyName);
+                SlotCommentMap?.Remove(propertyName);
                 DetachParent(removedNode);
                 if (index >= 0)
                 {
@@ -358,7 +358,7 @@ namespace System.Text.Yaml.Nodes
                     }
 
                     _complexKeys = complexKeys;
-                    _slotComments = slotComments;
+                    SlotCommentMap = slotComments;
                 }
 
                 // M7b: the element's style is kept before the element is dropped, and so are its comments.

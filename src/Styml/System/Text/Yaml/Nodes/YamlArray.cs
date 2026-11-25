@@ -130,7 +130,7 @@ namespace System.Text.Yaml.Nodes
             {
                 return (yamlElement.HasValue
                     ? new YamlArray(yamlElement.Value.Clone(), Options) { _collectionStyle = _collectionStyle, NoComments = NoComments }
-                    : new YamlArray(Options) { _collectionStyle = _collectionStyle, _startComment = _startComment, _endComment = _endComment }).WithPropertiesOf<YamlArray>(this);
+                    : new YamlArray(Options) { _collectionStyle = _collectionStyle, StartText = StartText, EndText = EndText }).WithPropertiesOf<YamlArray>(this);
             }
 
             var yamlArray = new YamlArray(Options)
@@ -144,17 +144,17 @@ namespace System.Text.Yaml.Nodes
                 yamlArray.Add(list[i]?.DeepCloneCore());
             }
 
-            if (_itemComments is { } itemComments)
+            if (ItemCommentList is { } itemComments)
             {
-                yamlArray._itemComments = new List<SlotComments?>(itemComments.Count);
+                yamlArray.ItemCommentList = new List<SlotComments?>(itemComments.Count);
                 foreach (SlotComments? comments in itemComments)
                 {
-                    yamlArray._itemComments.Add(comments?.Copy());
+                    yamlArray.ItemCommentList.Add(comments?.Copy());
                 }
             }
 
-            yamlArray._startComment = _startComment;
-            yamlArray._endComment = _endComment;
+            yamlArray.StartText = StartText;
+            yamlArray.EndText = EndText;
             yamlArray.NoComments = NoComments;
             return yamlArray.WithPropertiesOf<YamlArray>(this);
         }
@@ -340,10 +340,10 @@ namespace System.Text.Yaml.Nodes
                 WritePropertiesTo(writer);
                 WriteCollectionStyleTo(writer);
                 writer.WriteStartArray();
-                WriteOwnLineComment(writer, _startComment);
+                WriteOwnLineComment(writer, StartText);
 
                 List<YamlNode?> items = List;
-                List<SlotComments?>? itemComments = writer.IsBlockStyle ? _itemComments : null;
+                List<SlotComments?>? itemComments = writer.IsBlockStyle ? ItemCommentList : null;
                 for (int i = 0; i < items.Count; i++)
                 {
                     YamlNode? element = items[i];
@@ -361,7 +361,7 @@ namespace System.Text.Yaml.Nodes
                     comments?.WriteAfterValue(writer, element, item: true);
                 }
 
-                WriteOwnLineComment(writer, _endComment);
+                WriteOwnLineComment(writer, EndText);
                 writer.WriteEndArray();
             }
         }
@@ -405,7 +405,7 @@ namespace System.Text.Yaml.Nodes
                         list.Add(node);
                     }
 
-                    _itemComments = itemComments;
+                    ItemCommentList = itemComments;
 
                     // M7b: the element's style is kept before the element is dropped, and so are its comments.
                     CaptureCollectionStyle(jElement);

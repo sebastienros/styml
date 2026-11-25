@@ -81,7 +81,7 @@ namespace System.Text.Yaml.Nodes
         {
             KeyValuePair<string, YamlNode?> existing = Dictionary.GetAt(index);
             Dictionary.RemoveAt(index);
-            _slotComments?.Remove(existing.Key);
+            SlotCommentMap?.Remove(existing.Key);
             DetachParent(existing.Value);
             ShiftCollectionKeys(index, -1);
         }

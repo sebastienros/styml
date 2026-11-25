@@ -24,7 +24,7 @@ namespace System.Text.Yaml.Nodes
             item?.AssignParent(this);
 
             List.Add(item);
-            _itemComments?.Add(null);
+            ItemCommentList?.Add(null);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace System.Text.Yaml.Nodes
                 }
 
                 list.Clear();
-                _itemComments = null;
+                ItemCommentList = null;
             }
         }
 
@@ -86,7 +86,7 @@ namespace System.Text.Yaml.Nodes
         {
             item?.AssignParent(this);
             List.Insert(index, item);
-            _itemComments?.Insert(index, null);
+            ItemCommentList?.Insert(index, null);
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace System.Text.Yaml.Nodes
         {
             YamlNode? item = List[index];
             List.RemoveAt(index);
-            _itemComments?.RemoveAt(index);
+            ItemCommentList?.RemoveAt(index);
             DetachParent(item);
         }
 
@@ -138,7 +138,7 @@ namespace System.Text.Yaml.Nodes
             ArgumentNullException.ThrowIfNull(match);
 
             List<YamlNode?> items = List; // materialized first: that is when the items' comments are taken
-            if (_itemComments is { } itemComments)
+            if (ItemCommentList is { } itemComments)
             {
                 // The items' comments go with them: both lists are compacted in one pass, in the items' order.
                 int kept = 0;
@@ -220,7 +220,7 @@ namespace System.Text.Yaml.Nodes
                 }
 
                 list.RemoveRange(index, count);
-                _itemComments?.RemoveRange(index, count);
+                ItemCommentList?.RemoveRange(index, count);
             }
         }
 

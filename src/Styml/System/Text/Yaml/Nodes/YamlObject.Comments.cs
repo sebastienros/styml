@@ -9,10 +9,43 @@ namespace System.Text.Yaml.Nodes
         // The comments of the entries, by property name (the entries' own comparer), and of the collection's start and
         // end. A node made from a document read with CommentHandling.Allow takes them from the document when it
         // materializes; until then the document holds them, and writes them with the element.
-        private Dictionary<string, SlotComments>? _slotComments;
-        private string? _startComment;
-        private string? _endComment;
-        private bool _collectionCommentsCaptured;
+        private CollectionComments? _comments;
+
+        private Dictionary<string, SlotComments>? SlotCommentMap
+        {
+            get => _comments?.Slots;
+            set
+            {
+                if (value is not null || _comments is not null)
+                {
+                    (_comments ??= new CollectionComments()).Slots = value;
+                }
+            }
+        }
+
+        private string? StartText
+        {
+            get => _comments?.Start;
+            set
+            {
+                if (value is not null || _comments is not null)
+                {
+                    (_comments ??= new CollectionComments()).Start = value;
+                }
+            }
+        }
+
+        private string? EndText
+        {
+            get => _comments?.End;
+            set
+            {
+                if (value is not null || _comments is not null)
+                {
+                    (_comments ??= new CollectionComments()).End = value;
+                }
+            }
+        }
 
         /// <summary>
         ///   Gets or sets the comment written on the lines after this mapping's start, above its first entry, in block
@@ -29,14 +62,14 @@ namespace System.Text.Yaml.Nodes
             get
             {
                 EnsureCollectionComments();
-                return _startComment;
+                return StartText;
             }
             set
             {
                 ValidateComment(value, singleLine: false, nameof(value));
                 EnsureCollectionComments();
                 _ = Dictionary; // the element, which would write its own comments, is dropped
-                _startComment = value;
+                StartText = value;
             }
         }
 
@@ -54,14 +87,14 @@ namespace System.Text.Yaml.Nodes
             get
             {
                 EnsureCollectionComments();
-                return _endComment;
+                return EndText;
             }
             set
             {
                 ValidateComment(value, singleLine: false, nameof(value));
                 EnsureCollectionComments();
                 _ = Dictionary;
-                _endComment = value;
+                EndText = value;
             }
         }
 
@@ -92,7 +125,7 @@ namespace System.Text.Yaml.Nodes
                 return SlotComments.From(value, property: true)?.Get(position);
             }
 
-            return Dictionary.ContainsKey(propertyName) && _slotComments is { } slots && slots.TryGetValue(propertyName, out SlotComments? comments)
+            return Dictionary.ContainsKey(propertyName) && SlotCommentMap is { } slots && slots.TryGetValue(propertyName, out SlotComments? comments)
                 ? comments.Get(position)
                 : null;
         }
@@ -121,7 +154,7 @@ namespace System.Text.Yaml.Nodes
             }
 
             string name = dictionary.GetAt(index).Key;
-            if (_slotComments is { } slots && slots.TryGetValue(name, out SlotComments? comments))
+            if (SlotCommentMap is { } slots && slots.TryGetValue(name, out SlotComments? comments))
             {
                 comments.Set(position, comment);
                 if (comments.IsEmpty)
@@ -133,7 +166,7 @@ namespace System.Text.Yaml.Nodes
             {
                 comments = new SlotComments();
                 comments.Set(position, comment);
-                (_slotComments ??= CreateSlotComments(Options))[name] = comments;
+                (SlotCommentMap ??= CreateSlotComments(Options))[name] = comments;
             }
         }
 
@@ -156,15 +189,16 @@ namespace System.Text.Yaml.Nodes
         // Before the element is dropped (the node materializes or is cleared), its start and end comments are kept.
         private void CaptureCollectionComments(YamlElement element)
         {
-            if (!_collectionCommentsCaptured)
+            if (_comments is { Captured: true } || NoComments || !element.HasComments)
             {
-                if (!NoComments && element.HasComments)
-                {
-                    element.GetCollectionComments(out _startComment, out _endComment);
-                }
-
-                _collectionCommentsCaptured = true;
+                return;
             }
+
+            CollectionComments comments = _comments ??= new CollectionComments();
+            element.GetCollectionComments(out string? start, out string? end);
+            comments.Start ??= start;
+            comments.End ??= end;
+            comments.Captured = true;
         }
 
         private void EnsureCollectionComments()
@@ -178,7 +212,7 @@ namespace System.Text.Yaml.Nodes
         // An entry renamed in place keeps its comments.
         private void MoveSlotComments(string oldName, string newName)
         {
-            if (_slotComments is { } slots && slots.Comparer.Equals(oldName, newName) is false && slots.TryGetValue(oldName, out SlotComments? comments))
+            if (SlotCommentMap is { } slots && slots.Comparer.Equals(oldName, newName) is false && slots.TryGetValue(oldName, out SlotComments? comments))
             {
                 slots.Remove(oldName);
                 slots[newName] = comments;

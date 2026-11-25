@@ -9,10 +9,43 @@ namespace System.Text.Yaml.Nodes
         // The comments of the items, kept in step with them (null when no item has any), and of the collection's start
         // and end. A node made from a document read with CommentHandling.Allow takes them from the document when it
         // materializes; until then the document holds them, and writes them with the element.
-        private List<SlotComments?>? _itemComments;
-        private string? _startComment;
-        private string? _endComment;
-        private bool _collectionCommentsCaptured;
+        private CollectionComments? _comments;
+
+        private List<SlotComments?>? ItemCommentList
+        {
+            get => _comments?.Items;
+            set
+            {
+                if (value is not null || _comments is not null)
+                {
+                    (_comments ??= new CollectionComments()).Items = value;
+                }
+            }
+        }
+
+        private string? StartText
+        {
+            get => _comments?.Start;
+            set
+            {
+                if (value is not null || _comments is not null)
+                {
+                    (_comments ??= new CollectionComments()).Start = value;
+                }
+            }
+        }
+
+        private string? EndText
+        {
+            get => _comments?.End;
+            set
+            {
+                if (value is not null || _comments is not null)
+                {
+                    (_comments ??= new CollectionComments()).End = value;
+                }
+            }
+        }
 
         /// <summary>
         ///   Gets or sets the comment written on the lines after this sequence's start, above its first item, in block
@@ -28,14 +61,14 @@ namespace System.Text.Yaml.Nodes
             get
             {
                 EnsureCollectionComments();
-                return _startComment;
+                return StartText;
             }
             set
             {
                 ValidateComment(value, singleLine: false, nameof(value));
                 EnsureCollectionComments();
                 _ = List; // the element, which would write its own comments, is dropped
-                _startComment = value;
+                StartText = value;
             }
         }
 
@@ -53,14 +86,14 @@ namespace System.Text.Yaml.Nodes
             get
             {
                 EnsureCollectionComments();
-                return _endComment;
+                return EndText;
             }
             set
             {
                 ValidateComment(value, singleLine: false, nameof(value));
                 EnsureCollectionComments();
                 _ = List;
-                _endComment = value;
+                EndText = value;
             }
         }
 
@@ -96,7 +129,7 @@ namespace System.Text.Yaml.Nodes
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            return _itemComments is { } comments && index < comments.Count ? comments[index]?.Get(position) : null;
+            return ItemCommentList is { } comments && index < comments.Count ? comments[index]?.Get(position) : null;
         }
 
         /// <summary>Sets the comment of the item at <paramref name="index"/> at <paramref name="position"/>.</summary>
@@ -119,26 +152,26 @@ namespace System.Text.Yaml.Nodes
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            if (_itemComments is null)
+            if (ItemCommentList is null)
             {
                 if (comment is null)
                 {
                     return;
                 }
 
-                _itemComments = new List<SlotComments?>(new SlotComments?[items.Count]);
+                ItemCommentList = new List<SlotComments?>(new SlotComments?[items.Count]);
             }
 
-            while (_itemComments.Count < items.Count)
+            while (ItemCommentList.Count < items.Count)
             {
-                _itemComments.Add(null);
+                ItemCommentList.Add(null);
             }
 
-            SlotComments comments = _itemComments[index] ??= new SlotComments();
+            SlotComments comments = ItemCommentList[index] ??= new SlotComments();
             comments.Set(position, comment);
             if (comments.IsEmpty)
             {
-                _itemComments[index] = null;
+                ItemCommentList[index] = null;
             }
         }
 
@@ -149,15 +182,16 @@ namespace System.Text.Yaml.Nodes
         // Before the element is dropped (the node materializes or is cleared), its start and end comments are kept.
         private void CaptureCollectionComments(YamlElement element)
         {
-            if (!_collectionCommentsCaptured)
+            if (_comments is { Captured: true } || NoComments || !element.HasComments)
             {
-                if (!NoComments && element.HasComments)
-                {
-                    element.GetCollectionComments(out _startComment, out _endComment);
-                }
-
-                _collectionCommentsCaptured = true;
+                return;
             }
+
+            CollectionComments comments = _comments ??= new CollectionComments();
+            element.GetCollectionComments(out string? start, out string? end);
+            comments.Start ??= start;
+            comments.End ??= end;
+            comments.Captured = true;
         }
 
         private void EnsureCollectionComments()
