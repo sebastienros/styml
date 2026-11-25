@@ -112,6 +112,36 @@ namespace System.Text.Yaml.Tests
             }
         }
 
+        /// <summary>
+        /// Comments returned as tokens (CommentHandling.Allow) do not change the verdict: a case is rejected at the
+        /// same place, by the same rule, as with comments skipped.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Cases))]
+        public void CommentTokens_LeaveTheVerdict(string id)
+        {
+            YamlTestSuite.Case c = YamlTestSuite.Load(id);
+            string? Verdict(YamlCommentHandling comments)
+            {
+                YamlReaderOptions options = s_options;
+                options.CommentHandling = comments;
+                try
+                {
+                    var reader = new Utf8YamlReader(c.Input, options);
+                    while (reader.Read())
+                    {
+                    }
+                    return null;
+                }
+                catch (YamlException e)
+                {
+                    return e.Message;
+                }
+            }
+
+            Assert.Equal(Verdict(YamlCommentHandling.Skip), Verdict(YamlCommentHandling.Allow));
+        }
+
         [Fact]
         public void ListsAreWellFormed()
         {
