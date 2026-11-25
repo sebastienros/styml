@@ -56,6 +56,7 @@ The [playground](/styml/playground/) lets you try the reading and writing option
 | `Schema` | `Core` | How plain scalars resolve into token types. |
 | `AcceptLenientScalars` | `false` | As on `YamlSerializerOptions`, for the typed `Get` and `TryGet` methods. |
 | `DisallowImplicitCollectionKeys` | `false` | As on `YamlSerializerOptions`. |
+| `ApplyYaml13DraftRestrictions` | `false` | Refuses six YAML 1.2 forms that the drafts of YAML 1.3 remove, such as a top-level scalar with no `---` line. On the reader only. |
 
 ### `YamlDocumentOptions`
 

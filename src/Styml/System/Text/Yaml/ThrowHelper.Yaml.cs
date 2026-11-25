@@ -58,6 +58,12 @@ namespace System.Text.Yaml
                 YamlGrammarError.TagMismatch => SR.YamlGrammar_TagMismatch,
                 YamlGrammarError.UndefinedTagHandle => SR.YamlGrammar_UndefinedTagHandle,
                 YamlGrammarError.UnresolvedJsonSchemaScalar => SR.YamlGrammar_UnresolvedJsonSchemaScalar,
+                YamlGrammarError.Draft13RootScalarWithoutMarker => SR.YamlGrammar_Draft13RootScalarWithoutMarker,
+                YamlGrammarError.Draft13ScalarOnMarkerLine => SR.YamlGrammar_Draft13ScalarOnMarkerLine,
+                YamlGrammarError.Draft13RootBlockScalarIndentation => SR.YamlGrammar_Draft13RootBlockScalarIndentation,
+                YamlGrammarError.Draft13PropertiesOnOwnLine => SR.YamlGrammar_Draft13PropertiesOnOwnLine,
+                YamlGrammarError.Draft13AnchorName => SR.YamlGrammar_Draft13AnchorName,
+                YamlGrammarError.Draft13ImplicitCollectionKey => SR.YamlGrammar_Draft13ImplicitCollectionKey,
                 _ => SR.YamlGrammar_UnexpectedCharacter,
             };
 
@@ -209,5 +215,11 @@ namespace System.Text.Yaml
         TagMismatch,
         UndefinedTagHandle,
         UnresolvedJsonSchemaScalar,
+        Draft13RootScalarWithoutMarker,
+        Draft13ScalarOnMarkerLine,
+        Draft13RootBlockScalarIndentation,
+        Draft13PropertiesOnOwnLine,
+        Draft13AnchorName,
+        Draft13ImplicitCollectionKey,
     }
 }

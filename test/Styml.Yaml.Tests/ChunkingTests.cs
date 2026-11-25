@@ -56,6 +56,17 @@ namespace System.Text.Yaml.Tests
             AssertEverySplit(JsonCorpus.Items[index].Utf8, s_noCollectionKeys);
         }
 
+        // The same oracle with the YAML 1.3 draft restrictions: a refusal must come at the same place however the
+        // input is cut.
+        private static readonly YamlReaderOptions s_yaml13Draft = new() { AllowMultipleValues = true, MaxDepth = 256, ApplyYaml13DraftRestrictions = true };
+
+        [Theory]
+        [MemberData(nameof(SuiteCases))]
+        public void SuiteInput_EverySplit_Yaml13DraftRestrictions(string id)
+        {
+            AssertEverySplit(YamlTestSuite.Load(id).Input, s_yaml13Draft);
+        }
+
         internal static void AssertEverySplit(byte[] input, YamlReaderOptions options)
         {
             Trace oneShot = ReadOneShot(input, options);

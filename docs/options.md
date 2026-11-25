@@ -47,6 +47,7 @@ The [README's usage section](../README.md#usage) shows each one at work.
 | `Schema` | `Core` | How plain scalars resolve into token types. |
 | `AcceptLenientScalars` | `false` | As on `YamlSerializerOptions`, for the typed `Get` and `TryGet` methods. |
 | `DisallowImplicitCollectionKeys` | `false` | As on `YamlSerializerOptions`. |
+| `ApplyYaml13DraftRestrictions` | `false` | Refuses six YAML 1.2 forms that the drafts of YAML 1.3 remove, such as a top-level scalar with no `---` line. On the reader only. |
 
 ### `YamlDocumentOptions`
 

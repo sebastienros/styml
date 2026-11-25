@@ -230,6 +230,25 @@ namespace System.Text.Yaml.Tests.Docs
         }
 
         [Fact]
+        public void Yaml13Draft()
+        {
+            // docs: versions-draft text
+            static string Read(string yaml) => Describe(() =>
+            {
+                var reader = new Utf8YamlReader(Encoding.UTF8.GetBytes(yaml), new YamlReaderOptions { ApplyYaml13DraftRestrictions = true });
+                while (reader.Read())
+                {
+                }
+                return "read";
+            });
+
+            string[] documents = { "text\n", "---\ntext\n", "--- text\n", "&a\nkey: v\n", "--- &a\nkey: v\n", "[a, b]: v\n" };
+            string output = string.Join("\n", documents.Select(yaml => $"{yaml.Replace("\n", "\\n")} => {Read(yaml)}"));
+            // docs: end
+            Check("versions-draft", output + "\n", defaultStyle: false);
+        }
+
+        [Fact]
         public void Empty()
         {
             // docs: empty text

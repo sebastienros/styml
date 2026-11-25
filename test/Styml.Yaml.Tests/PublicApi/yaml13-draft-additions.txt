@@ -1,0 +1,2 @@
+# The reader option that applies the restrictions of the YAML 1.3 drafts.
+System.Text.Yaml.YamlReaderOptions.ApplyYaml13DraftRestrictions property System.Boolean { get; set; }

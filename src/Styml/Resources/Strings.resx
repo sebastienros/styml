@@ -932,6 +932,24 @@
   <data name="YamlGrammar_UnresolvedJsonSchemaScalar" xml:space="preserve">
     <value>The plain scalar '{0}' is not null, a boolean or a number of the JSON schema (YamlSchemaKind.Json); quote it to read a string.</value>
   </data>
+  <data name="YamlGrammar_Draft13RootScalarWithoutMarker" xml:space="preserve">
+    <value>With ApplyYaml13DraftRestrictions, a scalar at the top level of a YAML document needs a '---' line before it.</value>
+  </data>
+  <data name="YamlGrammar_Draft13ScalarOnMarkerLine" xml:space="preserve">
+    <value>With ApplyYaml13DraftRestrictions, a plain or quoted scalar may not start on the '---' line of a YAML document; only a block scalar may.</value>
+  </data>
+  <data name="YamlGrammar_Draft13RootBlockScalarIndentation" xml:space="preserve">
+    <value>With ApplyYaml13DraftRestrictions, the content of a block scalar at the top level of a YAML document must be indented.</value>
+  </data>
+  <data name="YamlGrammar_Draft13PropertiesOnOwnLine" xml:space="preserve">
+    <value>With ApplyYaml13DraftRestrictions, a YAML anchor or tag may not be alone on its line; write it after the indicator before its node, or on the first line of the node.</value>
+  </data>
+  <data name="YamlGrammar_Draft13AnchorName" xml:space="preserve">
+    <value>With ApplyYaml13DraftRestrictions, a YAML anchor or alias name may only have letters, digits, '_', '-' and characters outside ASCII.</value>
+  </data>
+  <data name="YamlGrammar_Draft13ImplicitCollectionKey" xml:space="preserve">
+    <value>With ApplyYaml13DraftRestrictions, a YAML flow collection may not be an implicit key of a block mapping; use an explicit key ('? ').</value>
+  </data>
   <data name="YamlTagReserved" xml:space="preserve">
     <value>The YAML tag '{0}' is reserved (a core tag, '!' or '?') and cannot select a type.</value>
   </data>

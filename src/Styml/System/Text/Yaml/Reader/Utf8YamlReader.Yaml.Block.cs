@@ -187,6 +187,10 @@ namespace System.Text.Yaml
             {
                 YamlThrow(YamlGrammarError.ImplicitCollectionKeyDisallowed, c);
             }
+            if (YamlDraft13)
+            {
+                YamlThrow(YamlGrammarError.Draft13ImplicitCollectionKey, c);
+            }
             YamlCursor nodeStart = new() { Pos = rawStart, Line = rawLine, Column = rawColumn };
             if (YamlReadKeyNode(nodeStart, explicitBlock: false, indent, out YamlKeyNode node) != YamlStep.Token)
             {
@@ -650,6 +654,13 @@ namespace System.Text.Yaml
 
                 if (next == -1 || YamlIsBreak((byte)next) || next == (byte)'#')
                 {
+                    if (s.LineStart && YamlDraft13 && !(_bitStack.CurrentDepth == 0 && _yaml.Has(YamlParseFlags.ScopedValue)))
+                    {
+                        // YAML 1.3 drafts: properties alone on their line, after no indicator. The root of a reader over
+                        // a sliced value is left alone: the slice does not say what came before it on its line.
+                        YamlThrow(YamlGrammarError.Draft13PropertiesOnOwnLine, new YamlCursor { Pos = rawStart, Line = rawLine, Column = rawColumn });
+                    }
+
                     // The node continues on the following lines, or is empty.
                     YamlCursor after = c;
                     if (!YamlScanToContent(ref after, out YamlScan s2, stopAtComment: false))
@@ -706,6 +717,12 @@ namespace System.Text.Yaml
                     }
                     if (more == -1 || YamlIsBreak((byte)more) || more == (byte)'#')
                     {
+                        if (YamlDraft13)
+                        {
+                            // A second line of properties: this one starts its line.
+                            YamlThrow(YamlGrammarError.Draft13PropertiesOnOwnLine, c);
+                        }
+
                         YamlCursor after = c;
                         if (!YamlScanToContent(ref after, out YamlScan s3, stopAtComment: false))
                         {
@@ -767,6 +784,10 @@ namespace System.Text.Yaml
                         YamlNoteTooLongKey(tooLong, rawLine);
                         if (collectionKey == 1)
                         {
+                            if (YamlDraft13)
+                            {
+                                YamlThrow(YamlGrammarError.Draft13ImplicitCollectionKey, c);
+                            }
                             return YamlEmitImplicitMappingStart(propsOnOwnLine ? c : new YamlCursor { Pos = rawStart, Line = rawLine, Column = rawColumn }, s.LineStart || propsOnOwnLine, parentIndent, propsOnOwnLine ? props : default, rawStart, rawLine, rawColumn, s.TabInIndent);
                         }
                     }
@@ -774,6 +795,10 @@ namespace System.Text.Yaml
 
                 case (byte)'|':
                 case (byte)'>':
+                    if (YamlDraft13)
+                    {
+                        YamlCheckDraft13RootScalar(c, startsOnMarkerLine: false);
+                    }
                     return YamlParseBlockScalar(ref c, parentIndent, props, rawStart, rawLine, rawColumn);
 
                 case (byte)'\'':
@@ -851,6 +876,10 @@ namespace System.Text.Yaml
                 YamlThrow(multiLine ? YamlGrammarError.MultilineImplicitKey : YamlGrammarError.MappingValueNotAllowed, c);
             }
 
+            if (YamlDraft13)
+            {
+                YamlCheckDraft13RootScalar(scalarStart, startsOnMarkerLine: !s.LineStart);
+            }
             return YamlEmitScalar(ref c, scalarStart.Pos, start, length, YamlScalarStyle.Plain, escaped: multiLine, needsProcessing: multiLine, multiLine, props, rawStart, rawLine, rawColumn);
         }
 
@@ -929,6 +958,10 @@ namespace System.Text.Yaml
                     }
                     YamlNoteTooLongKey(tooLong, probe.Line);
                     isKey = collectionKey == 1;
+                    if (isKey && YamlDraft13)
+                    {
+                        YamlThrow(YamlGrammarError.Draft13ImplicitCollectionKey, probe);
+                    }
                 }
                 else if (YamlCanStartPlain(probe, flow: false, out bool needMore))
                 {
@@ -992,6 +1025,10 @@ namespace System.Text.Yaml
                 }
             }
 
+            if (YamlDraft13)
+            {
+                YamlCheckDraft13RootScalar(scalarStart, startsOnMarkerLine: !s.LineStart);
+            }
             YamlScalarStyle style = quote == (byte)'"' ? YamlScalarStyle.DoubleQuoted : YamlScalarStyle.SingleQuoted;
             bool needsProcessing = escaped && (style == YamlScalarStyle.SingleQuoted || multiLine || yamlOnlyEscape);
             return YamlEmitScalar(ref c, scalarStart.Pos, start, length, style, escaped, needsProcessing, multiLine, props, rawStart, rawLine, rawColumn);
