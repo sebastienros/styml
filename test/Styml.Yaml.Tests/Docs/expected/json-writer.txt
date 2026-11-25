@@ -1,0 +1,10 @@
+name: web
+replicas: 3
+ratio: 1.50
+tags:
+- front
+- "yes"
+- "8080"
+script: |-
+  nginx -t
+  nginx -s reload
