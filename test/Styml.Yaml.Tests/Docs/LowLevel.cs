@@ -48,6 +48,30 @@ namespace System.Text.Yaml.Tests.Docs
         }
 
         [Fact]
+        public void DocumentComments()
+        {
+            // docs: dom-document-comments yaml
+            var options = new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Allow };
+            using YamlDocument document = YamlDocument.Parse("""
+                # Service settings
+                name: web # the public name
+
+                # Ports to expose
+                ports: [80, 443]
+                """, options);
+
+            var stream = new MemoryStream();
+            using (var writer = new Utf8YamlWriter(stream))
+            {
+                document.WriteTo(writer);
+            }
+
+            string yaml = Encoding.UTF8.GetString(stream.ToArray());
+            // docs: end
+            Check("dom-document-comments", yaml);
+        }
+
+        [Fact]
         public void Node()
         {
             // docs: dom-node yaml
@@ -59,6 +83,26 @@ namespace System.Text.Yaml.Tests.Docs
             string yaml = root.ToYamlString();
             // docs: end
             Check("dom-node", yaml);
+        }
+
+        [Fact]
+        public void NodeComments()
+        {
+            // docs: dom-node-comments yaml
+            YamlObject config = YamlNode.Parse("""
+                # Service settings
+                name: web # the public name
+                ports: [80, 443]
+                """, documentOptions: new() { CommentHandling = YamlCommentHandling.Allow })!.AsObject();
+
+            config["name"] = "api"; // the entry keeps its comment
+            config.SetComment("ports", YamlCommentPosition.Leading, "Ports to expose");
+            config["replicas"] = 2;
+            config.SetComment("replicas", YamlCommentPosition.Trailing, "one per zone");
+            config.EndComment = "Generated";
+            string yaml = config.ToYamlString();
+            // docs: end
+            Check("dom-node-comments", yaml);
         }
 
         [Fact]

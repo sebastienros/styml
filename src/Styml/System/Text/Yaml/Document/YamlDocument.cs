@@ -827,14 +827,15 @@ namespace System.Text.Yaml
 
         internal void WriteElementTo(
             int index,
-            Utf8YamlWriter writer)
+            Utf8YamlWriter writer,
+            bool comments = true)
         {
             CheckNotDisposed();
 
             if (_yaml is not null)
             {
-                // Anchors, tags, aliases or decoded scalars (M5a).
-                WriteYamlElementTo(index, writer);
+                // Anchors, tags, aliases or decoded scalars (M5a), comments.
+                WriteYamlElementTo(index, writer, comments);
                 return;
             }
 

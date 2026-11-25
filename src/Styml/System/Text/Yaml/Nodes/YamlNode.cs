@@ -87,8 +87,10 @@ namespace System.Text.Yaml.Nodes
             else
             {
                 // M7c: a copy made through an alias has no anchor of its own, so it never writes its element as it is,
-                // which would write the anchored node's anchor a second time.
+                // which would write the anchored node's anchor a second time. Nor does it keep the anchored node's
+                // comments.
                 _ownProperties = true;
+                _noComments = true;
             }
 
             _tag = element.GetTag();

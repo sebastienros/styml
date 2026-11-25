@@ -24,6 +24,7 @@ namespace System.Text.Yaml.Nodes
             item?.AssignParent(this);
 
             List.Add(item);
+            ItemCommentList?.Add(null);
         }
 
         /// <summary>
@@ -38,6 +39,7 @@ namespace System.Text.Yaml.Nodes
                 if (_yamlElement is { } element)
                 {
                     CaptureCollectionStyle(element);
+                    CaptureCollectionComments(element);
                 }
 
                 _yamlElement = null;
@@ -50,6 +52,7 @@ namespace System.Text.Yaml.Nodes
                 }
 
                 list.Clear();
+                ItemCommentList = null;
             }
         }
 
@@ -83,6 +86,7 @@ namespace System.Text.Yaml.Nodes
         {
             item?.AssignParent(this);
             List.Insert(index, item);
+            ItemCommentList?.Insert(index, null);
         }
 
         /// <summary>
@@ -96,13 +100,14 @@ namespace System.Text.Yaml.Nodes
         /// </returns>
         public bool Remove(YamlNode? item)
         {
-            if (List.Remove(item))
+            int index = List.IndexOf(item);
+            if (index < 0)
             {
-                DetachParent(item);
-                return true;
+                return false;
             }
 
-            return false;
+            RemoveAt(index);
+            return true;
         }
 
         /// <summary>
@@ -116,6 +121,7 @@ namespace System.Text.Yaml.Nodes
         {
             YamlNode? item = List[index];
             List.RemoveAt(index);
+            ItemCommentList?.RemoveAt(index);
             DetachParent(item);
         }
 
@@ -131,7 +137,36 @@ namespace System.Text.Yaml.Nodes
         {
             ArgumentNullException.ThrowIfNull(match);
 
-            return List.RemoveAll(node =>
+            List<YamlNode?> items = List; // materialized first: that is when the items' comments are taken
+            if (ItemCommentList is { } itemComments)
+            {
+                // The items' comments go with them: both lists are compacted in one pass, in the items' order.
+                int kept = 0;
+                for (int i = 0; i < items.Count; i++)
+                {
+                    YamlNode? node = items[i];
+                    if (match(node))
+                    {
+                        DetachParent(node);
+                        continue;
+                    }
+
+                    items[kept] = node;
+                    itemComments[kept] = i < itemComments.Count ? itemComments[i] : null;
+                    kept++;
+                }
+
+                int removed = items.Count - kept;
+                items.RemoveRange(kept, removed);
+                if (itemComments.Count > kept)
+                {
+                    itemComments.RemoveRange(kept, itemComments.Count - kept);
+                }
+
+                return removed;
+            }
+
+            return items.RemoveAll(node =>
             {
                 if (match(node))
                 {
@@ -185,6 +220,7 @@ namespace System.Text.Yaml.Nodes
                 }
 
                 list.RemoveRange(index, count);
+                ItemCommentList?.RemoveRange(index, count);
             }
         }
 

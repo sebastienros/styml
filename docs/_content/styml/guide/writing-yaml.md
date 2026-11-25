@@ -176,8 +176,9 @@ Tls: true
 ```
 <!-- /sample:comments -->
 
-Comments of a parsed document are not kept by the [DOM](dom.md). The [contract model](contracts.md) sets comments at run
-time, and `Utf8YamlWriter.WriteCommentValue` writes them anywhere.
+A `YamlDocument` read with `CommentHandling = Allow` keeps the comments of its source and writes them back (see the
+[DOM](dom.md#keep-comments)). The [contract model](contracts.md) sets comments at run time, and
+`Utf8YamlWriter.WriteCommentValue` writes them anywhere.
 
 ## Styles of scalars
 

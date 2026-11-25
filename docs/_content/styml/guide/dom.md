@@ -57,11 +57,50 @@ admin scaled: True
 
 An alias element reads as the node it refers to, and `IsAlias` and `GetAnchor()` tell it apart.
 
+### Keep comments
+
+With `CommentHandling = YamlCommentHandling.Allow`, a document keeps its comments, and writing it in block style puts
+them back. Each comment stays with the entry or item it is above or ends the line of, or with the start or the end of
+a collection: the comments at the top and the bottom of a file are the root's. The text is kept, not the blank lines,
+the columns or the spacing after `#`:
+
+<!-- sample:dom-document-comments -->
+```csharp
+var options = new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Allow };
+using YamlDocument document = YamlDocument.Parse("""
+    # Service settings
+    name: web # the public name
+
+    # Ports to expose
+    ports: [80, 443]
+    """, options);
+
+var stream = new MemoryStream();
+using (var writer = new Utf8YamlWriter(stream))
+{
+    document.WriteTo(writer);
+}
+
+string yaml = Encoding.UTF8.GetString(stream.ToArray());
+```
+
+```yaml
+# Service settings
+name: web # the public name
+# Ports to expose
+ports: [80, 443]
+```
+<!-- /sample:dom-document-comments -->
+
+A JSON-compatible writer writes no comments, and a node written again through an alias or a merge key writes none of
+its source's. The reader doesn't return a few comments, so they are not kept: one on a block scalar's header
+(`key: | # c`), after an anchor or tag alone on its line, and after a `-` or `?` whose node starts on the next line.
+`System.Text.Json`'s `JsonDocument` refuses `Allow`.
+
 ## Edit with YamlNode
 
 `YamlNode.Parse` reads a mutable tree of `YamlObject`, `YamlArray` and `YamlValue`. The indexers read and replace
-values, and `ToYamlString` writes the tree in the styles it was read in, anchors and tags included. Comments are not
-kept:
+values, and `ToYamlString` writes the tree in the styles it was read in, anchors and tags included:
 
 <!-- sample:dom-node -->
 ```csharp
@@ -84,6 +123,42 @@ services:
       TIER: front
 ```
 <!-- /sample:dom-node -->
+
+### Comments in a tree
+
+A tree parsed with `CommentHandling = Allow` keeps the document's comments. Each entry or item has a comment above it
+and one at the end of its line (`GetComment`, `SetComment` with a `YamlCommentPosition`), and each mapping or sequence
+has its `StartComment` and `EndComment`, which hold the comments at the top and the bottom of the file for the root.
+An entry keeps its comments when its value is replaced or it is renamed, and loses them when it is removed:
+
+<!-- sample:dom-node-comments -->
+```csharp
+YamlObject config = YamlNode.Parse("""
+    # Service settings
+    name: web # the public name
+    ports: [80, 443]
+    """, documentOptions: new() { CommentHandling = YamlCommentHandling.Allow })!.AsObject();
+
+config["name"] = "api"; // the entry keeps its comment
+config.SetComment("ports", YamlCommentPosition.Leading, "Ports to expose");
+config["replicas"] = 2;
+config.SetComment("replicas", YamlCommentPosition.Trailing, "one per zone");
+config.EndComment = "Generated";
+string yaml = config.ToYamlString();
+```
+
+```yaml
+# Service settings
+name: api # the public name
+# Ports to expose
+ports: [80, 443]
+replicas: 2 # one per zone
+# Generated
+```
+<!-- /sample:dom-node-comments -->
+
+A copy made through an alias keeps none of the anchored node's comments, and `DeepEquals` ignores comments, as it
+ignores styles.
 
 ## Create nodes
 

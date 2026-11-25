@@ -168,6 +168,18 @@ namespace System.Text.Yaml
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentException_InvalidNodeComment(string paramName)
+        {
+            throw new ArgumentException(SR.InvalidNodeComment, paramName);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowKeyNotFoundException_NodeCommentProperty(string propertyName)
+        {
+            throw new Collections.Generic.KeyNotFoundException(SR.Format(SR.NodeCommentPropertyNotFound, propertyName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_NodePropertyPending()
         {
             throw GetInvalidOperationException(SR.NodePropertyPending);

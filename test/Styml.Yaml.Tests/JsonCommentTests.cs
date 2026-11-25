@@ -477,7 +477,15 @@ namespace System.Text.Yaml.Tests
         public void Serializer_Allow_IsRefused()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new YamlSerializerOptions { ReadCommentHandling = YamlCommentHandling.Allow });
-            Assert.Throws<ArgumentOutOfRangeException>(() => new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Allow });
+        }
+
+        [Fact]
+        public void Document_Allow_KeepsJsonComments()
+        {
+            // Unlike System.Text.Json's document, a YamlDocument keeps comments (DocumentCommentTests).
+            using YamlDocument document = YamlDocument.Parse("[1, /* c */ 2]", new YamlDocumentOptions { CommentHandling = YamlCommentHandling.Allow });
+            Assert.Equal(2, document.RootElement.GetArrayLength());
+            Assert.True(document.HasComments);
         }
 
         [Fact]
