@@ -1,0 +1,42 @@
+name: Prepare
+description: Puts NuGet on the runner's local disk, installs the .NET SDKs and restores the solution.
+
+# Expects RESTORE_SOURCES and BUILD_PROPS in the job's environment (.github/workflows/build.yml).
+runs:
+  using: composite
+  steps:
+  # The runners' local temporary disk, outside the workspace: /mnt on Linux, D: on Windows (formatted with ReFS from the
+  # November 30, 2026 images, actions/runner-images#15315). The default package folder is on the OS disk (C: on
+  # Windows).
+  - name: Put NuGet on the local disk
+    shell: bash
+    run: |
+      set -euo pipefail
+      if [ "$RUNNER_OS" = Windows ]; then
+        root=D:/nuget
+        mkdir -p "$root"
+      else
+        root=/mnt/nuget
+        sudo install -d -o "$(id -u)" -g "$(id -g)" "$root"
+      fi
+      {
+        echo "NUGET_PACKAGES=$root/packages"
+        echo "NUGET_HTTP_CACHE_PATH=$root/http-cache"
+        echo "NUGET_SCRATCH=$root/scratch"
+        echo "NUGET_PLUGINS_CACHE_PATH=$root/plugins"
+      } >> "$GITHUB_ENV"
+
+  - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+    with:
+      dotnet-version: |
+        10.0.x
+      global-json-file: global.json
+      check-latest: false
+
+  # The test projects use three Microsoft.DotNet.* packages that only dnceng's public dotnet-eng feed serves. The
+  # repository has no NuGet.config; the sources are named on the command line, and NU1507 (two sources without package
+  # source mapping), which only a NuGet.config could resolve, is silenced. The legs' builds (eng/test/run-tests.sh)
+  # restore again without the dnceng source, and find those packages in the package folder this restore fills.
+  - name: Restore
+    shell: bash
+    run: dotnet restore Styml.slnx $RESTORE_SOURCES -p:NoWarn=NU1507 -p:Configuration=Release $BUILD_PROPS
