@@ -149,6 +149,77 @@ namespace System.Text.Yaml.Tests
         }
 
         [Fact]
+        public void MergeRewrite_KeepsStyles()
+        {
+            // Resolving merge keys rewrites the whole document: scalars outside the merged mappings keep their styles,
+            // and so do the merged copies, with their anchors and tags.
+            using YamlDocument off = YamlDocument.Parse(Styles);
+            using YamlDocument on = YamlDocument.Parse(Styles + "m:\n  <<: {k: v}\n", new YamlDocumentOptions { ResolveMergeKeys = true });
+            foreach (YamlProperty property in off.RootElement.EnumerateObject())
+            {
+                YamlElement merged = on.RootElement.GetProperty(property.Name);
+                Assert.Equal(property.Value.ScalarStyle, merged.ScalarStyle);
+                Assert.True(YamlElement.DeepEquals(property.Value, merged));
+            }
+
+            Assert.Equal(Write(off) + "m:\n  k: v\n", Write(on));
+
+            const string Copies =
+                "base: &b\n  l: &la |\n    x\n  s: 'q'\n  f: !t >\n    a\n    b\n  one: |-\n    y\nitem:\n  <<: *b\n  own: |\n    z\nref: *la\n";
+            using YamlDocument copies = YamlDocument.Parse(Copies, new YamlDocumentOptions { ResolveMergeKeys = true });
+            YamlElement source = copies.RootElement.GetProperty("base");
+            YamlElement item = copies.RootElement.GetProperty("item");
+            foreach (YamlElement mapping in new[] { source, item })
+            {
+                Assert.Equal(YamlScalarStyle.Literal, mapping.GetProperty("l").ScalarStyle);
+                Assert.Equal("x\n", mapping.GetProperty("l").GetString());
+                Assert.Equal(YamlScalarStyle.SingleQuoted, mapping.GetProperty("s").ScalarStyle);
+                Assert.Equal(YamlScalarStyle.Folded, mapping.GetProperty("f").ScalarStyle);
+                Assert.Equal("a b\n", mapping.GetProperty("f").GetString());
+                Assert.Equal("!t", mapping.GetProperty("f").GetTag());
+
+                // A block scalar the writer cannot hold as one stays quoted, as before.
+                Assert.Equal(YamlScalarStyle.DoubleQuoted, mapping.GetProperty("one").ScalarStyle);
+                Assert.Equal("y", mapping.GetProperty("one").GetString());
+            }
+
+            Assert.Equal("la", source.GetProperty("l").GetAnchor());
+            Assert.Null(item.GetProperty("l").GetAnchor());
+            Assert.Equal(YamlScalarStyle.Literal, item.GetProperty("own").ScalarStyle);
+            Assert.Equal(YamlScalarStyle.Literal, copies.RootElement.GetProperty("ref").ScalarStyle);
+
+            // The serializer's rewrite reads the same styles.
+            var options = new YamlSerializerOptions(s_block) { ResolveMergeKeys = true };
+            var read = YamlSerializer.Deserialize<Dictionary<string, YamlElement>>(Copies, options)!;
+            Assert.Equal(YamlScalarStyle.Literal, read["item"].GetProperty("l").ScalarStyle);
+            Assert.Equal(YamlScalarStyle.Folded, read["item"].GetProperty("f").ScalarStyle);
+            Assert.Equal(YamlScalarStyle.SingleQuoted, read["item"].GetProperty("s").ScalarStyle);
+        }
+
+        [Theory]
+        [MemberData(nameof(Schemas))]
+        public void MergeRewrite_BlockScalarsItCannotKeepStayStrings(YamlSchemaKind schema)
+        {
+            // A block scalar without a line break is not written as one; the rewrite double-quotes it, never plain, so
+            // that it reads as the same string under every schema.
+            const string Yaml = "n: |-\n  12\nt: >-\n  true\ny: |-\n  yes\nnul: |-\n  ~\ne: |-\nf:\n  - |\n    a\n  - 'x'\nm:\n  <<: {k: 'v'}\n";
+            using YamlDocument off = YamlDocument.Parse(Yaml, new YamlDocumentOptions { Schema = schema });
+            using YamlDocument on = YamlDocument.Parse(Yaml, new YamlDocumentOptions { Schema = schema, ResolveMergeKeys = true });
+            foreach (string name in new[] { "n", "t", "y", "nul", "e" })
+            {
+                YamlElement merged = on.RootElement.GetProperty(name);
+                Assert.Equal(YamlValueKind.String, merged.ValueKind);
+                Assert.Equal(off.RootElement.GetProperty(name).GetString(), merged.GetString());
+                Assert.Equal(YamlScalarStyle.DoubleQuoted, merged.ScalarStyle);
+            }
+
+            Assert.True(YamlElement.DeepEquals(off.RootElement.GetProperty("f"), on.RootElement.GetProperty("f")));
+            Assert.Equal(YamlScalarStyle.Literal, on.RootElement.GetProperty("f")[0].ScalarStyle);
+            Assert.Equal(YamlScalarStyle.SingleQuoted, on.RootElement.GetProperty("f")[1].ScalarStyle);
+            Assert.Equal("v", on.RootElement.GetProperty("m").GetProperty("k").GetString());
+        }
+
+        [Fact]
         public void ReRead_AliasAtAnObjectSite()
         {
             const string Flow = "base: &b {s: 'q', d: \"w\", f: x}\ncopy: *b\n";

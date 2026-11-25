@@ -474,6 +474,7 @@ namespace System.Text.Yaml
             _blockColumn = 0;
             _scalarStyleHint = YamlScalarStyle.None;
             _plainFromSource = false;
+            _quotedFallback = false;
             _softScalarStyleHint = false;
             _defaultStyleKey = false;
             _flushedColumn = 0;
