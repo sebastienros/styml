@@ -38,8 +38,8 @@ namespace System.Text.Yaml
         /// are written as <c>#</c> comments. A copy of a node, through an alias or a merge key, writes no comments of
         /// its source. A comment the writer can't put where it was, such as one on a block scalar's header
         /// (<c>key: | # c</c>), is written on its own line next to it. A few comments are not kept: one on a directive's
-        /// line, and those inside a key node read after <c>?</c> (after its properties or its header) or inside a
-        /// collection key.
+        /// line, one after a flow node's anchor or tag (<c>[&amp;a # c</c>), and those inside a key node read after
+        /// <c>?</c> (after its properties or its header) or inside a collection key.
         /// </para>
         /// </remarks>
         public YamlCommentHandling CommentHandling

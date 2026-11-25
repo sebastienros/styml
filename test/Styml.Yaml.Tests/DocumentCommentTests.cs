@@ -245,11 +245,13 @@ namespace System.Text.Yaml.Tests
         }
 
         /// <summary>
-        /// Comments still not kept: on a directive's line, and inside an explicit key's node (after its properties or
-        /// its block scalar header), which is read with comments skipped, like a collection key.
+        /// Comments still not kept: on a directive's line, after a flow node's properties, and inside an explicit key's
+        /// node (after its properties or its block scalar header), which is read with comments skipped, like a
+        /// collection key.
         /// </summary>
         [Theory]
         [InlineData("%YAML 1.2 # c\n---\na: 1\n", "a: 1\n")]
+        [InlineData("k: [&a # c\n  1]\n", "k: [&a 1]\n")]
         [InlineData("? &k # c\n  a\n: v\n", "&k a: v\n")]
         public void RemainingGaps_AreNotKept(string yaml, string expected)
         {
