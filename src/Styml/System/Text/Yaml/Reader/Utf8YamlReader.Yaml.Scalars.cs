@@ -647,9 +647,16 @@ namespace System.Text.Yaml
                 YamlThrow(YamlGrammarError.InvalidBlockScalarHeader, c);
             }
 
+            YamlCursor afterHeaderCursor = c;
             if (!YamlExpectLineEnd(ref c))
             {
                 return YamlStep.NeedMoreData;
+            }
+
+            if (YamlAllowComments && YamlTakePendingComment(afterHeaderCursor, c.Pos))
+            {
+                // '| # c': a token before the scalar, whose token spans its header.
+                return YamlStep.PendingComment;
             }
 
             int contentStart;

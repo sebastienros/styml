@@ -28,6 +28,7 @@ namespace System.Text.Yaml.Tests
             new object[] { "a: [1, # in flow\n  2]\n" },
             new object[] { "a: &x 1 # anchored\nb: !t 2 # tagged\n" },
             new object[] { "? [k] # complex\n: v\n# end\n" },
+            new object[] { "base: &b # after anchor\n  # below\n  x: 1\nlist:\n- # after dash\n  y: 2\ns: | # header\n  text\n" },
         };
 
         [Fact]

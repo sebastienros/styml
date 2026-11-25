@@ -84,6 +84,80 @@ namespace System.Text.Yaml.Tests
             }
         }
 
+        /// <summary>
+        /// Comments returned as tokens (CommentHandling.Allow) leave the other tokens as they are read with comments
+        /// skipped: the same tokens, at the same positions, with the same values and properties, and the same verdict.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Cases))]
+        public void CommentTokens_LeaveTheOtherTokens(string id)
+        {
+            YamlTestSuite.Case c = YamlTestSuite.Load(id);
+            List<string> Trace(YamlCommentHandling comments, List<long> commentStarts, List<long> consumed, out bool rejected)
+            {
+                var trace = new List<string>();
+                rejected = false;
+                var reader = new Utf8YamlReader(c.Input, new YamlReaderOptions { AllowMultipleValues = true, MaxDepth = 256, CommentHandling = comments });
+                try
+                {
+                    while (reader.Read())
+                    {
+                        if (reader.TokenType == YamlTokenType.Comment)
+                        {
+                            // A token before a comment token may end before the comment: a flow key's ':' is read after
+                            // the comments between them.
+                            commentStarts.Add(reader.TokenStartIndex);
+                            if (trace.Count > 0)
+                            {
+                                consumed[trace.Count - 1] = -1;
+                            }
+                            continue;
+                        }
+
+                        consumed.Add(reader.BytesConsumed);
+                        trace.Add($"{reader.TokenType} {reader.TokenStartIndex} v={Convert.ToBase64String(reader.ValueSpan.ToArray())} "
+                            + $"&{Encoding.UTF8.GetString(reader.Anchor.ToArray())} !{Encoding.UTF8.GetString(reader.Tag.ToArray())}");
+                    }
+                }
+                catch (YamlException)
+                {
+                    rejected = true;
+                }
+
+                return trace;
+            }
+
+            var none = new List<long>();
+            var starts = new List<long>();
+            var skippedConsumed = new List<long>();
+            var allowedConsumed = new List<long>();
+            List<string> skipped = Trace(YamlCommentHandling.Skip, none, skippedConsumed, out bool skipRejected);
+            List<string> allowed = Trace(YamlCommentHandling.Allow, starts, allowedConsumed, out bool allowRejected);
+            Assert.Equal(skipRejected, allowRejected);
+            if (!skipRejected)
+            {
+                Assert.Empty(none);
+                Assert.Equal(skipped, allowed);
+                for (int i = 0; i < allowedConsumed.Count; i++)
+                {
+                    if (allowedConsumed[i] >= 0 && allowedConsumed[i] != skippedConsumed[i])
+                    {
+                        Assert.Fail($"{id}: {allowed[i]} consumed {allowedConsumed[i]}, not {skippedConsumed[i]}.");
+                    }
+                }
+
+                // Each comment once, in source order, at its '#'.
+                for (int i = 0; i < starts.Count; i++)
+                {
+                    Assert.Equal((byte)'#', c.Input[starts[i]]);
+                    if (i > 0 && starts[i] <= starts[i - 1])
+                    {
+                        Assert.Fail($"{id}: comment at {starts[i]} after one at {starts[i - 1]}.");
+                    }
+                }
+            }
+        }
+
         [Fact]
         public void ListsAreWellFormed()
         {
